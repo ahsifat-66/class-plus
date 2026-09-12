@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String        @id @default(cuid())
+  name           String
+  email          String        @unique
+  role           String        // "TEACHER" | "STUDENT"
+  avatar         String?
+  createdCourses Classroom[]   @relation("TeacherCourses")
+  enrollments    Enrollment[]
+  messages       Message[]
+  announcements  Announcement[]
+  submissions    Submission[]
+  createdAt      DateTime      @default(now())
+}
+
+model Classroom {
+  id            String         @id @default(cuid())
+  name          String
+  subject       String
+  code          String         @unique
+  teacherId     String
+  teacher       User           @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: Cascade)
+  enrollments   Enrollment[]
+  announcements Announcement[]
+  assignments   Assignment[]
+  channels      Channel[]
+  createdAt     DateTime       @default(now())
+}
+
+model Enrollment {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, classroomId])
+}
+
+model Channel {
+  id          String    @id @default(cuid())
+  name        String    // e.g. "general", "doubt-solving", "resources"
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  messages    Message[]
+  createdAt   DateTime  @default(now())
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  channelId String
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Announcement {
+  id          String    @id @default(cuid())
+  title       String
+  content     String
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+}
+
+model Assignment {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  dueDate     DateTime
+  maxPoints   Int
+  classroomId String
+  classroom   Classroom    @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+  createdAt   DateTime     @default(now())
+}
+
+model Submission {
+  id           String     @id @default(cuid())
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  content      String
+  grade        Int?
+  feedback     String?
+  submittedAt  DateTime   @default(now())
+
+  @@unique([assignmentId, studentId])
+}
