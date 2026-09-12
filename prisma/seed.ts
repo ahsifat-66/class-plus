@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -15,11 +16,14 @@ async function main() {
   await prisma.classroom.deleteMany();
   await prisma.user.deleteMany();
 
+  const defaultPasswordHash = await bcrypt.hash("Password123", 10);
+
   // 1. Create Teacher
   const teacher = await prisma.user.create({
     data: {
       name: "Dr. Kamal Hossain",
       email: "kamal@classpulse.edu",
+      password: defaultPasswordHash,
       role: "TEACHER",
       avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
     },
@@ -30,6 +34,7 @@ async function main() {
     data: {
       name: "MD Abid Hasan",
       email: "abid@classpulse.edu",
+      password: defaultPasswordHash,
       role: "STUDENT",
       avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80",
     },
@@ -39,6 +44,7 @@ async function main() {
     data: {
       name: "Sarah Ahmed",
       email: "sarah@classpulse.edu",
+      password: defaultPasswordHash,
       role: "STUDENT",
       avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
     },

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { signUpSchema } from "@/lib/validations/auth";
+import { hashPassword } from "@/lib/auth/password";
+import { signJwtToken } from "@/lib/auth/jwt";
+import { AUTH_COOKIE_NAME } from "@/lib/auth/session";
 
 const DEFAULT_AVATARS = {
   TEACHER: [
@@ -18,51 +22,103 @@ const DEFAULT_AVATARS = {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, role } = body;
 
-    if (!name || !email || !role) {
+    // 1. Zod validation
+    const parseResult = signUpSchema.safeParse(body);
+    if (!parseResult.success) {
+      const firstError = parseResult.error.issues[0]?.message || "Invalid input data";
+      return NextResponse.json({ error: firstError }, { status: 400 });
+    }
+
+    const { name, email, password, role, teacherCode } = parseResult.data;
+
+    // 2. Teacher passcode check
+    if (role === "TEACHER") {
+      const expectedCode = process.env.TEACHER_ACCESS_CODE || "TEACHER2024";
+      if (!teacherCode || teacherCode.trim() !== expectedCode) {
+        return NextResponse.json(
+          {
+            error:
+              "Invalid Teacher Access Code. A valid faculty passcode is required to register as a Teacher (use TEACHER2024).",
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    // 3. Check for existing account
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
       return NextResponse.json(
-        { error: "Name, email, and role (TEACHER or STUDENT) are required" },
-        { status: 400 }
+        { error: "An account with this email already exists. Please sign in instead." },
+        { status: 409 }
       );
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const normalizedRole = role.toUpperCase() === "TEACHER" ? "TEACHER" : "STUDENT";
+    // 4. Hash password with bcrypt
+    const hashedPassword = await hashPassword(password);
 
-    // Check if user already exists
-    let user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
+    // Pick avatar
+    const avatarList = DEFAULT_AVATARS[role];
+    const avatar = avatarList[Math.floor(Math.random() * avatarList.length)];
+
+    // 5. Create user in database
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role,
+        avatar,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatar: true,
+        createdAt: true,
+      },
     });
 
-    if (!user) {
-      const avatarList = DEFAULT_AVATARS[normalizedRole as keyof typeof DEFAULT_AVATARS];
-      const randomAvatar = avatarList[Math.floor(Math.random() * avatarList.length)];
+    // 6. Sign JWT token
+    const token = await signJwtToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    });
 
-      user = await prisma.user.create({
-        data: {
-          name: name.trim(),
-          email: normalizedEmail,
-          role: normalizedRole,
-          avatar: randomAvatar,
-        },
-      });
-    }
+    const redirectTo = role === "TEACHER" ? "/dashboard/teacher" : "/dashboard/student";
 
     const response = NextResponse.json({
       user,
-      message: "Signed in successfully!",
+      redirectTo,
+      message: `Account created successfully as ${role}!`,
     });
 
+    // Set secure HTTP-only cookie
+    response.cookies.set(AUTH_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: "/",
+    });
+
+    // Also set email cookie for client context
     response.cookies.set("classpulse_user_email", user.email, {
       path: "/",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
+      maxAge: 60 * 60 * 24 * 30,
       sameSite: "lax",
     });
 
     return response;
   } catch (error) {
-    console.error("Error in user registration / sign in:", error);
+    console.error("Error in registration:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

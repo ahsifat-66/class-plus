@@ -9,6 +9,7 @@ import {
   UserCheck,
   Plus,
   LogIn,
+  LogOut,
   ChevronDown,
   Sparkles,
   BookOpen,
@@ -27,13 +28,27 @@ export default function Navbar({
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const isTeacher = currentUser?.role === "TEACHER";
+  const homeLink = currentUser
+    ? isTeacher
+      ? "/dashboard/teacher"
+      : "/dashboard/student"
+    : "/";
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      window.location.href = "/login";
+    } catch (err) {
+      window.location.href = "/login";
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md transition-all">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand */}
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2.5 group">
+          <Link href={homeLink} className="flex items-center gap-2.5 group">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-teal-400 text-white shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform">
               <Activity className="h-5 w-5 animate-pulse" />
             </div>
@@ -199,15 +214,20 @@ export default function Navbar({
                   </div>
 
                   <div className="mt-2 pt-2 border-t border-slate-100 px-2 py-1 flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400">
-                      Sandbox Mode
-                    </span>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-600 hover:text-rose-800"
+                    >
+                      <LogOut className="h-3 w-3" />
+                      <span>Sign Out</span>
+                    </button>
                     <Link
                       href="/login"
                       onClick={() => setDropdownOpen(false)}
                       className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800"
                     >
-                      Full Login Portal →
+                      Login Portal →
                     </Link>
                   </div>
                 </div>
