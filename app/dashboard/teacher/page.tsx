@@ -54,10 +54,10 @@ function TeacherDashboardContent() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const fetchClassrooms = useCallback(async () => {
-    if (!currentUser) return;
     try {
       setIsLoadingClasses(true);
-      const res = await fetch(`/api/classrooms?userId=${currentUser.id}`);
+      const url = currentUser?.id ? `/api/classrooms?userId=${currentUser.id}` : "/api/classrooms";
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setClassrooms(data.classrooms || []);
@@ -70,10 +70,8 @@ function TeacherDashboardContent() {
   }, [currentUser]);
 
   useEffect(() => {
-    if (currentUser) {
-      fetchClassrooms();
-    }
-  }, [currentUser, fetchClassrooms]);
+    fetchClassrooms();
+  }, [fetchClassrooms]);
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);

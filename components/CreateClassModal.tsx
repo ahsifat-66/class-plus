@@ -25,8 +25,8 @@ export default function CreateClassModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !subject.trim()) {
-      setError("Please fill in both classroom name and subject.");
+    if (!name.trim()) {
+      setError("Please enter a classroom name (e.g. Class 6 or Class 9 A).");
       return;
     }
 
@@ -39,7 +39,7 @@ export default function CreateClassModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
-          subject: subject.trim(),
+          subject: subject.trim() || undefined,
           teacherId: currentUser?.id,
         }),
       });
@@ -94,7 +94,7 @@ export default function CreateClassModal({
             </label>
             <input
               type="text"
-              placeholder="e.g. Database Systems (45-I)"
+              placeholder="e.g. Class 6 or Class 9 A"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -103,16 +103,18 @@ export default function CreateClassModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
-              Subject / Department
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+                Subject / Department
+              </label>
+              <span className="text-[11px] text-slate-400">Optional • defaults to All Subjects</span>
+            </div>
             <input
               type="text"
-              placeholder="e.g. Computer Science & Engineering"
+              placeholder="e.g. All, Science, or General"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-              required
             />
           </div>
 

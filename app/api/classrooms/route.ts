@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSessionUser } from "@/lib/auth/session";
+
+export const dynamic = "force-dynamic";
 
 function generateClassCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -13,10 +16,18 @@ function generateClassCode(): string {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId");
+    let userId = searchParams.get("userId");
+
+    // Fall back to authenticated session user if not provided in search params
+    if (!userId) {
+      const session = await getSessionUser();
+      if (session?.id) {
+        userId = session.id;
+      }
+    }
 
     if (!userId) {
-      // If no userId provided, return all classrooms
+      // If no userId and not authenticated, return all classrooms
       const classrooms = await prisma.classroom.findMany({
         include: {
           teacher: true,
@@ -91,16 +102,53 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, subject, teacherId } = body;
+    const { name, subject } = body;
+    let { teacherId } = body;
 
-    if (!name || !subject || !teacherId) {
+    // 1. Automatically extract teacherId from authenticated session if not in body
+    if (!teacherId) {
+      const session = await getSessionUser();
+      if (session?.id) {
+        teacherId = session.id;
+      }
+    }
+
+    // 2. Validate Class Name
+    if (!name || !name.trim()) {
       return NextResponse.json(
-        { error: "Name, subject, and teacherId are required" },
+        { error: "Classroom name is required (e.g. Class 6 or Class 9 A)" },
         { status: 400 }
       );
     }
 
-    // Generate unique code
+    // 3. Ensure we have a valid teacher ID
+    if (!teacherId) {
+      return NextResponse.json(
+        { error: "Authentication required. Please sign in as a teacher to create a classroom." },
+        { status: 401 }
+      );
+    }
+
+    // Verify teacher exists in the database
+    const teacher = await prisma.user.findUnique({
+      where: { id: teacherId },
+    });
+
+    if (!teacher) {
+      return NextResponse.json(
+        { error: "Teacher account not found" },
+        { status: 404 }
+      );
+    }
+
+    // 4. Flexible subject handling: optional with sensible default
+    // If left blank or set to "All", default to "All Subjects"
+    let finalSubject = subject ? subject.trim() : "";
+    if (!finalSubject || finalSubject.toLowerCase() === "all") {
+      finalSubject = "All Subjects";
+    }
+
+    // 5. Generate unique 6-character alphanumeric code
     let code = generateClassCode();
     let existing = await prisma.classroom.findUnique({ where: { code } });
     while (existing) {
@@ -110,8 +158,8 @@ export async function POST(req: NextRequest) {
 
     const classroom = await prisma.classroom.create({
       data: {
-        name,
-        subject,
+        name: name.trim(),
+        subject: finalSubject,
         code,
         teacherId,
         channels: {
