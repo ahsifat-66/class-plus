@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
     // Fall back to session user if userId not provided in body
     if (!userId) {
-      const session = await getSessionUser();
+      const session = await getSessionUser(req);
       if (session?.id) {
         userId = session.id;
       }

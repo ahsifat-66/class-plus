@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   ChevronDown,
   LayoutDashboard,
+  BarChart3,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -37,10 +38,11 @@ export default function Navbar({
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      window.location.href = "/login";
-    } catch (err) {
-      window.location.href = "/login";
-    }
+    } catch (err) {}
+    try {
+      localStorage.removeItem("classpulse_user_cache");
+    } catch (e) {}
+    window.location.href = "/login";
   };
 
   const getInitials = (name?: string) => {
@@ -107,6 +109,15 @@ export default function Navbar({
                     <span>Join Class</span>
                   </button>
                 )}
+
+                <Link
+                  href="/analytics"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95"
+                  title="View Analytics & Performance Dashboard"
+                >
+                  <BarChart3 className="h-3.5 w-3.5 text-indigo-600" />
+                  <span className="hidden sm:inline">Analytics</span>
+                </Link>
               </div>
 
               {/* Profile Avatar Dropdown Button */}
@@ -219,6 +230,20 @@ export default function Navbar({
                           </div>
                           <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
                             {userSummary?.enrolledCount || 0}
+                          </span>
+                        </Link>
+
+                        <Link
+                          href="/analytics"
+                          onClick={() => setDropdownOpen(false)}
+                          className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-900 rounded-xl transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <BarChart3 className="h-4 w-4 text-indigo-600" />
+                            <span>Analytics & Graphs</span>
+                          </div>
+                          <span className="text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                            Charts
                           </span>
                         </Link>
                       </div>

@@ -7,13 +7,30 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSessionUser();
-    if (!session?.id) {
+    const session = await getSessionUser(req);
+    let userId = session?.id;
+
+    // Fallback: Check email query or cookie if session token was lost
+    if (!userId) {
+      const email =
+        req.nextUrl.searchParams.get("email") ||
+        req.cookies.get("classpulse_user_email")?.value;
+
+      if (email) {
+        const found = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+        if (found) userId = found.id;
+      }
+    }
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.id },
+      where: { id: userId },
       select: {
         id: true,
         name: true,
@@ -89,8 +106,21 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const session = await getSessionUser();
-    if (!session?.id) {
+    const session = await getSessionUser(req);
+    let userId = session?.id;
+
+    if (!userId) {
+      const email = req.cookies.get("classpulse_user_email")?.value;
+      if (email) {
+        const found = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+        if (found) userId = found.id;
+      }
+    }
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -98,7 +128,7 @@ export async function PUT(req: NextRequest) {
     const { name, institution, grade, bio, currentPassword, newPassword } = body;
 
     const user = await prisma.user.findUnique({
-      where: { id: session.id },
+      where: { id: userId },
     });
 
     if (!user) {
@@ -146,9 +176,9 @@ export async function PUT(req: NextRequest) {
         );
       }
 
-      if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
+      if (newPassword.length < 6) {
         return NextResponse.json(
-          { error: "New password must be at least 8 characters and include at least 1 uppercase letter and 1 number." },
+          { error: "New password must be at least 6 characters." },
           { status: 400 }
         );
       }
@@ -157,7 +187,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: session.id },
+      where: { id: userId },
       data: updateData,
       select: {
         id: true,

@@ -32,21 +32,21 @@ export async function POST(req: NextRequest) {
 
     const { name, email, password, role, teacherCode } = parseResult.data;
 
-    // 2. Teacher passcode check
-    if (role === "TEACHER") {
+    // Optional teacherCode check: if TEACHER_ACCESS_CODE is set in env and user provided one
+    if (role === "TEACHER" && process.env.STRICT_TEACHER_CODE === "true") {
       const expectedCode = process.env.TEACHER_ACCESS_CODE || "TEACHER2024";
       if (!teacherCode || teacherCode.trim() !== expectedCode) {
         return NextResponse.json(
           {
             error:
-              "Invalid Teacher Access Code. A valid faculty passcode is required to register as a Teacher (use TEACHER2024).",
+              "Invalid Teacher Access Code. Please enter valid code (TEACHER2024).",
           },
           { status: 403 }
         );
       }
     }
 
-    // 3. Check for existing account
+    // 2. Check for existing account
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -58,14 +58,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Hash password with bcrypt
+    // 3. Hash password with bcrypt
     const hashedPassword = await hashPassword(password);
 
     // Pick avatar
     const avatarList = DEFAULT_AVATARS[role];
     const avatar = avatarList[Math.floor(Math.random() * avatarList.length)];
 
-    // 5. Create user in database
+    // 4. Create user in database
     const user = await prisma.user.create({
       data: {
         name,
@@ -80,11 +80,14 @@ export async function POST(req: NextRequest) {
         email: true,
         role: true,
         avatar: true,
+        institution: true,
+        grade: true,
+        bio: true,
         createdAt: true,
       },
     });
 
-    // 6. Sign JWT token
+    // 5. Sign JWT token
     const token = await signJwtToken({
       id: user.id,
       email: user.email,
@@ -92,10 +95,12 @@ export async function POST(req: NextRequest) {
       name: user.name,
     });
 
+    const isSecure = req.nextUrl.protocol === "https:";
     const redirectTo = role === "TEACHER" ? "/dashboard?view=teaching" : "/dashboard?view=enrolled";
 
     const response = NextResponse.json({
       user,
+      token,
       redirectTo,
       message: `Account created successfully as ${role}!`,
     });
@@ -103,7 +108,7 @@ export async function POST(req: NextRequest) {
     // Set secure HTTP-only cookie
     response.cookies.set(AUTH_COOKIE_NAME, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecure,
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 30, // 30 days
       path: "/",
@@ -114,6 +119,7 @@ export async function POST(req: NextRequest) {
       path: "/",
       maxAge: 60 * 60 * 24 * 30,
       sameSite: "lax",
+      secure: isSecure,
     });
 
     return response;

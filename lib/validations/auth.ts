@@ -9,11 +9,7 @@ export const signUpSchema = z.object({
     .toLowerCase(),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(
-      /^(?=.*[A-Z])(?=.*\d)/,
-      "Password must contain at least one uppercase letter and at least one number"
-    ),
+    .min(6, "Password must be at least 6 characters"),
   role: z.enum(["TEACHER", "STUDENT"], {
     message: "Role must strictly be either TEACHER or STUDENT",
   }),

@@ -42,7 +42,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch("/api/auth/users");
+      const res = await fetch("/api/auth/users", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setAllUsers(data.users || []);
@@ -54,12 +54,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      setIsLoading(true);
-      const res = await fetch("/api/auth/me");
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setCurrentUser(data.user);
         setUserSummary(data.summary || null);
+        if (data.user) {
+          try {
+            localStorage.setItem("classpulse_user_cache", JSON.stringify(data.user));
+          } catch (err) {}
+        } else {
+          try {
+            localStorage.removeItem("classpulse_user_cache");
+          } catch (err) {}
+        }
       }
     } catch (e) {
       console.error("Failed to fetch active user", e);
@@ -79,7 +87,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setCurrentUser(data.user);
-        // Refresh page data so server/client components reload the active perspective
         window.location.reload();
       }
     } catch (e) {
@@ -90,6 +97,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    try {
+      const cached = localStorage.getItem("classpulse_user_cache");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.id) {
+          setCurrentUser(parsed);
+          setIsLoading(false);
+        }
+      }
+    } catch (err) {}
     refreshUser();
   }, [refreshUser]);
 

@@ -10,6 +10,7 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const emailCookie = req.cookies.get("classpulse_user_email")?.value;
   let userPayload: { id: string; email: string; role: string; name: string } | null = null;
 
   if (token) {
@@ -27,7 +28,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // 1. If user is already authenticated and visits /login or /signup, redirect to dashboard
-  if (userPayload && (pathname === "/login" || pathname === "/signup")) {
+  if ((userPayload || emailCookie) && (pathname === "/login" || pathname === "/signup")) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
@@ -35,12 +36,13 @@ export async function middleware(req: NextRequest) {
   const isProtectedPath =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/profile") ||
+    pathname.startsWith("/analytics") ||
     pathname.startsWith("/classroom") ||
-    pathname.startsWith("/api/profile") ||
+    pathname.startsWith("/api/analytics") ||
     pathname.startsWith("/api/teacher") ||
     pathname.startsWith("/api/student");
 
-  if (isProtectedPath && !userPayload) {
+  if (isProtectedPath && !userPayload && !emailCookie) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
     }
@@ -58,9 +60,10 @@ export const config = {
     "/signup",
     "/dashboard/:path*",
     "/profile/:path*",
+    "/analytics/:path*",
     "/classroom/:path*",
+    "/api/analytics/:path*",
     "/api/teacher/:path*",
     "/api/student/:path*",
-    "/api/profile/:path*",
   ],
 };

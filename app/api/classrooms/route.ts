@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     // Fall back to authenticated session user if not provided in search params
     if (!userId) {
-      const session = await getSessionUser();
+      const session = await getSessionUser(req);
       if (session?.id) {
         userId = session.id;
       }
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
 
     // 1. Automatically extract teacherId from authenticated session if not in body
     if (!teacherId) {
-      const session = await getSessionUser();
+      const session = await getSessionUser(req);
       if (session?.id) {
         teacherId = session.id;
       }

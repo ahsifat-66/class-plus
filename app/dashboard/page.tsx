@@ -25,8 +25,11 @@ import {
   Award,
   AlertCircle,
   Calendar,
+  BarChart3,
 } from "lucide-react";
 import { formatRelativeDueDate } from "@/lib/utils";
+import StudentAnalyticsView from "@/components/analytics/StudentAnalyticsView";
+import TeacherAnalyticsView from "@/components/analytics/TeacherAnalyticsView";
 
 export const dynamic = "force-dynamic";
 
@@ -65,8 +68,8 @@ function UnifiedDashboardContent() {
 
   const { currentUser, userSummary, refreshUser } = useUser();
 
-  // Mode state: "teaching" or "enrolled"
-  const [activeTab, setActiveTab] = useState<"teaching" | "enrolled">("teaching");
+  // Mode state: "teaching", "enrolled", or "analytics"
+  const [activeTab, setActiveTab] = useState<"teaching" | "enrolled" | "analytics">("teaching");
 
   const [teachingClasses, setTeachingClasses] = useState<Classroom[]>([]);
   const [enrolledClasses, setEnrolledClasses] = useState<Classroom[]>([]);
@@ -76,16 +79,52 @@ function UnifiedDashboardContent() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
 
+  // Analytics states for embedded dashboard analytics
+  const [analyticsData, setAnalyticsData] = useState<any | null>(null);
+  const [teacherAnalyticsData, setTeacherAnalyticsData] = useState<any | null>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+  const [analyticsRoleView, setAnalyticsRoleView] = useState<"student" | "teacher">("student");
+
+  const fetchAnalytics = useCallback(async () => {
+    try {
+      setIsLoadingAnalytics(true);
+      const [meRes, teacherRes] = await Promise.all([
+        fetch("/api/analytics/me", { cache: "no-store" }),
+        fetch("/api/analytics/teacher", { cache: "no-store" }),
+      ]);
+      if (meRes.ok) {
+        const d = await meRes.json();
+        setAnalyticsData(d);
+      }
+      if (teacherRes.ok) {
+        const td = await teacherRes.json();
+        setTeacherAnalyticsData(td);
+      }
+    } catch (e) {
+      console.error("Failed to load analytics in dashboard", e);
+    } finally {
+      setIsLoadingAnalytics(false);
+    }
+  }, []);
+
   // Set initial tab from query param or role
   useEffect(() => {
     if (viewParam === "enrolled") {
       setActiveTab("enrolled");
     } else if (viewParam === "teaching") {
       setActiveTab("teaching");
+    } else if (viewParam === "analytics") {
+      setActiveTab("analytics");
     } else if (currentUser?.role === "STUDENT" && !viewParam) {
       setActiveTab("enrolled");
     }
   }, [viewParam, currentUser]);
+
+  useEffect(() => {
+    if (activeTab === "analytics" && !analyticsData) {
+      fetchAnalytics();
+    }
+  }, [activeTab, analyticsData, fetchAnalytics]);
 
   const fetchAllData = useCallback(async () => {
     try {
@@ -114,7 +153,7 @@ function UnifiedDashboardContent() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const handleTabChange = (tab: "teaching" | "enrolled") => {
+  const handleTabChange = (tab: "teaching" | "enrolled" | "analytics") => {
     setActiveTab(tab);
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set("view", tab);
@@ -206,6 +245,27 @@ function UnifiedDashboardContent() {
                 }`}
               >
                 {enrolledClasses.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => handleTabChange("analytics")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+                activeTab === "analytics"
+                  ? "bg-white text-indigo-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <BarChart3 className="h-4 w-4 text-indigo-600" />
+              <span>Analytics</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                  activeTab === "analytics"
+                    ? "bg-indigo-100 text-indigo-800"
+                    : "bg-slate-200 text-slate-600"
+                }`}
+              >
+                Live
               </span>
             </button>
           </div>
@@ -592,6 +652,87 @@ function UnifiedDashboardContent() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* TAB 3: ANALYTICS VIEW */}
+        {activeTab === "analytics" && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            {/* Analytics Hero Banner */}
+            <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <div className="space-y-1.5">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-indigo-200 backdrop-blur-md border border-white/10">
+                    <BarChart3 className="h-3.5 w-3.5 text-indigo-300" />
+                    <span>Live Interactive Graphs</span>
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+                    {analyticsRoleView === "student" ? "Your Academic Performance" : "Faculty Analytics & Student Directory"}
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
+                    Interactive charts for completion rates, chronological score trends, and individual student drill-down.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  {/* Perspective switcher if user has both roles */}
+                  {(currentUser?.role === "TEACHER" || (userSummary?.teachingCount ?? 0) > 0) && (
+                    <div className="inline-flex rounded-xl bg-white/10 p-1 backdrop-blur-md border border-white/10">
+                      <button
+                        onClick={() => setAnalyticsRoleView("student")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          analyticsRoleView === "student"
+                            ? "bg-white text-slate-900 shadow-sm"
+                            : "text-slate-300 hover:text-white"
+                        }`}
+                      >
+                        Student View
+                      </button>
+                      <button
+                        onClick={() => setAnalyticsRoleView("teacher")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          analyticsRoleView === "teacher"
+                            ? "bg-white text-purple-900 shadow-sm"
+                            : "text-slate-300 hover:text-white"
+                        }`}
+                      >
+                        Teacher View
+                      </button>
+                    </div>
+                  )}
+
+                  <Link
+                    href="/analytics"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow hover:bg-indigo-700 transition-all"
+                  >
+                    <span>Full Analytics Hub</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {isLoadingAnalytics && !analyticsData ? (
+              <div className="py-16 text-center text-xs text-slate-400 space-y-2">
+                <div className="h-8 w-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                <span>Loading interactive charts...</span>
+              </div>
+            ) : (
+              <>
+                {analyticsRoleView === "student" && analyticsData?.student && (
+                  <StudentAnalyticsView data={analyticsData.student} />
+                )}
+
+                {analyticsRoleView === "teacher" && analyticsData?.teacher && (
+                  <TeacherAnalyticsView
+                    overviewData={analyticsData.teacher}
+                    classesList={teacherAnalyticsData?.classes || []}
+                    studentsList={teacherAnalyticsData?.students || []}
+                  />
+                )}
+              </>
+            )}
           </div>
         )}
       </main>

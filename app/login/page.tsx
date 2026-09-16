@@ -67,12 +67,17 @@ function LoginForm() {
       }
 
       setSuccess(`Signed in as ${data.user.role}! Redirecting...`);
+      if (data.user) {
+        try {
+          localStorage.setItem("classpulse_user_cache", JSON.stringify(data.user));
+        } catch (e) {}
+      }
       await refreshUser();
 
       const targetDestination = callbackUrl || data.redirectTo;
       setTimeout(() => {
-        router.push(targetDestination);
-      }, 500);
+        window.location.href = targetDestination;
+      }, 300);
     } catch (err: any) {
       setError(err.message || "Invalid credentials.");
     } finally {

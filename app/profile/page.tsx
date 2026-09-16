@@ -7,6 +7,7 @@ import { useUser } from "@/context/UserContext";
 import Navbar from "@/components/Navbar";
 import CreateClassModal from "@/components/CreateClassModal";
 import JoinClassModal from "@/components/JoinClassModal";
+import AvatarUploadModal from "@/components/AvatarUploadModal";
 import {
   User as UserIcon,
   Mail,
@@ -26,8 +27,10 @@ import {
   Calendar,
   Sparkles,
   ArrowRight,
+  ArrowLeft,
   Eye,
   EyeOff,
+  Camera,
 } from "lucide-react";
 
 interface ProfileStats {
@@ -83,39 +86,52 @@ export default function ProfilePage() {
   // Modals for navbar actions
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+
+  // Synchronize profile immediately if currentUser is loaded in context
+  useEffect(() => {
+    if (currentUser) {
+      setProfile((prev) => prev || (currentUser as ProfileUser));
+      setFormData((prev) => ({
+        ...prev,
+        name: currentUser.name || prev.name,
+        institution: currentUser.institution || prev.institution,
+        grade: currentUser.grade || prev.grade,
+        bio: currentUser.bio || prev.bio,
+      }));
+      setIsLoading(false);
+    }
+  }, [currentUser]);
 
   const fetchProfile = useCallback(async () => {
     try {
-      setIsLoading(true);
-      const res = await fetch("/api/profile");
-      if (!res.ok) {
-        if (res.status === 401) {
-          router.push("/login");
-          return;
-        }
-        throw new Error("Failed to load profile");
-      }
-      const data = await res.json();
-      setProfile(data.user);
-      setStats(data.stats);
+      const emailQuery = currentUser?.email
+        ? `?email=${encodeURIComponent(currentUser.email)}`
+        : "";
+      const res = await fetch(`/api/profile${emailQuery}`, { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data.user);
+        setStats(data.stats);
 
-      // Populate form state
-      setFormData({
-        name: data.user.name || "",
-        institution: data.user.institution || "",
-        grade: data.user.grade || "",
-        bio: data.user.bio || "",
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
+        setFormData({
+          name: data.user.name || "",
+          institution: data.user.institution || "",
+          grade: data.user.grade || "",
+          bio: data.user.bio || "",
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else if (res.status === 401 && !currentUser) {
+        window.location.href = "/login?callbackUrl=/profile";
+      }
     } catch (err: any) {
       console.error("Profile load error:", err);
-      setErrorMessage("Could not load your profile details. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [currentUser]);
 
   useEffect(() => {
     fetchProfile();
@@ -140,14 +156,8 @@ export default function ProfilePage() {
         setErrorMessage("New passwords do not match.");
         return;
       }
-      if (
-        formData.newPassword.length < 8 ||
-        !/[A-Z]/.test(formData.newPassword) ||
-        !/\d/.test(formData.newPassword)
-      ) {
-        setErrorMessage(
-          "New password must be at least 8 characters with at least 1 uppercase letter and 1 number."
-        );
+      if (formData.newPassword.length < 6) {
+        setErrorMessage("New password must be at least 6 characters.");
         return;
       }
     }
@@ -190,7 +200,11 @@ export default function ProfilePage() {
         confirmPassword: "",
       }));
 
-      // Refresh global user context
+      // Update local storage cache and global user context
+      try {
+        localStorage.setItem("classpulse_user_cache", JSON.stringify(data.user));
+      } catch (err) {}
+
       await refreshUser();
     } catch (err: any) {
       console.error("Save profile error:", err);
@@ -209,7 +223,12 @@ export default function ProfilePage() {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const dynamicBadge = stats?.activeRole || userSummary?.activeRole || "Student";
+  const dynamicBadge =
+    stats?.activeRole ||
+    userSummary?.activeRole ||
+    (currentUser?.role === "TEACHER" ? "Teacher" : "Student");
+
+  const effectiveProfile = profile || (currentUser as ProfileUser | null);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -218,7 +237,21 @@ export default function ProfilePage() {
         onJoinClassOpen={() => setIsJoinOpen(true)}
       />
 
-      <main className="flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Navigation Breadcrumb / Back button */}
+        <div className="flex items-center justify-between">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Dashboard</span>
+          </Link>
+          <span className="text-xs font-semibold text-slate-400">
+            Account & Academic Profile
+          </span>
+        </div>
+
         {/* Notifications */}
         {errorMessage && (
           <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 flex items-center gap-3 text-rose-900 shadow-sm animate-in fade-in">
@@ -234,7 +267,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {isLoading ? (
+        {isLoading && !effectiveProfile ? (
           <div className="space-y-6">
             <div className="h-44 rounded-3xl bg-white border border-slate-200 p-6 animate-pulse" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -242,7 +275,7 @@ export default function ProfilePage() {
               <div className="h-48 rounded-3xl bg-white border border-slate-200 p-6 animate-pulse" />
             </div>
           </div>
-        ) : profile ? (
+        ) : effectiveProfile ? (
           <>
             {/* Header / Avatar Hero Card */}
             <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
@@ -251,16 +284,16 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-5">
                   {/* Avatar or Initials */}
                   <div className="relative shrink-0">
-                    {profile.avatar ? (
+                    {effectiveProfile.avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={profile.avatar}
-                        alt={profile.name}
+                        src={effectiveProfile.avatar}
+                        alt={effectiveProfile.name}
                         className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover ring-4 ring-white/20 shadow-lg"
                       />
                     ) : (
                       <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-teal-400 text-white font-extrabold text-2xl sm:text-3xl shadow-lg ring-4 ring-white/20">
-                        {getInitials(profile.name)}
+                        {getInitials(effectiveProfile.name)}
                       </div>
                     )}
                     <span
@@ -268,13 +301,21 @@ export default function ProfilePage() {
                         dynamicBadge.includes("Teacher") ? "bg-purple-400" : "bg-emerald-400"
                       }`}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setIsAvatarModalOpen(true)}
+                      className="absolute -bottom-1 -left-1 flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-700 shadow-md ring-2 ring-slate-200 hover:bg-slate-100 hover:text-indigo-600 transition-transform active:scale-95"
+                      title="Upload or change profile picture"
+                    >
+                      <Camera className="h-3.5 w-3.5" />
+                    </button>
                   </div>
 
                   {/* User Details */}
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2.5">
                       <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                        {profile.name}
+                        {effectiveProfile.name}
                       </h1>
                       <span
                         className={`text-[11px] font-extrabold uppercase tracking-wider px-3 py-0.5 rounded-full backdrop-blur-md border ${
@@ -291,15 +332,15 @@ export default function ProfilePage() {
 
                     <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-300">
                       <Mail className="h-3.5 w-3.5 text-slate-400" />
-                      <span>{profile.email}</span>
+                      <span>{effectiveProfile.email}</span>
                     </div>
 
-                    {profile.createdAt && (
+                    {effectiveProfile.createdAt && (
                       <div className="flex items-center gap-2 text-[11px] text-slate-400">
                         <Calendar className="h-3 w-3 text-slate-500" />
                         <span>
                           Member since{" "}
-                          {new Date(profile.createdAt).toLocaleDateString(undefined, {
+                          {new Date(effectiveProfile.createdAt).toLocaleDateString(undefined, {
                             month: "short",
                             year: "numeric",
                           })}
@@ -406,7 +447,7 @@ export default function ProfilePage() {
                     <input
                       type="text"
                       disabled
-                      value={profile.email}
+                      value={effectiveProfile.email}
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-500 cursor-not-allowed"
                     />
                   </div>
@@ -440,7 +481,7 @@ export default function ProfilePage() {
                   {showPasswordSection && (
                     <div className="mt-4 rounded-2xl bg-slate-50 p-4 border border-slate-200 space-y-4 animate-in fade-in">
                       <div className="text-xs text-slate-500">
-                        Leave blank if you do not wish to change your password. Must be at least 8 characters with 1 number and 1 uppercase letter.
+                        Leave blank if you do not wish to change your password. Must be at least 6 characters.
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -561,7 +602,7 @@ export default function ProfilePage() {
                       Institution / School
                     </span>
                     <p className="text-sm font-bold text-slate-900">
-                      {profile.institution || (
+                      {effectiveProfile.institution || (
                         <span className="text-slate-400 italic font-normal">
                           Not specified yet
                         </span>
@@ -574,7 +615,7 @@ export default function ProfilePage() {
                       Grade / Standard
                     </span>
                     <p className="text-sm font-bold text-slate-900">
-                      {profile.grade || (
+                      {effectiveProfile.grade || (
                         <span className="text-slate-400 italic font-normal">
                           Not specified yet
                         </span>
@@ -588,7 +629,7 @@ export default function ProfilePage() {
                     Subjects & Academic Bio
                   </span>
                   <p className="text-sm text-slate-700 leading-relaxed">
-                    {profile.bio || (
+                    {effectiveProfile.bio || (
                       <span className="text-slate-400 italic">
                         No bio or subjects provided yet. Click "Edit Profile" to add details about your academic interests.
                       </span>
@@ -743,12 +784,21 @@ export default function ProfilePage() {
             </div>
           </>
         ) : (
-          <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center space-y-3">
+          <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center space-y-4">
             <UserIcon className="mx-auto h-12 w-12 text-slate-300" />
-            <h3 className="text-base font-bold text-slate-900">User Profile Not Found</h3>
+            <h3 className="text-base font-bold text-slate-900">User Session Not Detected</h3>
             <p className="text-xs text-slate-500">
-              Please try logging out and logging back in.
+              Please sign in to view and manage your profile and classrooms.
             </p>
+            <div>
+              <Link
+                href="/login?callbackUrl=/profile"
+                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition-all"
+              >
+                <span>Sign In to ClassPulse</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
           </div>
         )}
       </main>
@@ -764,6 +814,19 @@ export default function ProfilePage() {
         isOpen={isJoinOpen}
         onClose={() => setIsJoinOpen(false)}
         onClassJoined={fetchProfile}
+      />
+
+      <AvatarUploadModal
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        currentAvatar={effectiveProfile?.avatar || null}
+        userName={effectiveProfile?.name || ""}
+        onAvatarUpdated={(newUrl) => {
+          if (profile) {
+            setProfile({ ...profile, avatar: newUrl });
+          }
+          fetchProfile();
+        }}
       />
     </div>
   );

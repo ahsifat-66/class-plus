@@ -2,16 +2,14 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Activity,
-  GraduationCap,
-  ShieldCheck,
   Sparkles,
+  ShieldCheck,
+  GraduationCap,
   ArrowRight,
-  Check,
   AlertCircle,
-  KeyRound,
+  Check,
   Eye,
   EyeOff,
   User,
@@ -20,24 +18,14 @@ import {
 } from "lucide-react";
 
 export default function SignUpPage() {
-  const router = useRouter();
-
-  const [role, setRole] = useState<"STUDENT" | "TEACHER">("STUDENT");
+  const [role, setRole] = useState<"TEACHER" | "STUDENT">("STUDENT");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [teacherCode, setTeacherCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  // Real-time password requirement checks
-  const hasMinLength = password.length >= 8;
-  const hasUppercase = /[A-Z]/.test(password);
-  const hasNumber = /\d/.test(password);
-  const isPasswordValid = hasMinLength && hasUppercase && hasNumber;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,12 +40,8 @@ export default function SignUpPage() {
       setError("Please enter a valid email address.");
       return;
     }
-    if (!isPasswordValid) {
-      setError("Password must be at least 8 characters and include 1 uppercase letter and 1 number.");
-      return;
-    }
-    if (role === "TEACHER" && !teacherCode.trim()) {
-      setError("A teacher access code is required to register as faculty (use TEACHER2024).");
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
 
@@ -72,7 +56,6 @@ export default function SignUpPage() {
           email: email.trim().toLowerCase(),
           password,
           role,
-          teacherCode: role === "TEACHER" ? teacherCode.trim() : undefined,
         }),
       });
 
@@ -82,11 +65,18 @@ export default function SignUpPage() {
         throw new Error(data.error || "Failed to create account");
       }
 
-      setSuccess(`Account created! Redirecting to your ${role.toLowerCase()} dashboard...`);
+      setSuccess(`Account created! Welcome, ${data.user.name}! Redirecting...`);
 
+      if (data.user) {
+        try {
+          localStorage.setItem("classpulse_user_cache", JSON.stringify(data.user));
+        } catch (e) {}
+      }
+
+      const targetDestination = data.redirectTo || (role === "TEACHER" ? "/dashboard?view=teaching" : "/dashboard?view=enrolled");
       setTimeout(() => {
-        router.push(data.redirectTo || (role === "TEACHER" ? "/dashboard?view=teaching" : "/dashboard?view=enrolled"));
-      }, 700);
+        window.location.href = targetDestination;
+      }, 400);
     } catch (err: any) {
       setError(err.message || "An error occurred during registration.");
     } finally {
@@ -126,13 +116,13 @@ export default function SignUpPage() {
           <div className="text-center space-y-1.5">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-xs font-semibold text-indigo-700">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>Role-Based Registration</span>
+              <span>Instant Account Creation</span>
             </div>
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
               Create Your ClassPulse Account
             </h1>
             <p className="text-xs text-slate-500">
-              Select whether you are joining as a Student or Teacher
+              Choose your primary role to get started (you can both teach & enroll in any class)
             </p>
           </div>
 
@@ -156,7 +146,7 @@ export default function SignUpPage() {
               {/* Role Selector Radio Cards */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                  Select Your Role
+                  Select Your Primary Role
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   {/* Student Option */}
@@ -165,7 +155,7 @@ export default function SignUpPage() {
                     onClick={() => setRole("STUDENT")}
                     className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all text-center ${
                       role === "STUDENT"
-                        ? "border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-500/20"
+                        ? "border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-500/20 shadow-sm"
                         : "border-slate-200 hover:border-slate-300 bg-slate-50/50 text-slate-600"
                     }`}
                   >
@@ -179,7 +169,7 @@ export default function SignUpPage() {
                       <GraduationCap className="h-5 w-5" />
                     </div>
                     <span className="text-xs font-bold">I am a Student</span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">Learn & Ask</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">Learn & Submit</span>
                   </button>
 
                   {/* Teacher Option */}
@@ -188,7 +178,7 @@ export default function SignUpPage() {
                     onClick={() => setRole("TEACHER")}
                     className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all text-center ${
                       role === "TEACHER"
-                        ? "border-purple-600 bg-purple-50/70 text-purple-950 ring-2 ring-purple-500/20"
+                        ? "border-purple-600 bg-purple-50/70 text-purple-950 ring-2 ring-purple-500/20 shadow-sm"
                         : "border-slate-200 hover:border-slate-300 bg-slate-50/50 text-slate-600"
                     }`}
                   >
@@ -202,31 +192,10 @@ export default function SignUpPage() {
                       <ShieldCheck className="h-5 w-5" />
                     </div>
                     <span className="text-xs font-bold">I am a Teacher</span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">Manage & AI Copilot</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">Create & Guide</span>
                   </button>
                 </div>
               </div>
-
-              {/* Conditional Teacher Access Code */}
-              {role === "TEACHER" && (
-                <div className="rounded-2xl bg-purple-50/80 border border-purple-200 p-3.5 space-y-1.5 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-purple-900">
-                    <KeyRound className="h-3.5 w-3.5 text-purple-600" />
-                    <span>Teacher Access Code Required</span>
-                  </div>
-                  <p className="text-[11px] text-purple-700">
-                    A faculty verification code is required to register as Teacher (passcode: <code className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-purple-200">TEACHER2024</code>).
-                  </p>
-                  <input
-                    type="text"
-                    value={teacherCode}
-                    onChange={(e) => setTeacherCode(e.target.value)}
-                    placeholder="Enter teacher passcode (e.g. TEACHER2024)"
-                    className="w-full rounded-xl border border-purple-300 bg-white px-3.5 py-2 text-xs font-mono font-bold text-slate-900 focus:border-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
-                    required
-                  />
-                </div>
-              )}
 
               {/* Full Name */}
               <div>
@@ -239,7 +208,7 @@ export default function SignUpPage() {
                   </div>
                   <input
                     type="text"
-                    placeholder={role === "TEACHER" ? "Prof. Alan Turing" : "Alex Morgan"}
+                    placeholder={role === "TEACHER" ? "e.g. Dr. Jane Smith" : "e.g. Alex Morgan"}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full rounded-xl border border-slate-300 pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -259,7 +228,7 @@ export default function SignUpPage() {
                   </div>
                   <input
                     type="email"
-                    placeholder={role === "TEACHER" ? "faculty@university.edu" : "student@university.edu"}
+                    placeholder="name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full rounded-xl border border-slate-300 pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -279,7 +248,7 @@ export default function SignUpPage() {
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
-                    placeholder="Create secure password"
+                    placeholder="Minimum 6 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full rounded-xl border border-slate-300 pl-10 pr-10 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -292,45 +261,6 @@ export default function SignUpPage() {
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
-                </div>
-
-                {/* Password Requirements Checklist */}
-                <div className="mt-2.5 space-y-1 rounded-xl bg-slate-50 p-2.5 border border-slate-100">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                    Password Security Requirements:
-                  </span>
-                  <div className="flex flex-col gap-1 text-[11px]">
-                    <span
-                      className={`flex items-center gap-1.5 ${
-                        hasMinLength ? "text-emerald-700 font-semibold" : "text-slate-500"
-                      }`}
-                    >
-                      <Check
-                        className={`h-3 w-3 ${hasMinLength ? "text-emerald-600" : "text-slate-300"}`}
-                      />
-                      At least 8 characters
-                    </span>
-                    <span
-                      className={`flex items-center gap-1.5 ${
-                        hasUppercase ? "text-emerald-700 font-semibold" : "text-slate-500"
-                      }`}
-                    >
-                      <Check
-                        className={`h-3 w-3 ${hasUppercase ? "text-emerald-600" : "text-slate-300"}`}
-                      />
-                      At least one uppercase letter (A-Z)
-                    </span>
-                    <span
-                      className={`flex items-center gap-1.5 ${
-                        hasNumber ? "text-emerald-700 font-semibold" : "text-slate-500"
-                      }`}
-                    >
-                      <Check
-                        className={`h-3 w-3 ${hasNumber ? "text-emerald-600" : "text-slate-300"}`}
-                      />
-                      At least one number (0-9)
-                    </span>
-                  </div>
                 </div>
               </div>
 
@@ -360,7 +290,7 @@ export default function SignUpPage() {
               </Link>
             </div>
             <p className="text-[11px] text-slate-400">
-              By signing up, you agree to ClassPulse&apos;s academic collaboration policies.
+              By signing up, you gain instant access to your classes, discussions, and AI tools.
             </p>
           </div>
         </div>
@@ -368,7 +298,7 @@ export default function SignUpPage() {
 
       {/* Footer */}
       <footer className="py-4 text-center text-xs text-slate-400 border-t border-slate-200">
-        ClassPulse • Strict Role-Based Authentication
+        ClassPulse • Modern Learning Platform
       </footer>
     </div>
   );
