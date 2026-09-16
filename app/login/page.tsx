@@ -86,34 +86,34 @@ function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md space-y-6">
-      <div className="text-center space-y-1.5">
+    <div className="w-full max-w-md space-y-5 sm:space-y-6">
+      <div className="text-center space-y-1.5 px-2">
         <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-xs font-semibold text-indigo-700">
           <Sparkles className="h-3.5 w-3.5" />
           <span>Role-Based Secure Sign-In</span>
         </div>
-        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           Sign In to Your Workspace
         </h1>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs sm:text-sm text-slate-500">
           You will be automatically redirected to your assigned role dashboard
         </p>
       </div>
 
       {error && (
-        <div className="rounded-2xl bg-rose-50 border border-rose-200 p-3.5 flex items-start gap-2.5 text-xs text-rose-700 animate-in fade-in">
+        <div className="rounded-2xl bg-rose-50 border border-rose-200 p-3.5 flex items-start gap-2.5 text-xs sm:text-sm text-rose-700 animate-in fade-in">
           <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-3.5 text-center text-xs text-emerald-700 font-bold animate-in fade-in">
+        <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-3.5 text-center text-xs sm:text-sm text-emerald-700 font-bold animate-in fade-in">
           {success}
         </div>
       )}
 
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
+      <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
@@ -128,7 +128,7 @@ function LoginForm() {
                 placeholder="name@university.edu"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full rounded-xl border border-slate-300 pl-10 pr-3.5 py-3 sm:py-2.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 required
               />
             </div>
@@ -147,13 +147,14 @@ function LoginForm() {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 pl-10 pr-10 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full rounded-xl border border-slate-300 pl-10 pr-11 py-3 sm:py-2.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
+                className="absolute inset-y-0 right-0 pr-3.5 pl-2 flex items-center text-slate-400 hover:text-slate-600 min-h-[44px]"
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -164,7 +165,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-xs sm:text-sm font-bold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-98 disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3.5 sm:py-3 text-sm font-bold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-[0.99] disabled:opacity-50 min-h-[46px]"
             >
               <span>{isSubmitting ? "Signing In..." : "Sign In"}</span>
               <ArrowRight className="h-4 w-4" />
@@ -173,7 +174,7 @@ function LoginForm() {
         </form>
       </div>
 
-      <div className="text-center text-xs text-slate-500">
+      <div className="text-center text-xs sm:text-sm text-slate-500 pb-2">
         Don&apos;t have an account?{" "}
         <Link href="/signup" className="font-bold text-indigo-600 hover:text-indigo-800">
           Sign Up

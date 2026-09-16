@@ -12,54 +12,107 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 export async function POST(req: NextRequest) {
   try {
     const session = await getSessionUser(req);
-    if (!session?.id) {
+    let userId = session?.id;
+
+    if (!userId) {
+      const email = req.cookies.get("classpulse_user_email")?.value;
+      if (email) {
+        const found = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+        if (found) userId = found.id;
+      }
+    }
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const formData = await req.formData();
-    const file = (formData.get("file") || formData.get("avatar")) as File | null;
+    const contentType = req.headers.get("content-type") || "";
+    let avatarUrl: string | null = null;
 
-    if (!file) {
-      return NextResponse.json({ error: "No image file provided." }, { status: 400 });
+    // 1. Support direct JSON Base64 Data URL (Fastest & 100% Vercel-compatible)
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      const rawAvatar = body.avatar || body.avatarUrl;
+
+      if (!rawAvatar || typeof rawAvatar !== "string") {
+        return NextResponse.json(
+          { error: "No image data provided." },
+          { status: 400 }
+        );
+      }
+
+      if (!rawAvatar.startsWith("data:image/") && !rawAvatar.startsWith("http")) {
+        return NextResponse.json(
+          { error: "Invalid image format. Expected an image Data URL." },
+          { status: 400 }
+        );
+      }
+
+      avatarUrl = rawAvatar;
+    } else {
+      // 2. Support Multipart FormData
+      const formData = await req.formData();
+      const file = (formData.get("file") || formData.get("avatar")) as File | null;
+
+      if (!file) {
+        return NextResponse.json({ error: "No image file provided." }, { status: 400 });
+      }
+
+      if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+        return NextResponse.json(
+          { error: "Invalid file type. Only JPEG, PNG, WebP, and GIF images are allowed." },
+          { status: 400 }
+        );
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        return NextResponse.json(
+          { error: "File exceeds 5MB limit. Please upload a smaller image." },
+          { status: 400 }
+        );
+      }
+
+      // Read buffer
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+
+      // Determine file extension
+      let ext = "png";
+      if (file.type === "image/jpeg") ext = "jpg";
+      else if (file.type === "image/webp") ext = "webp";
+      else if (file.type === "image/gif") ext = "gif";
+
+      const fileName = `${userId}-${Date.now()}.${ext}`;
+      const uploadDir = path.join(process.cwd(), "public", "uploads", "avatars");
+
+      // Attempt to save to public uploads directory (works on local node server)
+      let savedToDisk = false;
+      try {
+        await fs.mkdir(uploadDir, { recursive: true });
+        const filePath = path.join(uploadDir, fileName);
+        await fs.writeFile(filePath, buffer);
+        savedToDisk = true;
+        avatarUrl = `/uploads/avatars/${fileName}`;
+      } catch (fsError) {
+        // On Vercel / serverless, filesystem is read-only. Gracefully fall back to base64 Data URL!
+        savedToDisk = false;
+      }
+
+      if (!savedToDisk) {
+        avatarUrl = `data:${file.type};base64,${buffer.toString("base64")}`;
+      }
     }
 
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Invalid file type. Only JPEG, PNG, WebP, and GIF images are allowed." },
-        { status: 400 }
-      );
+    if (!avatarUrl) {
+      return NextResponse.json({ error: "Failed to process image." }, { status: 400 });
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: "File exceeds 5MB limit. Please upload a smaller image." },
-        { status: 400 }
-      );
-    }
-
-    // Determine file extension
-    let ext = "png";
-    if (file.type === "image/jpeg") ext = "jpg";
-    else if (file.type === "image/webp") ext = "webp";
-    else if (file.type === "image/gif") ext = "gif";
-
-    const fileName = `${session.id}-${Date.now()}.${ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "avatars");
-
-    // Ensure directory exists
-    await fs.mkdir(uploadDir, { recursive: true });
-
-    const filePath = path.join(uploadDir, fileName);
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    await fs.writeFile(filePath, buffer);
-
-    const avatarUrl = `/uploads/avatars/${fileName}`;
-
-    // Update user avatar in the database
+    // Update user avatar in database
     const updatedUser = await prisma.user.update({
-      where: { id: session.id },
+      where: { id: userId },
       data: { avatar: avatarUrl },
       select: {
         id: true,
@@ -80,9 +133,12 @@ export async function POST(req: NextRequest) {
       user: updatedUser,
       message: "Profile picture updated successfully!",
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Avatar upload error:", error);
-    return NextResponse.json({ error: "Internal server error during upload." }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message || "Internal server error during upload." },
+      { status: 500 }
+    );
   }
 }
 

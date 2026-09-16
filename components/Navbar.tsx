@@ -58,14 +58,14 @@ export default function Navbar({
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md transition-all">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand */}
-        <div className="flex items-center gap-6">
-          <Link href={homeLink} className="flex items-center gap-2.5 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-teal-400 text-white shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform">
-              <Activity className="h-5 w-5 animate-pulse" />
+        <div className="flex items-center gap-2 sm:gap-6 shrink-0">
+          <Link href={homeLink} className="flex items-center gap-2 sm:gap-2.5 group">
+            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-teal-400 text-white shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform shrink-0">
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5 animate-pulse" />
             </div>
             <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl font-bold tracking-tight text-slate-900">
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
                   Class<span className="text-indigo-600">Pulse</span>
                 </span>
                 <span className="relative flex h-2 w-2">
@@ -73,7 +73,7 @@ export default function Navbar({
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
               </div>
-              <span className="text-[11px] font-medium text-slate-500 hidden sm:inline">
+              <span className="text-[10px] sm:text-[11px] font-medium text-slate-500 hidden sm:inline">
                 Hub for Teachers & Students
               </span>
             </div>
@@ -81,51 +81,53 @@ export default function Navbar({
         </div>
 
         {/* Center/Right Section */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {isLoading ? (
-            <div className="h-9 w-28 bg-slate-100 animate-pulse rounded-xl" />
+            <div className="h-8 sm:h-9 w-20 sm:w-28 bg-slate-100 animate-pulse rounded-xl" />
           ) : currentUser ? (
             <>
               {/* Dual Action Buttons: Both Create Class and Join Class */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {onCreateClassOpen && (
                   <button
                     onClick={onCreateClassOpen}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-purple-700 transition-all active:scale-95"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl bg-purple-600 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-purple-700 transition-all active:scale-95 shrink-0"
                     title="Create a new course as Teacher"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    <span>Create Class</span>
+                    <span className="hidden sm:inline">Create Class</span>
+                    <span className="sm:hidden text-[11px]">Create</span>
                   </button>
                 )}
 
                 {onJoinClassOpen && (
                   <button
                     onClick={onJoinClassOpen}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl bg-emerald-600 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 shrink-0"
                     title="Join an existing course via class code"
                   >
                     <LogIn className="h-3.5 w-3.5" />
-                    <span>Join Class</span>
+                    <span className="hidden sm:inline">Join Class</span>
+                    <span className="sm:hidden text-[11px]">Join</span>
                   </button>
                 )}
 
                 <Link
                   href="/analytics"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95"
+                  className="inline-flex items-center justify-center gap-1 sm:gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 shrink-0"
                   title="View Analytics & Performance Dashboard"
                 >
-                  <BarChart3 className="h-3.5 w-3.5 text-indigo-600" />
-                  <span className="hidden sm:inline">Analytics</span>
+                  <BarChart3 className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-indigo-600" />
+                  <span className="hidden md:inline">Analytics</span>
                 </Link>
               </div>
 
               {/* Profile Avatar Dropdown Button */}
-              <div className="relative">
+              <div className="relative shrink-0">
                 <button
                   type="button"
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-1.5 sm:px-2.5 sm:py-1.5 text-left shadow-sm hover:bg-slate-100 hover:border-slate-300 transition-all active:scale-95 focus:outline-none"
+                  className="flex items-center gap-1.5 sm:gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-1 sm:px-2.5 sm:py-1.5 text-left shadow-sm hover:bg-slate-100 hover:border-slate-300 transition-all active:scale-95 focus:outline-none"
                   aria-expanded={dropdownOpen}
                 >
                   <div className="relative">
@@ -134,10 +136,10 @@ export default function Navbar({
                       <img
                         src={currentUser.avatar}
                         alt={currentUser.name}
-                        className="h-8 w-8 rounded-full object-cover ring-2 ring-indigo-500/20"
+                        className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover ring-2 ring-indigo-500/20"
                       />
                     ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-bold text-xs shadow-sm">
+                      <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-bold text-xs shadow-sm">
                         {getInitials(currentUser.name)}
                       </div>
                     )}
