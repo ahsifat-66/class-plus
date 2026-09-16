@@ -26,67 +26,27 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 1. If user is already authenticated and visits /login or /signup, redirect to their role dashboard
+  // 1. If user is already authenticated and visits /login or /signup, redirect to dashboard
   if (userPayload && (pathname === "/login" || pathname === "/signup")) {
-    const targetDashboard =
-      userPayload.role === "TEACHER" ? "/dashboard/teacher" : "/dashboard/student";
-    return NextResponse.redirect(new URL(targetDashboard, req.url));
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // 2. Protected Teacher Routes: /dashboard/teacher and /api/teacher/*
-  if (pathname.startsWith("/dashboard/teacher") || pathname.startsWith("/api/teacher")) {
-    if (!userPayload) {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
-      }
-      const loginUrl = new URL("/login", req.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
+  // 2. Protected Routes requiring authentication
+  const isProtectedPath =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/classroom") ||
+    pathname.startsWith("/api/profile") ||
+    pathname.startsWith("/api/teacher") ||
+    pathname.startsWith("/api/student");
 
-    if (userPayload.role !== "TEACHER") {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json(
-          { error: "Forbidden: Teacher privileges required." },
-          { status: 403 }
-        );
-      }
-      // Redirect student attempting to access teacher dashboard to student dashboard with error query
-      const studentDashUrl = new URL("/dashboard/student", req.url);
-      studentDashUrl.searchParams.set(
-        "error",
-        "Access denied. You must be a Teacher to access the Teacher Portal."
-      );
-      return NextResponse.redirect(studentDashUrl);
+  if (isProtectedPath && !userPayload) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
     }
-  }
-
-  // 3. Protected Student Routes: /dashboard/student and /api/student/*
-  if (pathname.startsWith("/dashboard/student") || pathname.startsWith("/api/student")) {
-    if (!userPayload) {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
-      }
-      const loginUrl = new URL("/login", req.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    if (userPayload.role !== "STUDENT") {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json(
-          { error: "Forbidden: Student privileges required." },
-          { status: 403 }
-        );
-      }
-      // Redirect teacher attempting to access student dashboard to teacher dashboard with error query
-      const teacherDashUrl = new URL("/dashboard/teacher", req.url);
-      teacherDashUrl.searchParams.set(
-        "error",
-        "Access denied. You must be a Student to access the Student Portal."
-      );
-      return NextResponse.redirect(teacherDashUrl);
-    }
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
@@ -97,7 +57,10 @@ export const config = {
     "/login",
     "/signup",
     "/dashboard/:path*",
+    "/profile/:path*",
+    "/classroom/:path*",
     "/api/teacher/:path*",
     "/api/student/:path*",
+    "/api/profile/:path*",
   ],
 };

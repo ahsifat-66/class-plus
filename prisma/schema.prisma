@@ -13,34 +13,51 @@ enum Role {
 }
 
 model User {
-  id             String        @id @default(cuid())
+  id             String            @id @default(cuid())
   name           String
-  email          String        @unique
+  email          String            @unique
   password       String
-  role           Role          @default(STUDENT)
+  role           Role              @default(STUDENT)
   avatar         String?
-  createdCourses Classroom[]   @relation("TeacherCourses")
+  institution    String?
+  grade          String?
+  bio            String?
+  createdCourses Classroom[]       @relation("TeacherCourses")
+  memberships    ClassroomMember[]
   enrollments    Enrollment[]
   messages       Message[]
   announcements  Announcement[]
   submissions    Submission[]
-  createdAt      DateTime      @default(now())
+  createdAt      DateTime          @default(now())
 
   @@index([email])
 }
 
 model Classroom {
-  id            String         @id @default(cuid())
+  id            String            @id @default(cuid())
   name          String
   subject       String
-  code          String         @unique
+  code          String            @unique
   teacherId     String
-  teacher       User           @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: Cascade)
+  teacher       User              @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: Cascade)
+  members       ClassroomMember[]
   enrollments   Enrollment[]
   announcements Announcement[]
   assignments   Assignment[]
   channels      Channel[]
-  createdAt     DateTime       @default(now())
+  createdAt     DateTime          @default(now())
+}
+
+model ClassroomMember {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  role        Role      @default(STUDENT)
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, classroomId])
 }
 
 model Enrollment {

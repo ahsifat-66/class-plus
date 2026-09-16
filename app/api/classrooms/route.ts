@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     let userId = searchParams.get("userId");
+    const type = searchParams.get("type"); // "teaching" | "enrolled" | null
 
     // Fall back to authenticated session user if not provided in search params
     if (!userId) {
@@ -51,48 +52,67 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    let classrooms;
-    if (user.role === "TEACHER") {
-      classrooms = await prisma.classroom.findMany({
-        where: { teacherId: user.id },
-        include: {
-          teacher: true,
-          enrollments: {
-            include: { user: true },
-          },
-          assignments: true,
-          channels: true,
-          announcements: true,
+    // Fetch classes taught by this user
+    const teachingPromise = prisma.classroom.findMany({
+      where: { teacherId: user.id },
+      include: {
+        teacher: true,
+        enrollments: {
+          include: { user: true },
         },
-        orderBy: { createdAt: "desc" },
-      });
-    } else {
-      classrooms = await prisma.classroom.findMany({
-        where: {
-          enrollments: {
-            some: { userId: user.id },
-          },
+        assignments: true,
+        channels: true,
+        announcements: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Fetch classes where user is enrolled as student
+    const enrolledPromise = prisma.classroom.findMany({
+      where: {
+        OR: [
+          { enrollments: { some: { userId: user.id } } },
+          { members: { some: { userId: user.id, role: "STUDENT" } } },
+        ],
+      },
+      include: {
+        teacher: true,
+        enrollments: {
+          include: { user: true },
         },
-        include: {
-          teacher: true,
-          enrollments: {
-            include: { user: true },
-          },
-          assignments: {
-            include: {
-              submissions: {
-                where: { studentId: user.id },
-              },
+        assignments: {
+          include: {
+            submissions: {
+              where: { studentId: user.id },
             },
           },
-          channels: true,
-          announcements: true,
         },
-        orderBy: { createdAt: "desc" },
-      });
+        channels: true,
+        announcements: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const [teaching, enrolled] = await Promise.all([teachingPromise, enrolledPromise]);
+
+    let classrooms;
+    if (type === "teaching") {
+      classrooms = teaching;
+    } else if (type === "enrolled") {
+      classrooms = enrolled;
+    } else {
+      classrooms = user.role === "TEACHER" ? teaching : enrolled;
     }
 
-    return NextResponse.json({ classrooms });
+    return NextResponse.json({
+      classrooms,
+      teaching,
+      enrolled,
+      counts: {
+        teaching: teaching.length,
+        enrolled: enrolled.length,
+      },
+    });
   } catch (error) {
     console.error("Error listing classrooms:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -142,7 +162,6 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Flexible subject handling: optional with sensible default
-    // If left blank or set to "All", default to "All Subjects"
     let finalSubject = subject ? subject.trim() : "";
     if (!finalSubject || finalSubject.toLowerCase() === "all") {
       finalSubject = "All Subjects";
@@ -169,11 +188,18 @@ export async function POST(req: NextRequest) {
             { name: "general" },
           ],
         },
+        members: {
+          create: {
+            userId: teacherId,
+            role: "TEACHER",
+          },
+        },
       },
       include: {
         teacher: true,
         channels: true,
         enrollments: true,
+        members: true,
       },
     });
 

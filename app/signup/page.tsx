@@ -85,7 +85,7 @@ export default function SignUpPage() {
       setSuccess(`Account created! Redirecting to your ${role.toLowerCase()} dashboard...`);
 
       setTimeout(() => {
-        router.push(data.redirectTo || (role === "TEACHER" ? "/dashboard/teacher" : "/dashboard/student"));
+        router.push(data.redirectTo || (role === "TEACHER" ? "/dashboard?view=teaching" : "/dashboard?view=enrolled"));
       }, 700);
     } catch (err: any) {
       setError(err.message || "An error occurred during registration.");

@@ -35,26 +35,79 @@ export async function GET(req: NextRequest) {
           email: true,
           role: true,
           avatar: true,
+          institution: true,
+          grade: true,
+          bio: true,
           createdAt: true,
         },
       });
 
       // If !user, return { user: null } with status 200 and clear the invalid session cookie
       if (!user) {
-        const response = NextResponse.json({ user: null }, { status: 200 });
+        const response = NextResponse.json({ user: null, summary: null }, { status: 200 });
         response.cookies.delete(AUTH_COOKIE_NAME);
         return response;
       }
 
-      return NextResponse.json({ user }, { status: 200 });
+      // Compute activity summary for flexible multi-role experience
+      const [
+        teachingCount,
+        enrolledCount,
+        assignmentsPosted,
+        assignmentsSubmitted,
+        teacherClasses,
+      ] = await Promise.all([
+        prisma.classroom.count({ where: { teacherId: user.id } }),
+        prisma.enrollment.count({ where: { userId: user.id } }),
+        prisma.assignment.count({
+          where: { classroom: { teacherId: user.id } },
+        }),
+        prisma.submission.count({ where: { studentId: user.id } }),
+        prisma.classroom.findMany({
+          where: { teacherId: user.id },
+          select: {
+            _count: {
+              select: { enrollments: true },
+            },
+          },
+        }),
+      ]);
+
+      const totalStudents = teacherClasses.reduce(
+        (sum, c) => sum + (c._count?.enrollments || 0),
+        0
+      );
+
+      const hasTeaching = teachingCount > 0 || user.role === "TEACHER";
+      const hasEnrolled = enrolledCount > 0;
+
+      let activeRole = "Student";
+      if (hasTeaching && hasEnrolled) {
+        activeRole = "Teacher & Student";
+      } else if (hasTeaching) {
+        activeRole = "Teacher";
+      } else {
+        activeRole = "Student";
+      }
+
+      const summary = {
+        teachingCount,
+        enrolledCount,
+        assignmentsPosted,
+        assignmentsSubmitted,
+        totalStudents,
+        activeRole,
+      };
+
+      return NextResponse.json({ user, summary }, { status: 200 });
     } catch (dbError) {
       // Catch any Prisma/DB error and safely return { user: null } with status 200
       console.error("Database error in /api/auth/me:", dbError);
-      return NextResponse.json({ user: null }, { status: 200 });
+      return NextResponse.json({ user: null, summary: null }, { status: 200 });
     }
   } catch (error) {
     console.error("Unexpected error in /api/auth/me:", error);
-    return NextResponse.json({ user: null }, { status: 200 });
+    return NextResponse.json({ user: null, summary: null }, { status: 200 });
   }
 }
 

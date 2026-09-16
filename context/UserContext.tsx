@@ -8,10 +8,24 @@ export interface User {
   email: string;
   role: "TEACHER" | "STUDENT";
   avatar: string | null;
+  institution?: string | null;
+  grade?: string | null;
+  bio?: string | null;
+  createdAt?: string;
+}
+
+export interface UserSummary {
+  teachingCount: number;
+  enrolledCount: number;
+  assignmentsPosted: number;
+  assignmentsSubmitted: number;
+  totalStudents: number;
+  activeRole: string;
 }
 
 interface UserContextType {
   currentUser: User | null;
+  userSummary: UserSummary | null;
   allUsers: User[];
   isLoading: boolean;
   switchUser: (email: string) => Promise<void>;
@@ -22,6 +36,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userSummary, setUserSummary] = useState<UserSummary | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -44,6 +59,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setCurrentUser(data.user);
+        setUserSummary(data.summary || null);
       }
     } catch (e) {
       console.error("Failed to fetch active user", e);
@@ -81,6 +97,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     <UserContext.Provider
       value={{
         currentUser,
+        userSummary,
         allUsers,
         isLoading,
         switchUser,

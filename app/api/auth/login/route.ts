@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       name: user.name,
     });
 
-    const redirectTo = user.role === "TEACHER" ? "/dashboard/teacher" : "/dashboard/student";
+    const redirectTo = user.role === "TEACHER" ? "/dashboard?view=teaching" : "/dashboard?view=enrolled";
 
     const sanitizedUser = {
       id: user.id,

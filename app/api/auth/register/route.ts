@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       name: user.name,
     });
 
-    const redirectTo = role === "TEACHER" ? "/dashboard/teacher" : "/dashboard/student";
+    const redirectTo = role === "TEACHER" ? "/dashboard?view=teaching" : "/dashboard?view=enrolled";
 
     const response = NextResponse.json({
       user,
