@@ -32,6 +32,8 @@ model User {
   personalNotes  PersonalNote[]
   studyLogs      StudyLog[]
   personalGoals  PersonalGoal[]
+  isVerified     Boolean           @default(false)
+  emailOtps      EmailOtp[]
   createdAt      DateTime          @default(now())
 
   @@index([email])
@@ -171,4 +173,18 @@ model PersonalGoal {
   createdAt   DateTime @default(now())
 
   @@index([userId])
+}
+
+model EmailOtp {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  code      String
+  type      String   @default("SIGNUP") // "SIGNUP" | "RESET_PASSWORD"
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([email])
 }

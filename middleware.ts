@@ -32,22 +32,14 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // 2. Protected Routes requiring authentication
-  const isProtectedPath =
+  // 2. Protected UI routes requiring authentication redirect to login
+  const isProtectedPage =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/analytics") ||
-    pathname.startsWith("/classroom") ||
-    pathname.startsWith("/api/analytics") ||
-    pathname.startsWith("/api/user") ||
-    pathname.startsWith("/api/teacher") ||
-    pathname.startsWith("/api/student") ||
-    pathname.startsWith("/api/ai");
+    pathname.startsWith("/classroom");
 
-  if (isProtectedPath && !userPayload && !emailCookie) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
-    }
+  if (isProtectedPage && !userPayload && !emailCookie) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
@@ -64,10 +56,5 @@ export const config = {
     "/profile/:path*",
     "/analytics/:path*",
     "/classroom/:path*",
-    "/api/analytics/:path*",
-    "/api/user/:path*",
-    "/api/teacher/:path*",
-    "/api/student/:path*",
-    "/api/ai/:path*",
   ],
 };

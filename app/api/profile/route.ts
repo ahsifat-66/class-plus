@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ user: null, stats: null }, { status: 200 });
     }
 
     const user = await prisma.user.findUnique({

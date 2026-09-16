@@ -4,6 +4,9 @@ import { signInSchema } from "@/lib/validations/auth";
 import { comparePassword } from "@/lib/auth/password";
 import { signJwtToken } from "@/lib/auth/jwt";
 import { AUTH_COOKIE_NAME } from "@/lib/auth/session";
+import { generateOtpCode, sendOtpEmail } from "@/lib/email/mailer";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,10 +20,11 @@ export async function POST(req: NextRequest) {
     }
 
     const { email, password } = parseResult.data;
+    const normalizedEmail = email.trim().toLowerCase();
 
     // 2. Find user in database
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {
@@ -39,7 +43,45 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Sign JWT session token
+    // 4. If account is not verified, prompt user to complete email verification
+    if (!user.isVerified) {
+      // Generate fresh OTP code
+      const otpCode = generateOtpCode();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+      await prisma.emailOtp.deleteMany({
+        where: { userId: user.id, type: "SIGNUP" },
+      });
+
+      await prisma.emailOtp.create({
+        data: {
+          userId: user.id,
+          email: normalizedEmail,
+          code: otpCode,
+          type: "SIGNUP",
+          expiresAt,
+        },
+      });
+
+      const mailResult = await sendOtpEmail({
+        to: normalizedEmail,
+        code: otpCode,
+        name: user.name,
+        type: "SIGNUP",
+      });
+
+      return NextResponse.json(
+        {
+          error: "Your account email is not yet verified. A 6-digit verification code has been sent to your inbox.",
+          requireVerification: true,
+          email: normalizedEmail,
+          devCode: mailResult?.fallback ? otpCode : undefined,
+        },
+        { status: 403 }
+      );
+    }
+
+    // 5. Verified User: Normal Direct Log In (NO OTP REQUIRED!)
     const token = await signJwtToken({
       id: user.id,
       email: user.email,
@@ -55,7 +97,9 @@ export async function POST(req: NextRequest) {
       name: user.name,
       email: user.email,
       role: user.role,
+      isVerified: user.isVerified,
       avatar: user.avatar,
+      avatarUrl: user.avatarUrl,
       institution: user.institution,
       grade: user.grade,
       bio: user.bio,
@@ -86,7 +130,7 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in login:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

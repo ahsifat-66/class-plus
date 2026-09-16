@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
+      return NextResponse.json({ user: null, student: null, metrics: null, error: "Unauthorized" }, { status: 200 });
     }
 
     // Strict Privacy Rule: If a studentId query param is provided, ensure it matches authenticated user

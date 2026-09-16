@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
+      return NextResponse.json({ user: null, studyLogs: [], metrics: null, subjectBreakdown: [] }, { status: 200 });
     }
 
     const studyLogs = await prisma.studyLog.findMany({

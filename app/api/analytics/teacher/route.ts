@@ -21,7 +21,10 @@ export async function GET(req: NextRequest) {
     }
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { user: null, classes: [], students: [], metrics: null, error: "Unauthorized" },
+        { status: 200 }
+      );
     }
 
     // Fetch classrooms taught by this user

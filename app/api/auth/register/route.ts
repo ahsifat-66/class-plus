@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signUpSchema } from "@/lib/validations/auth";
 import { hashPassword } from "@/lib/auth/password";
-import { signJwtToken } from "@/lib/auth/jwt";
-import { AUTH_COOKIE_NAME } from "@/lib/auth/session";
+import { generateOtpCode, sendOtpEmail } from "@/lib/email/mailer";
+
+export const dynamic = "force-dynamic";
 
 const DEFAULT_AVATARS = {
   TEACHER: [
@@ -31,15 +32,15 @@ export async function POST(req: NextRequest) {
     }
 
     const { name, email, password, role, teacherCode } = parseResult.data;
+    const normalizedEmail = email.trim().toLowerCase();
 
-    // Optional teacherCode check: if TEACHER_ACCESS_CODE is set in env and user provided one
+    // Optional teacherCode check
     if (role === "TEACHER" && process.env.STRICT_TEACHER_CODE === "true") {
       const expectedCode = process.env.TEACHER_ACCESS_CODE || "TEACHER2024";
       if (!teacherCode || teacherCode.trim() !== expectedCode) {
         return NextResponse.json(
           {
-            error:
-              "Invalid Teacher Access Code. Please enter valid code (TEACHER2024).",
+            error: "Invalid Teacher Access Code. Please enter valid code (TEACHER2024).",
           },
           { status: 403 }
         );
@@ -48,83 +49,89 @@ export async function POST(req: NextRequest) {
 
     // 2. Check for existing account
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
-    if (existingUser) {
+    if (existingUser && existingUser.isVerified) {
       return NextResponse.json(
-        { error: "An account with this email already exists. Please sign in instead." },
+        { error: "An account with this email already exists and is verified. Please sign in." },
         { status: 409 }
       );
     }
 
-    // 3. Hash password with bcrypt
+    // 3. Hash password
     const hashedPassword = await hashPassword(password);
-
-    // Pick avatar
     const avatarList = DEFAULT_AVATARS[role];
     const avatar = avatarList[Math.floor(Math.random() * avatarList.length)];
 
-    // 4. Create user in database
-    const user = await prisma.user.create({
+    let user;
+    if (existingUser && !existingUser.isVerified) {
+      // Re-use unverified user record with updated details
+      user = await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          name: name.trim(),
+          password: hashedPassword,
+          role,
+          avatar,
+        },
+      });
+    } else {
+      // Create new user with isVerified: false
+      user = await prisma.user.create({
+        data: {
+          name: name.trim(),
+          email: normalizedEmail,
+          password: hashedPassword,
+          role,
+          avatar,
+          isVerified: false,
+        },
+      });
+    }
+
+    // 4. Generate 6-digit OTP code & save to database
+    const otpCode = generateOtpCode();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Delete any older unused signup OTPs for this user
+    await prisma.emailOtp.deleteMany({
+      where: { userId: user.id, type: "SIGNUP" },
+    });
+
+    await prisma.emailOtp.create({
       data: {
-        name,
-        email,
-        password: hashedPassword,
-        role,
-        avatar,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        avatar: true,
-        institution: true,
-        grade: true,
-        bio: true,
-        createdAt: true,
+        userId: user.id,
+        email: normalizedEmail,
+        code: otpCode,
+        type: "SIGNUP",
+        expiresAt,
       },
     });
 
-    // 5. Sign JWT token
-    const token = await signJwtToken({
-      id: user.id,
-      email: user.email,
-      role: user.role,
+    // 5. Send OTP Email via Nodemailer
+    const mailResult = await sendOtpEmail({
+      to: normalizedEmail,
+      code: otpCode,
       name: user.name,
+      type: "SIGNUP",
     });
 
-    const isSecure = req.nextUrl.protocol === "https:";
-    const redirectTo = role === "TEACHER" ? "/dashboard?view=teaching" : "/dashboard?view=enrolled";
-
-    const response = NextResponse.json({
-      user,
-      token,
-      redirectTo,
-      message: `Account created successfully as ${role}!`,
+    return NextResponse.json({
+      success: true,
+      requireVerification: true,
+      email: normalizedEmail,
+      userId: user.id,
+      role: user.role,
+      // Provide devCode in development/fallback for automated testing
+      devCode: mailResult?.fallback ? otpCode : undefined,
+      message: `A 6-digit verification code has been sent to ${normalizedEmail}. Please verify to activate your account.`,
     });
-
-    // Set secure HTTP-only cookie
-    response.cookies.set(AUTH_COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: isSecure,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      path: "/",
-    });
-
-    // Also set email cookie for client context
-    response.cookies.set("classpulse_user_email", user.email, {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-      sameSite: "lax",
-      secure: isSecure,
-    });
-
-    return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in registration:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message || "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

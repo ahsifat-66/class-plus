@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Activity,
   Sparkles,
@@ -15,18 +16,59 @@ import {
   User,
   Mail,
   Lock,
+  KeyRound,
+  RotateCcw,
+  ArrowLeft,
+  CheckCircle2,
 } from "lucide-react";
 
-export default function SignUpPage() {
+function SignUpContent() {
+  const searchParams = useSearchParams();
+  const queryEmail = searchParams.get("email");
+  const queryStep = searchParams.get("step");
+
+  const [step, setStep] = useState<"FORM" | "VERIFY">(queryStep === "verify" ? "VERIFY" : "FORM");
   const [role, setRole] = useState<"TEACHER" | "STUDENT">("STUDENT");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(queryEmail || "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [success, setSuccess] = useState(
+    queryStep === "verify" && queryEmail
+      ? `Please enter the 6-digit code sent to ${queryEmail}.`
+      : ""
+  );
 
+  // OTP state
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isResending, setIsResending] = useState(false);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (queryEmail && !email) {
+      setEmail(queryEmail);
+    }
+    if (queryStep === "verify") {
+      setStep("VERIFY");
+    }
+  }, [queryEmail, queryStep]);
+
+  // Resend cooldown timer
+  useEffect(() => {
+    let timer: any = null;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  // Step 1: Submit Registration Form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -65,22 +107,144 @@ export default function SignUpPage() {
         throw new Error(data.error || "Failed to create account");
       }
 
-      setSuccess(`Account created! Welcome, ${data.user.name}! Redirecting...`);
+      // If verification is required (default production flow)
+      if (data.requireVerification) {
+        setStep("VERIFY");
+        setResendCooldown(30);
+        setSuccess(`Verification code sent to ${email.trim().toLowerCase()}!`);
+        setTimeout(() => inputRefs.current[0]?.focus(), 100);
+      } else {
+        setSuccess(`Account created! Welcome, ${data.user.name}!`);
+        if (data.user) {
+          try {
+            localStorage.setItem("classpulse_user_cache", JSON.stringify(data.user));
+          } catch (e) {}
+        }
+        const targetDestination =
+          data.redirectTo ||
+          (role === "TEACHER" ? "/dashboard?view=teaching" : "/dashboard?view=enrolled");
+        setTimeout(() => {
+          window.location.href = targetDestination;
+        }, 400);
+      }
+    } catch (err: any) {
+      setError(err.message || "An error occurred during registration.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
+  // Step 2: Handle OTP input changes
+  const handleOtpChange = (index: number, value: string) => {
+    // Handle paste of complete 6-digit code
+    if (value.length > 1) {
+      const pasted = value.replace(/\D/g, "").slice(0, 6);
+      if (pasted) {
+        const nextOtp = [...otp];
+        for (let i = 0; i < pasted.length; i++) {
+          nextOtp[i] = pasted[i];
+        }
+        setOtp(nextOtp);
+        const nextIndex = Math.min(pasted.length, 5);
+        inputRefs.current[nextIndex]?.focus();
+      }
+      return;
+    }
+
+    const digit = value.replace(/\D/g, "");
+    const nextOtp = [...otp];
+    nextOtp[index] = digit;
+    setOtp(nextOtp);
+
+    // Auto-advance to next box if digit entered
+    if (digit && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  // Step 2: Verify OTP
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    const fullCode = otp.join("");
+    if (fullCode.length !== 6) {
+      setError("Please enter all 6 digits of the verification code.");
+      return;
+    }
+
+    try {
+      setIsVerifyingOtp(true);
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          code: fullCode,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to verify code");
+      }
+
+      setSuccess("Account activated successfully! Redirecting to your dashboard...");
       if (data.user) {
         try {
           localStorage.setItem("classpulse_user_cache", JSON.stringify(data.user));
         } catch (e) {}
       }
 
-      const targetDestination = data.redirectTo || (role === "TEACHER" ? "/dashboard?view=teaching" : "/dashboard?view=enrolled");
+      const targetDestination =
+        data.redirectTo ||
+        (data.user?.role === "TEACHER" ? "/dashboard?view=teaching" : "/dashboard?view=enrolled");
+
       setTimeout(() => {
         window.location.href = targetDestination;
-      }, 400);
+      }, 500);
     } catch (err: any) {
-      setError(err.message || "An error occurred during registration.");
+      setError(err.message || "Invalid verification code.");
     } finally {
-      setIsSubmitting(false);
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  // Step 2: Resend OTP Code
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || isResending) return;
+    setError("");
+    setSuccess("");
+
+    try {
+      setIsResending(true);
+      const res = await fetch("/api/auth/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          type: "SIGNUP",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to resend code");
+      }
+
+      setResendCooldown(30);
+      setSuccess(`A fresh verification code was sent to ${email}!`);
+    } catch (err: any) {
+      setError(err.message || "Failed to resend code.");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -98,11 +262,11 @@ export default function SignUpPage() {
             </span>
           </Link>
 
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-500 hidden sm:inline">Already have an account?</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-500 hidden sm:inline">Already registered?</span>
             <Link
               href="/login"
-              className="rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 font-bold text-indigo-600 hover:bg-slate-50 shadow-sm transition-colors"
+              className="rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-all active:scale-95"
             >
               Sign In
             </Link>
@@ -110,197 +274,264 @@ export default function SignUpPage() {
         </div>
       </header>
 
-      {/* Main Form Container */}
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className="w-full max-w-md space-y-5 sm:space-y-6">
-          <div className="text-center space-y-1.5 px-2">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-xs font-semibold text-indigo-700">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Instant Account Creation</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Create Your ClassPulse Account
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500">
-              Choose your primary role to get started (you can both teach & enroll in any class)
-            </p>
-          </div>
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 my-6">
+        <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-100/60 p-6 sm:p-8 space-y-6 animate-in fade-in">
+          {/* STEP 1: Registration Form */}
+          {step === "FORM" ? (
+            <>
+              {/* Form Title */}
+              <div className="text-center space-y-1.5">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold mb-1">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Get Started in Seconds</span>
+                </div>
+                <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                  Create your account
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500">
+                  Join ClassPulse as an educator or independent learner
+                </p>
+              </div>
 
-          {/* Feedback Alerts */}
-          {error && (
-            <div className="rounded-2xl bg-rose-50 border border-rose-200 p-3.5 flex items-start gap-2.5 text-xs sm:text-sm text-rose-700 animate-in fade-in">
-              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
+              {/* Role Toggle */}
+              <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => setRole("STUDENT")}
+                  className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all ${
+                    role === "STUDENT"
+                      ? "bg-white text-emerald-700 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <GraduationCap className="w-4 h-4 text-emerald-600" />
+                  <span>Student</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("TEACHER")}
+                  className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all ${
+                    role === "TEACHER"
+                      ? "bg-white text-purple-700 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4 text-purple-600" />
+                  <span>Teacher</span>
+                </button>
+              </div>
 
-          {success && (
-            <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-3.5 flex items-start gap-2.5 text-xs sm:text-sm text-emerald-700 animate-in fade-in">
-              <Check className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>{success}</span>
-            </div>
-          )}
+              {/* Alerts */}
+              {error && (
+                <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
 
-          <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Role Selector Radio Cards */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                  Select Your Primary Role
-                </label>
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                  {/* Student Option */}
-                  <button
-                    type="button"
-                    onClick={() => setRole("STUDENT")}
-                    className={`flex flex-col items-center justify-center p-3 sm:p-3.5 rounded-2xl border-2 transition-all text-center min-h-[82px] ${
-                      role === "STUDENT"
-                        ? "border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-500/20 shadow-sm"
-                        : "border-slate-200 hover:border-slate-300 bg-slate-50/50 text-slate-600"
-                    }`}
-                  >
-                    <div
-                      className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl mb-1 ${
-                        role === "STUDENT"
-                          ? "bg-emerald-600 text-white shadow-sm"
-                          : "bg-slate-200 text-slate-600"
-                      }`}
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Marie Curie"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="e.g. marie@gmail.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    />
+                  </div>
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    We will send a 6-digit verification code to this address.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      placeholder="At least 6 characters"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-10 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                     >
-                      <GraduationCap className="h-5 w-5" />
-                    </div>
-                    <span className="text-xs sm:text-sm font-bold">I am a Student</span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">Learn & Submit</span>
-                  </button>
-
-                  {/* Teacher Option */}
-                  <button
-                    type="button"
-                    onClick={() => setRole("TEACHER")}
-                    className={`flex flex-col items-center justify-center p-3 sm:p-3.5 rounded-2xl border-2 transition-all text-center min-h-[82px] ${
-                      role === "TEACHER"
-                        ? "border-purple-600 bg-purple-50/70 text-purple-950 ring-2 ring-purple-500/20 shadow-sm"
-                        : "border-slate-200 hover:border-slate-300 bg-slate-50/50 text-slate-600"
-                    }`}
-                  >
-                    <div
-                      className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl mb-1 ${
-                        role === "TEACHER"
-                          ? "bg-purple-600 text-white shadow-sm"
-                          : "bg-slate-200 text-slate-600"
-                      }`}
-                    >
-                      <ShieldCheck className="h-5 w-5" />
-                    </div>
-                    <span className="text-xs sm:text-sm font-bold">I am a Teacher</span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">Create & Guide</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Full Name */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Full Name
-                </label>
-                <div className="relative mt-1.5">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <User className="h-4 w-4" />
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
-                  <input
-                    type="text"
-                    placeholder={role === "TEACHER" ? "e.g. Dr. Jane Smith" : "e.g. Alex Morgan"}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 pl-10 pr-3.5 py-3 sm:py-2.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                    required
-                  />
                 </div>
-              </div>
 
-              {/* Email Address */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Email Address
-                </label>
-                <div className="relative mt-1.5">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Mail className="h-4 w-4" />
-                  </div>
-                  <input
-                    type="email"
-                    placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 pl-10 pr-3.5 py-3 sm:py-2.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Password */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Password
-                </label>
-                <div className="relative mt-1.5">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Lock className="h-4 w-4" />
-                  </div>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Minimum 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 pl-10 pr-11 py-3 sm:py-2.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 pl-2 flex items-center text-slate-400 hover:text-slate-600 min-h-[44px]"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-2">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full flex items-center justify-center gap-2 rounded-xl py-3.5 sm:py-3 text-sm font-bold text-white shadow-md transition-all active:scale-[0.99] disabled:opacity-50 min-h-[46px] ${
-                    role === "TEACHER"
-                      ? "bg-purple-600 hover:bg-purple-700 shadow-purple-200"
-                      : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200"
-                  }`}
+                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 text-sm shadow-lg shadow-indigo-600/30 transition-all active:scale-95 disabled:opacity-50"
                 >
-                  <span>{isSubmitting ? "Creating Account..." : `Sign Up as ${role === "TEACHER" ? "Teacher" : "Student"}`}</span>
-                  <ArrowRight className="h-4 w-4" />
+                  {isSubmitting ? (
+                    <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>Continue & Verify Email</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+            </>
+          ) : (
+            /* STEP 2: Email OTP Verification Screen */
+            <div className="space-y-6 animate-in fade-in zoom-in-95">
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto shadow-sm">
+                  <KeyRound className="w-7 h-7" />
+                </div>
+                <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                  Verify Your Email
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 max-w-xs mx-auto">
+                  We have sent a 6-digit verification code to:
+                </p>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-800 text-xs font-semibold">
+                  <Mail className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>{email}</span>
+                </div>
+              </div>
+
+              {/* Alerts */}
+              {error && (
+                <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {success && (
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{success}</span>
+                </div>
+              )}
+
+              {/* 6-Digit OTP Form */}
+              <form onSubmit={handleVerifyOtp} className="space-y-5">
+                <div>
+                  <label className="block text-center text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+                    Enter 6-Digit Code
+                  </label>
+                  <div className="flex items-center justify-center gap-2 sm:gap-3">
+                    {otp.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={(el) => {
+                          inputRefs.current[idx] = el;
+                        }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                        className="w-11 h-13 sm:w-12 sm:h-14 rounded-2xl border-2 border-slate-200 bg-slate-50 text-center text-xl sm:text-2xl font-black text-slate-900 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all shadow-xs"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isVerifyingOtp || otp.join("").length !== 6}
+                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 text-sm shadow-lg shadow-indigo-600/30 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isVerifyingOtp ? (
+                    <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>Activate & Enter ClassPulse</span>
+                      <Check className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Footer controls: Resend and Change Email */}
+              <div className="flex flex-col items-center gap-2.5 pt-2 text-xs text-slate-500">
+                <div className="flex items-center gap-2">
+                  <span>Didn't receive the email?</span>
+                  {resendCooldown > 0 ? (
+                    <span className="font-semibold text-slate-400">Resend in {resendCooldown}s</span>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={isResending}
+                      onClick={handleResendOtp}
+                      className="font-bold text-indigo-600 hover:text-indigo-700 hover:underline disabled:opacity-50"
+                    >
+                      {isResending ? "Sending..." : "Resend Code"}
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("FORM");
+                    setError("");
+                    setSuccess("");
+                  }}
+                  className="inline-flex items-center gap-1.5 text-slate-400 hover:text-slate-600 transition-colors pt-1"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Edit registration details</span>
                 </button>
               </div>
-            </form>
-          </div>
-
-          <div className="text-center text-xs text-slate-500 space-y-1 pb-4">
-            <div>
-              Already have an account?{" "}
-              <Link href="/login" className="font-bold text-indigo-600 hover:text-indigo-800">
-                Sign In
-              </Link>
             </div>
-            <p className="text-[11px] text-slate-400">
-              By signing up, you gain instant access to your classes, discussions, and AI tools.
-            </p>
-          </div>
+          )}
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="py-4 text-center text-xs text-slate-400 border-t border-slate-200">
-        ClassPulse • Modern Learning Platform
+      <footer className="w-full border-t border-slate-200 bg-white/50 py-4 text-center text-xs text-slate-400">
+        &copy; {new Date().getFullYear()} ClassPulse Educational Platform. All rights reserved.
       </footer>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-xs text-slate-400">Loading sign up...</div>}>
+      <SignUpContent />
+    </Suspense>
   );
 }

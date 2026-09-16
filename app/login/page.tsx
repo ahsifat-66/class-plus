@@ -29,6 +29,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [error, setError] = useState(queryError || "");
   const [success, setSuccess] = useState("");
 
@@ -50,6 +51,7 @@ function LoginForm() {
       setIsSubmitting(true);
       setError("");
       setSuccess("");
+      setUnverifiedEmail("");
 
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -63,6 +65,9 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.requireVerification) {
+          setUnverifiedEmail(email.trim().toLowerCase());
+        }
         throw new Error(data.error || "Failed to sign in");
       }
 
@@ -107,6 +112,26 @@ function LoginForm() {
         </div>
       )}
 
+      {unverifiedEmail && (
+        <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3.5 text-xs sm:text-sm text-amber-800 space-y-1.5 animate-in fade-in">
+          <p className="font-bold flex items-center gap-1.5 text-amber-900">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            Verification Code Required
+          </p>
+          <p className="text-amber-700">
+            Your account is awaiting 6-digit email confirmation.
+          </p>
+          <div>
+            <Link
+              href={`/signup?email=${encodeURIComponent(unverifiedEmail)}&step=verify`}
+              className="inline-flex items-center gap-1 font-bold text-indigo-700 hover:text-indigo-900 underline"
+            >
+              Verify Email Address Now <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      )}
+
       {success && (
         <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-3.5 text-center text-xs sm:text-sm text-emerald-700 font-bold animate-in fade-in">
           {success}
@@ -135,9 +160,17 @@ function LoginForm() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Password
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                Password
+              </label>
+              <Link
+                href="/forgot-password"
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <div className="relative mt-1.5">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <Lock className="h-4 w-4" />

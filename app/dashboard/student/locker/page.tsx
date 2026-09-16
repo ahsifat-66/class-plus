@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   BookOpen,
@@ -30,6 +30,8 @@ import {
   Lightbulb,
   ArrowRight,
   Filter,
+  Paperclip,
+  Upload,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
@@ -88,6 +90,10 @@ export default function AcademicLockerPage() {
     fileUrl: "",
   });
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
+  const [attachedFileSize, setAttachedFileSize] = useState<string | null>(null);
+  const [fileUploadError, setFileUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Pomodoro Timer state
   const [timerMinutes, setTimerMinutes] = useState(25);
@@ -186,9 +192,48 @@ export default function AcademicLockerPage() {
     }
   };
 
+  // File Upload Handlers (safely reads Base64 data URL up to 2MB)
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFileUploadError(null);
+
+    // 2MB size limit to safely adhere to Vercel serverless request body bounds
+    if (file.size > 2 * 1024 * 1024) {
+      setFileUploadError("File size exceeds 2MB limit. Please attach a file smaller than 2MB or use an external URL.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setNoteForm((prev) => ({ ...prev, fileUrl: dataUrl }));
+      setAttachedFileName(file.name);
+      setAttachedFileSize((file.size / 1024).toFixed(1) + " KB");
+    };
+    reader.onerror = () => {
+      setFileUploadError("Failed to read file.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAttachment = () => {
+    setNoteForm((prev) => ({ ...prev, fileUrl: "" }));
+    setAttachedFileName(null);
+    setAttachedFileSize(null);
+    setFileUploadError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   // Note CRUD
   const handleOpenCreateNote = () => {
     setEditingNote(null);
+    setAttachedFileName(null);
+    setAttachedFileSize(null);
+    setFileUploadError(null);
     setNoteForm({
       title: "",
       subject: selectedSubject !== "All" ? selectedSubject : "General",
@@ -201,6 +246,19 @@ export default function AcademicLockerPage() {
 
   const handleOpenEditNote = (note: PersonalNote) => {
     setEditingNote(note);
+    if (note.fileUrl) {
+      if (note.fileUrl.startsWith("data:")) {
+        setAttachedFileName("Attached Document / Image");
+        setAttachedFileSize("Stored Attachment");
+      } else {
+        setAttachedFileName(null);
+        setAttachedFileSize(null);
+      }
+    } else {
+      setAttachedFileName(null);
+      setAttachedFileSize(null);
+    }
+    setFileUploadError(null);
     setNoteForm({
       title: note.title,
       subject: note.subject,
@@ -762,15 +820,44 @@ export default function AcademicLockerPage() {
 
                   {/* Attached File/Link */}
                   {note.fileUrl && (
-                    <a
-                      href={note.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline pt-1"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      <span className="truncate max-w-[200px]">Reference Link</span>
-                    </a>
+                    <div className="pt-1">
+                      {note.fileUrl.startsWith("data:image/") ? (
+                        <div className="space-y-1">
+                          <a
+                            href={note.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block overflow-hidden rounded-xl border border-slate-200 bg-slate-50 max-h-32 group/img"
+                          >
+                            <img
+                              src={note.fileUrl}
+                              alt={note.title}
+                              className="w-full h-32 object-cover group-hover/img:scale-105 transition-transform"
+                            />
+                          </a>
+                          <span className="text-[10px] text-slate-400">Attached Image</span>
+                        </div>
+                      ) : note.fileUrl.startsWith("data:") ? (
+                        <a
+                          href={note.fileUrl}
+                          download={`${note.title.toLowerCase().replace(/[^a-z0-9]/g, "_")}_attachment`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 transition-colors"
+                        >
+                          <Paperclip className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                          <span className="truncate max-w-[200px]">Download Attached File</span>
+                        </a>
+                      ) : (
+                        <a
+                          href={note.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate max-w-[200px]">Reference Link</span>
+                        </a>
+                      )}
+                    </div>
                   )}
 
                   {/* Tags */}
@@ -790,44 +877,44 @@ export default function AcademicLockerPage() {
                 </div>
 
                 {/* Card Actions & AI Helper Buttons */}
-                <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
-                  {/* AI Quick Actions */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => handleGenerateQuiz(note)}
-                      className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-[11px] font-bold border border-purple-200 transition-colors"
-                      title="Generate 3-5 Practice Questions with Gemini AI"
-                    >
-                      <Sparkles className="w-3 h-3 text-purple-600" />
-                      <span>Practice Quiz</span>
-                    </button>
+                <div className="pt-4 border-t border-slate-100 flex flex-col gap-2.5">
+                  {/* Prominent Practice Quiz Button */}
+                  <button
+                    onClick={() => handleGenerateQuiz(note)}
+                    className="w-full inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold shadow-sm shadow-purple-200 transition-all active:scale-[0.98]"
+                    title="Generate 3-5 Practice Questions with Gemini AI"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-purple-200 animate-pulse" />
+                    <span>Generate Practice Quiz with AI</span>
+                  </button>
 
+                  {/* Secondary Actions */}
+                  <div className="flex items-center justify-between pt-0.5">
                     <button
                       onClick={() => handleGenerateSummary(note)}
-                      className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold border border-indigo-200 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold border border-indigo-100 transition-colors"
                       title="Summarize key takeaways with Gemini AI"
                     >
-                      <BrainCircuit className="w-3 h-3 text-indigo-600" />
+                      <BrainCircuit className="w-3.5 h-3.5 text-indigo-600" />
                       <span>Smart Summary</span>
                     </button>
-                  </div>
 
-                  {/* Edit / Delete Note */}
-                  <div className="flex items-center justify-end gap-2 pt-1">
-                    <button
-                      onClick={() => handleOpenEditNote(note)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                      title="Edit Note"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteNote(note.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                      title="Delete Note"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenEditNote(note)}
+                        className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                        title="Edit Note"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        title="Delete Note"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -897,17 +984,72 @@ export default function AcademicLockerPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    External Resource / File Link (Optional)
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Study Material Attachment or Reference Link (Optional)
                   </label>
-                  <input
-                    type="url"
-                    placeholder="https://drive.google.com/... or https://arxiv.org/..."
-                    value={noteForm.fileUrl}
-                    onChange={(e) => setNoteForm({ ...noteForm, fileUrl: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                  />
+
+                  {/* Local File Attachment Option */}
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                        <Upload className="w-4 h-4 text-emerald-600" />
+                        <span>Upload Document / Image (Max 2MB)</span>
+                      </div>
+                      <span className="text-[11px] text-slate-400">PDF, PNG, JPG, TXT</span>
+                    </div>
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="application/pdf,image/*,.txt,.md"
+                      onChange={handleFileUpload}
+                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                    />
+
+                    {fileUploadError && (
+                      <p className="text-xs text-rose-600 font-medium">{fileUploadError}</p>
+                    )}
+
+                    {attachedFileName && (
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
+                        <div className="flex items-center gap-2 truncate">
+                          <Paperclip className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="font-semibold truncate">{attachedFileName}</span>
+                          {attachedFileSize && (
+                            <span className="text-[10px] text-emerald-600 shrink-0">({attachedFileSize})</span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveAttachment}
+                          className="text-emerald-700 hover:text-rose-600 p-1"
+                          title="Remove attachment"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* External Resource URL Alternative */}
+                  <div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-1">
+                      <ExternalLink className="w-3 h-3 text-slate-400" />
+                      <span>Or paste an external resource URL</span>
+                    </div>
+                    <input
+                      type="url"
+                      placeholder="https://drive.google.com/... or https://arxiv.org/..."
+                      value={noteForm.fileUrl && !noteForm.fileUrl.startsWith("data:") ? noteForm.fileUrl : ""}
+                      onChange={(e) => {
+                        setNoteForm({ ...noteForm, fileUrl: e.target.value });
+                        setAttachedFileName(null);
+                        setAttachedFileSize(null);
+                      }}
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    />
+                  </div>
                 </div>
 
                 <div>
