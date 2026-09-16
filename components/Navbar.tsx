@@ -1,18 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { useUser } from "@/context/UserContext";
 import {
   Activity,
-  GraduationCap,
-  UserCheck,
   Plus,
   LogIn,
   LogOut,
-  ChevronDown,
-  Sparkles,
-  BookOpen,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -24,8 +19,7 @@ export default function Navbar({
   onCreateClassOpen,
   onJoinClassOpen,
 }: NavbarProps) {
-  const { currentUser, allUsers, switchUser, isLoading } = useUser();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { currentUser, isLoading } = useUser();
 
   const isTeacher = currentUser?.role === "TEACHER";
   const homeLink = currentUser
@@ -71,9 +65,11 @@ export default function Navbar({
 
         {/* Center/Right Section */}
         <div className="flex items-center gap-3">
-          {/* Quick Action Button */}
-          {currentUser && (
-            <div>
+          {isLoading ? (
+            <div className="h-8 w-20 bg-slate-100 animate-pulse rounded-xl" />
+          ) : currentUser ? (
+            <>
+              {/* Quick Action Button */}
               {isTeacher ? (
                 onCreateClassOpen && (
                   <button
@@ -95,154 +91,71 @@ export default function Navbar({
                   </button>
                 )
               )}
+
+              {/* User Profile Badge */}
+              <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-1.5 text-left text-xs sm:text-sm font-medium text-slate-800 shadow-sm">
+                <div className="relative">
+                  {currentUser.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={currentUser.avatar}
+                      alt={currentUser.name}
+                      className="h-7 w-7 rounded-full object-cover ring-2 ring-indigo-500/20"
+                    />
+                  ) : (
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs">
+                      {currentUser.name?.slice(0, 2).toUpperCase() || "??"}
+                    </div>
+                  )}
+                  <span
+                    className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${
+                      isTeacher ? "bg-purple-500" : "bg-emerald-500"
+                    }`}
+                  />
+                </div>
+
+                <div className="hidden sm:flex flex-col leading-tight">
+                  <span className="font-semibold text-slate-900 truncate max-w-[130px]">
+                    {currentUser.name}
+                  </span>
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-wider ${
+                      isTeacher ? "text-purple-600" : "text-emerald-600"
+                    }`}
+                  >
+                    {currentUser.role}
+                  </span>
+                </div>
+              </div>
+
+              {/* Clean Sign Out Button */}
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/60 px-3 py-1.5 text-xs sm:text-sm font-semibold text-rose-600 hover:bg-rose-100 hover:text-rose-700 transition-colors shadow-sm active:scale-95"
+                title="Sign Out"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            </>
+          ) : (
+            /* Strictly two clean options for unauthenticated visitors */
+            <div className="flex items-center gap-2.5">
+              <Link
+                href="/login"
+                className="rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition-colors"
+              >
+                Sign Up
+              </Link>
             </div>
           )}
-
-          {/* Quick Demo Role Switcher */}
-          <div className="relative">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-1.5 text-left text-xs sm:text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-100 hover:border-slate-300 transition-all"
-            >
-              <div className="relative">
-                {currentUser?.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={currentUser.avatar}
-                    alt={currentUser.name}
-                    className="h-7 w-7 rounded-full object-cover ring-2 ring-indigo-500/20"
-                  />
-                ) : (
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs">
-                    {currentUser?.name?.slice(0, 2).toUpperCase() || "??"}
-                  </div>
-                )}
-                <span
-                  className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${
-                    isTeacher ? "bg-purple-500" : "bg-emerald-500"
-                  }`}
-                />
-              </div>
-
-              <div className="hidden sm:flex flex-col leading-tight">
-                <span className="font-semibold text-slate-900 truncate max-w-[130px]">
-                  {currentUser?.name || (isLoading ? "Loading..." : "Guest")}
-                </span>
-                <span
-                  className={`text-[10px] font-bold uppercase tracking-wider ${
-                    isTeacher ? "text-purple-600" : "text-emerald-600"
-                  }`}
-                >
-                  {currentUser?.role || "USER"}
-                </span>
-              </div>
-
-              <ChevronDown className="h-4 w-4 text-slate-400 transition-transform duration-200" />
-            </button>
-
-            {/* Dropdown Menu */}
-            {dropdownOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setDropdownOpen(false)}
-                />
-                <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ring-1 ring-black/5 z-50 animate-in fade-in zoom-in-95 duration-100">
-                  <div className="px-3 py-2 border-b border-slate-100">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                      Quick Switch Demo Persona
-                    </p>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Toggle roles instantly to test both Teacher & Student views
-                    </p>
-                  </div>
-
-                  <div className="mt-1 space-y-1">
-                    {allUsers.map((user) => {
-                      const isActive = user.id === currentUser?.id;
-                      const isTeacherUser = user.role === "TEACHER";
-
-                      return (
-                        <button
-                          key={user.id}
-                          onClick={async () => {
-                            setDropdownOpen(false);
-                            if (!isActive) {
-                              await switchUser(user.email);
-                            }
-                          }}
-                          className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all ${
-                            isActive
-                              ? "bg-indigo-50/80 border border-indigo-200 text-indigo-950 font-medium"
-                              : "hover:bg-slate-50 text-slate-700"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={user.avatar || ""}
-                              alt={user.name}
-                              className="h-8 w-8 rounded-full object-cover ring-1 ring-slate-200"
-                            />
-                            <div>
-                              <div className="text-xs font-bold text-slate-900">
-                                {user.name}
-                              </div>
-                              <div className="text-[11px] text-slate-500">
-                                {user.email}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                                isTeacherUser
-                                  ? "bg-purple-100 text-purple-700 border border-purple-200"
-                                  : "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                              }`}
-                            >
-                              {user.role}
-                            </span>
-                            {isActive && (
-                              <UserCheck className="h-4 w-4 text-indigo-600" />
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="mt-2 pt-2 border-t border-slate-100 px-2 py-1 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-600 hover:text-rose-800"
-                    >
-                      <LogOut className="h-3 w-3" />
-                      <span>Sign Out</span>
-                    </button>
-                    <Link
-                      href="/login"
-                      onClick={() => setDropdownOpen(false)}
-                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800"
-                    >
-                      Login Portal →
-                    </Link>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Explicit Login / Switch Portal Button */}
-          <Link
-            href="/login"
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors shadow-sm"
-          >
-            <LogIn className="h-3.5 w-3.5 text-indigo-600" />
-            <span>Login Portal</span>
-          </Link>
         </div>
       </div>
     </header>

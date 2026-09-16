@@ -74,9 +74,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    fetchUsers();
     refreshUser();
-  }, [fetchUsers, refreshUser]);
+  }, [refreshUser]);
 
   return (
     <UserContext.Provider

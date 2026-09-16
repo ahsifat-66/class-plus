@@ -215,7 +215,7 @@ export default function SignUpPage() {
                     <span>Teacher Access Code Required</span>
                   </div>
                   <p className="text-[11px] text-purple-700">
-                    Faculty verification code is required. For demo evaluation, use <code className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-purple-200">TEACHER2024</code>.
+                    A faculty verification code is required to register as Teacher (passcode: <code className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-purple-200">TEACHER2024</code>).
                   </p>
                   <input
                     type="text"
@@ -352,8 +352,16 @@ export default function SignUpPage() {
             </form>
           </div>
 
-          <div className="text-center text-xs text-slate-500">
-            By signing up, you agree to ClassPulse's academic collaboration policies.
+          <div className="text-center text-xs text-slate-500 space-y-1">
+            <div>
+              Already have an account?{" "}
+              <Link href="/login" className="font-bold text-indigo-600 hover:text-indigo-800">
+                Sign In
+              </Link>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              By signing up, you agree to ClassPulse&apos;s academic collaboration policies.
+            </p>
           </div>
         </div>
       </main>

@@ -6,8 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 import {
   Activity,
-  GraduationCap,
-  ShieldCheck,
   Sparkles,
   ArrowRight,
   AlertCircle,
@@ -40,12 +38,10 @@ function LoginForm() {
     }
   }, [queryError]);
 
-  const handleLogin = async (e?: React.FormEvent, targetEmail?: string, targetPassword?: string) => {
-    if (e) e.preventDefault();
-    const loginEmail = targetEmail || email;
-    const loginPassword = targetPassword || password;
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    if (!loginEmail.trim() || !loginPassword.trim()) {
+    if (!email.trim() || !password.trim()) {
       setError("Please enter both your email address and password.");
       return;
     }
@@ -59,8 +55,8 @@ function LoginForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: loginEmail.trim().toLowerCase(),
-          password: loginPassword,
+          email: email.trim().toLowerCase(),
+          password,
         }),
       });
 
@@ -82,12 +78,6 @@ function LoginForm() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleQuickDemo = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword("Password123");
-    handleLogin(undefined, demoEmail, "Password123");
   };
 
   return (
@@ -119,7 +109,7 @@ function LoginForm() {
       )}
 
       <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
-        <form onSubmit={(e) => handleLogin(e)} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
               Email Address
@@ -176,46 +166,12 @@ function LoginForm() {
             </button>
           </div>
         </form>
-
-        <div className="mt-6 pt-5 border-t border-slate-100 space-y-2.5">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block text-center">
-            Or 1-Click Demo Sign-In (Password: Password123)
-          </span>
-
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => handleQuickDemo("kamal@classpulse.edu")}
-              className="flex items-center gap-2 rounded-xl border border-purple-200 bg-purple-50/60 p-2.5 text-left hover:bg-purple-100/70 transition-all"
-            >
-              <ShieldCheck className="h-4 w-4 text-purple-600 shrink-0" />
-              <div className="truncate">
-                <div className="text-xs font-bold text-purple-950 truncate">Dr. Kamal</div>
-                <div className="text-[10px] text-purple-700 font-semibold">Teacher Portal →</div>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => handleQuickDemo("abid@classpulse.edu")}
-              className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-2.5 text-left hover:bg-emerald-100/70 transition-all"
-            >
-              <GraduationCap className="h-4 w-4 text-emerald-600 shrink-0" />
-              <div className="truncate">
-                <div className="text-xs font-bold text-emerald-950 truncate">MD Abid</div>
-                <div className="text-[10px] text-emerald-700 font-semibold">Student Portal →</div>
-              </div>
-            </button>
-          </div>
-        </div>
       </div>
 
       <div className="text-center text-xs text-slate-500">
-        Don't have an account?{" "}
+        Don&apos;t have an account?{" "}
         <Link href="/signup" className="font-bold text-indigo-600 hover:text-indigo-800">
-          Sign up here
+          Sign Up
         </Link>
       </div>
     </div>
@@ -237,12 +193,12 @@ export default function LoginPage() {
           </Link>
 
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-500 hidden sm:inline">New to ClassPulse?</span>
+            <span className="text-slate-500 hidden sm:inline">Don&apos;t have an account?</span>
             <Link
               href="/signup"
               className="rounded-xl bg-indigo-600 px-3.5 py-1.5 font-bold text-white shadow-sm hover:bg-indigo-700 transition-colors"
             >
-              Create Account
+              Sign Up
             </Link>
           </div>
         </div>

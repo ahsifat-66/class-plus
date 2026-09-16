@@ -30,17 +30,6 @@ export default function HomePage() {
     }
   }, [currentUser, isLoading, router]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-slate-500 text-sm font-medium">
-          <span className="h-4 w-4 rounded-full bg-indigo-600 animate-ping" />
-          <span>Loading ClassPulse...</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
       {/* Header */}
@@ -71,7 +60,7 @@ export default function HomePage() {
               href="/signup"
               className="rounded-xl bg-indigo-600 px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition-colors"
             >
-              Get Started
+              Sign Up
             </Link>
           </div>
         </div>
@@ -115,14 +104,14 @@ export default function HomePage() {
                   href="/login"
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900"
                 >
-                  <span>Teacher Sign-In</span>
+                  <span>Sign In</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
                 <Link
                   href="/signup"
-                  className="text-xs font-semibold text-slate-400 hover:text-slate-600"
+                  className="text-xs font-semibold text-slate-500 hover:text-indigo-600"
                 >
-                  Register as Faculty
+                  Sign Up as Faculty
                 </Link>
               </div>
             </div>
@@ -144,14 +133,14 @@ export default function HomePage() {
                   href="/login"
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-900"
                 >
-                  <span>Student Sign-In</span>
+                  <span>Sign In</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
                 <Link
                   href="/signup"
-                  className="text-xs font-semibold text-slate-400 hover:text-slate-600"
+                  className="text-xs font-semibold text-slate-500 hover:text-indigo-600"
                 >
-                  Register as Student
+                  Sign Up as Student
                 </Link>
               </div>
             </div>
