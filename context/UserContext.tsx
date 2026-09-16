@@ -8,6 +8,7 @@ export interface User {
   email: string;
   role: "TEACHER" | "STUDENT";
   avatar: string | null;
+  avatarUrl?: string | null;
   institution?: string | null;
   grade?: string | null;
   bio?: string | null;

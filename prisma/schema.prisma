@@ -19,6 +19,7 @@ model User {
   password       String
   role           Role              @default(STUDENT)
   avatar         String?
+  avatarUrl      String?
   institution    String?
   grade          String?
   bio            String?

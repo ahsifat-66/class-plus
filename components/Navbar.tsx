@@ -131,10 +131,10 @@ export default function Navbar({
                   aria-expanded={dropdownOpen}
                 >
                   <div className="relative">
-                    {currentUser.avatar ? (
+                    {(currentUser.avatarUrl || currentUser.avatar) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={currentUser.avatar}
+                        src={currentUser.avatarUrl || currentUser.avatar || ""}
                         alt={currentUser.name}
                         className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover ring-2 ring-indigo-500/20"
                       />

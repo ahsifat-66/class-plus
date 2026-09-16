@@ -113,13 +113,14 @@ export async function POST(req: NextRequest) {
     // Update user avatar in database
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { avatar: avatarUrl },
+      data: { avatar: avatarUrl, avatarUrl },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
         avatar: true,
+        avatarUrl: true,
         institution: true,
         grade: true,
         bio: true,
@@ -151,13 +152,14 @@ export async function DELETE(req: NextRequest) {
 
     const updatedUser = await prisma.user.update({
       where: { id: session.id },
-      data: { avatar: null },
+      data: { avatar: null, avatarUrl: null },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
         avatar: true,
+        avatarUrl: true,
         institution: true,
         grade: true,
         bio: true,

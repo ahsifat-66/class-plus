@@ -151,6 +151,75 @@ export async function GET(req: NextRequest) {
       };
     });
 
+    // Calculate total submissions pending grading
+    let pendingGradingCount = 0;
+    const allTeacherAssignments: Array<{
+      id: string;
+      title: string;
+      classroomName: string;
+      dueDate: Date;
+      totalEnrolled: number;
+      turnedInCount: number;
+      missingCount: number;
+      turnInRate: number;
+    }> = [];
+
+    // All grades for performance distribution
+    const allEarnedPercentages: number[] = [];
+
+    for (const c of teacherClasses) {
+      const classEnrollmentCount = c.enrollments.length;
+
+      for (const a of c.assignments) {
+        const turnedIn = a.submissions.length;
+        const missing = Math.max(0, classEnrollmentCount - turnedIn);
+        const rate = classEnrollmentCount > 0 ? Math.round((turnedIn / classEnrollmentCount) * 100) : 0;
+
+        allTeacherAssignments.push({
+          id: a.id,
+          title: a.title,
+          classroomName: c.name,
+          dueDate: a.dueDate,
+          totalEnrolled: classEnrollmentCount,
+          turnedInCount: turnedIn,
+          missingCount: missing,
+          turnInRate: rate,
+        });
+
+        for (const sub of a.submissions) {
+          if (sub.grade === null) {
+            pendingGradingCount++;
+          } else {
+            allEarnedPercentages.push(Math.round((sub.grade / a.maxPoints) * 100));
+          }
+        }
+      }
+    }
+
+    // Performance Distribution brackets: 90-100%, 80-89%, 70-79%, <70%
+    const gradeDistribution = [
+      {
+        range: "90-100%",
+        count: allEarnedPercentages.filter((p) => p >= 90).length,
+        color: "#10b981",
+      },
+      {
+        range: "80-89%",
+        count: allEarnedPercentages.filter((p) => p >= 80 && p < 90).length,
+        color: "#3b82f6",
+      },
+      {
+        range: "70-79%",
+        count: allEarnedPercentages.filter((p) => p >= 70 && p < 80).length,
+        color: "#f59e0b",
+      },
+      {
+        range: "<70%",
+        count: allEarnedPercentages.filter((p) => p < 70).length,
+        color: "#ef4444",
+      },
+    ];
+
     const classesList = teacherClasses.map((c) => ({
       id: c.id,
       name: c.name,
@@ -160,23 +229,33 @@ export async function GET(req: NextRequest) {
       assignmentCount: c.assignments.length,
     }));
 
+    const totalAssignmentsCount = teacherClasses.reduce(
+      (sum, c) => sum + c.assignments.length,
+      0
+    );
+
+    const totalSubmissionsCount = teacherClasses.reduce(
+      (sum, c) =>
+        sum +
+        c.assignments.reduce((s, a) => s + a.submissions.length, 0),
+      0
+    );
+
     return NextResponse.json({
       classes: classesList,
       students,
       metrics: {
         totalStudents: students.length,
+        totalActiveStudents: students.length,
         totalCourses: teacherClasses.length,
-        totalAssignments: teacherClasses.reduce(
-          (sum, c) => sum + c.assignments.length,
-          0
-        ),
-        totalSubmissions: teacherClasses.reduce(
-          (sum, c) =>
-            sum +
-            c.assignments.reduce((s, a) => s + a.submissions.length, 0),
-          0
-        ),
+        totalAssignments: totalAssignmentsCount,
+        assignmentsPosted: totalAssignmentsCount,
+        totalSubmissions: totalSubmissionsCount,
+        submissionsPendingGrading: pendingGradingCount,
+        gradedSubmissionsCount: allEarnedPercentages.length,
       },
+      gradeDistribution,
+      turnInRates: allTeacherAssignments,
     });
   } catch (error) {
     console.error("Teacher analytics error:", error);

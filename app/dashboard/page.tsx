@@ -310,6 +310,13 @@ function UnifiedDashboardContent() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                  <Link
+                    href="/dashboard/teacher/analytics"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-3 text-sm font-bold text-white transition-all"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    <span>Teacher Analytics</span>
+                  </Link>
                   <button
                     onClick={() => setIsCreateOpen(true)}
                     className="inline-flex items-center gap-2 rounded-2xl bg-purple-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-purple-600/30 hover:bg-purple-500 active:scale-95 transition-all"
@@ -467,6 +474,13 @@ function UnifiedDashboardContent() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                  <Link
+                    href="/dashboard/student/analytics"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-3 text-sm font-bold text-white transition-all"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    <span>My Analytics</span>
+                  </Link>
                   <button
                     onClick={() => setIsJoinOpen(true)}
                     className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/30 hover:bg-emerald-500 active:scale-95 transition-all"

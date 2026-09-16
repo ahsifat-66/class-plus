@@ -48,6 +48,7 @@ interface ProfileUser {
   email: string;
   role: string;
   avatar: string | null;
+  avatarUrl?: string | null;
   institution: string | null;
   grade: string | null;
   bio: string | null;
@@ -284,10 +285,10 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-5">
                   {/* Avatar or Initials */}
                   <div className="relative shrink-0">
-                    {effectiveProfile.avatar ? (
+                    {(effectiveProfile.avatarUrl || effectiveProfile.avatar) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={effectiveProfile.avatar}
+                        src={effectiveProfile.avatarUrl || effectiveProfile.avatar || ""}
                         alt={effectiveProfile.name}
                         className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover ring-4 ring-white/20 shadow-lg"
                       />
@@ -317,6 +318,14 @@ export default function ProfilePage() {
                       <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
                         {effectiveProfile.name}
                       </h1>
+                      <button
+                        type="button"
+                        onClick={() => setIsAvatarModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white border border-white/20 backdrop-blur-sm transition-all"
+                      >
+                        <Camera className="h-3 w-3" />
+                        <span>Upload Photo</span>
+                      </button>
                       <span
                         className={`text-[11px] font-extrabold uppercase tracking-wider px-3 py-0.5 rounded-full backdrop-blur-md border ${
                           dynamicBadge.includes("Teacher") && dynamicBadge.includes("Student")

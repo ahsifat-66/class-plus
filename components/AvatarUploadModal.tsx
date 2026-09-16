@@ -31,8 +31,8 @@ export default function AvatarUploadModal({
 
   if (!isOpen) return null;
 
-  // Client-side image compression: creates a lightweight ~25KB JPEG Data URL
-  const compressImage = (file: File, maxDim = 320, quality = 0.85): Promise<string> => {
+  // Client-side image compression: resizes to max 256x256 px JPEG Base64 Data URL
+  const compressImage = (file: File, maxDim = 256, quality = 0.85): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -90,8 +90,8 @@ export default function AvatarUploadModal({
 
     try {
       setSelectedFile(file);
-      // Immediately compress for preview and instant upload
-      const compressed = await compressImage(file);
+      // Immediately compress to max 256x256 for instant preview and lightweight payload
+      const compressed = await compressImage(file, 256);
       setPreviewUrl(compressed);
     } catch (err) {
       const objectUrl = URL.createObjectURL(file);
@@ -114,7 +114,7 @@ export default function AvatarUploadModal({
 
     try {
       setSelectedFile(file);
-      const compressed = await compressImage(file);
+      const compressed = await compressImage(file, 256);
       setPreviewUrl(compressed);
     } catch (err) {
       const objectUrl = URL.createObjectURL(file);
@@ -129,20 +129,20 @@ export default function AvatarUploadModal({
       setIsUploading(true);
       setError(null);
 
-      // Prefer sending the compressed Base64 Data URL (fastest & 100% Vercel-compatible)
+      // Post 256x256 Base64 Data URL to /api/user/avatar
       let res: Response;
       if (previewUrl && previewUrl.startsWith("data:image/")) {
-        res = await fetch("/api/profile/avatar", {
+        res = await fetch("/api/user/avatar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ avatar: previewUrl }),
+          body: JSON.stringify({ avatarUrl: previewUrl }),
         });
       } else {
         const formData = new FormData();
         if (selectedFile) {
-          formData.append("file", selectedFile);
+          formData.append("avatar", selectedFile);
         }
-        res = await fetch("/api/profile/avatar", {
+        res = await fetch("/api/user/avatar", {
           method: "POST",
           body: formData,
         });
@@ -181,7 +181,7 @@ export default function AvatarUploadModal({
       setIsDeleting(true);
       setError(null);
 
-      const res = await fetch("/api/profile/avatar", {
+      const res = await fetch("/api/user/avatar", {
         method: "DELETE",
       });
 
