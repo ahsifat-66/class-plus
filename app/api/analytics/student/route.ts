@@ -198,6 +198,87 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // 6. Self-Study & Academic Locker Analytics
+    const [studyLogs, personalGoals, notesCount] = await Promise.all([
+      prisma.studyLog.findMany({
+        where: { userId },
+        orderBy: { date: "desc" },
+      }),
+      prisma.personalGoal.findMany({
+        where: { userId },
+        orderBy: { targetDate: "asc" },
+      }),
+      prisma.personalNote.count({
+        where: { userId },
+      }),
+    ]);
+
+    // Focus Time calculations
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    let totalFocusMinutes = 0;
+    let thisWeekFocusMinutes = 0;
+    let thisMonthFocusMinutes = 0;
+    const subjectFocusMap: Record<string, number> = {};
+
+    for (const log of studyLogs) {
+      const logDate = new Date(log.date);
+      totalFocusMinutes += log.durationMinutes;
+
+      if (logDate >= sevenDaysAgo) {
+        thisWeekFocusMinutes += log.durationMinutes;
+      }
+      if (logDate >= thirtyDaysAgo) {
+        thisMonthFocusMinutes += log.durationMinutes;
+      }
+
+      const subj = log.subject || "General";
+      subjectFocusMap[subj] = (subjectFocusMap[subj] || 0) + log.durationMinutes;
+    }
+
+    const colorPalette = ["#6366f1", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#06b6d4", "#f97316"];
+    const subjectBreakdown = Object.entries(subjectFocusMap).map(([subject, minutes], index) => ({
+      name: subject,
+      subject,
+      minutes,
+      hours: Math.round((minutes / 60) * 10) / 10,
+      value: Math.round((minutes / 60) * 10) / 10,
+      color: colorPalette[index % colorPalette.length],
+    }));
+
+    // Calculate Study Streak (consecutive days of logged study activity or submitted assignments)
+    const activeDatesSet = new Set<string>();
+    for (const log of studyLogs) {
+      activeDatesSet.add(new Date(log.date).toISOString().split("T")[0]);
+    }
+    for (const d of deliverables) {
+      if (d.submission?.submittedAt) {
+        activeDatesSet.add(new Date(d.submission.submittedAt).toISOString().split("T")[0]);
+      }
+    }
+
+    let studyStreak = 0;
+    const checkDate = new Date(now);
+    // Check if active today
+    const todayStr = checkDate.toISOString().split("T")[0];
+    const yesterdayDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const yesterdayStr = yesterdayDate.toISOString().split("T")[0];
+
+    // If active today or yesterday, streak is currently active
+    if (activeDatesSet.has(todayStr) || activeDatesSet.has(yesterdayStr)) {
+      let currentCheck = activeDatesSet.has(todayStr) ? checkDate : yesterdayDate;
+      while (activeDatesSet.has(currentCheck.toISOString().split("T")[0])) {
+        studyStreak++;
+        currentCheck = new Date(currentCheck.getTime() - 24 * 60 * 60 * 1000);
+      }
+    }
+
+    // Personal Goals progress
+    const totalGoals = personalGoals.length;
+    const completedGoals = personalGoals.filter((g) => g.isCompleted).length;
+    const goalsProgressRate = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0;
+
     return NextResponse.json({
       student: studentUser,
       metrics: {
@@ -208,10 +289,25 @@ export async function GET(req: NextRequest) {
         overdueCount,
         completionRate,
         averageScore,
+        // Self-study metrics
+        totalFocusMinutes,
+        totalFocusHours: Math.round((totalFocusMinutes / 60) * 10) / 10,
+        thisWeekFocusMinutes,
+        thisWeekFocusHours: Math.round((thisWeekFocusMinutes / 60) * 10) / 10,
+        thisMonthFocusMinutes,
+        thisMonthFocusHours: Math.round((thisMonthFocusMinutes / 60) * 10) / 10,
+        studyStreak,
+        notesCount,
+        totalGoals,
+        completedGoals,
+        goalsProgressRate,
       },
       completionDistribution,
       performanceTrend,
       weeklyActivity,
+      subjectBreakdown,
+      personalGoals,
+      recentStudyLogs: studyLogs.slice(0, 5),
       deliverables,
     });
   } catch (error: any) {

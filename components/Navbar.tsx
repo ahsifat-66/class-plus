@@ -14,6 +14,7 @@ import {
   ChevronDown,
   LayoutDashboard,
   BarChart3,
+  BookOpen,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -232,6 +233,20 @@ export default function Navbar({
                           </div>
                           <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
                             {userSummary?.enrolledCount || 0}
+                          </span>
+                        </Link>
+
+                        <Link
+                          href="/dashboard/student/locker"
+                          onClick={() => setDropdownOpen(false)}
+                          className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-slate-700 hover:bg-teal-50 hover:text-teal-900 rounded-xl transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4 text-teal-600" />
+                            <span>Academic Locker</span>
+                          </div>
+                          <span className="text-[10px] font-bold bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full">
+                            Notes & AI
                           </span>
                         </Link>
 

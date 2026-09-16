@@ -29,6 +29,9 @@ model User {
   messages       Message[]
   announcements  Announcement[]
   submissions    Submission[]
+  personalNotes  PersonalNote[]
+  studyLogs      StudyLog[]
+  personalGoals  PersonalGoal[]
   createdAt      DateTime          @default(now())
 
   @@index([email])
@@ -126,4 +129,46 @@ model Submission {
   submittedAt  DateTime   @default(now())
 
   @@unique([assignmentId, studentId])
+}
+
+model PersonalNote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String   @db.Text
+  subject   String
+  tags      String[]
+  fileUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([subject])
+}
+
+model StudyLog {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject         String
+  durationMinutes Int
+  date            DateTime @default(now())
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([date])
+}
+
+model PersonalGoal {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  targetDate  DateTime
+  isCompleted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
 }

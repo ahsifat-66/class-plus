@@ -473,10 +473,17 @@ function UnifiedDashboardContent() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link
+                    href="/dashboard/student/locker"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-emerald-800/60 hover:bg-emerald-800 border border-emerald-500/30 px-4 py-3 text-sm font-bold text-white transition-all shadow-sm active:scale-95"
+                  >
+                    <BookOpen className="h-4 w-4 text-emerald-300" />
+                    <span>Academic Locker</span>
+                  </Link>
                   <Link
                     href="/dashboard/student/analytics"
-                    className="inline-flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-3 text-sm font-bold text-white transition-all"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-3 text-sm font-bold text-white transition-all active:scale-95"
                   >
                     <BarChart3 className="h-4 w-4" />
                     <span>My Analytics</span>
