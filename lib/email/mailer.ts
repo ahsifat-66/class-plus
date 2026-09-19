@@ -158,27 +158,50 @@ export async function sendOtpEmail({
     }
   }
 
-  // 2. Check for SMTP / Nodemailer credentials (Gmail App Password or custom SMTP)
-  const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
-  const smtpPass = process.env.SMTP_PASSWORD || process.env.GMAIL_APP_PASSWORD;
-  const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
-  const smtpPort = parseInt(process.env.SMTP_PORT || "465", 10);
-  const smtpFrom = process.env.SMTP_FROM || `"ClassPulse" <${smtpUser || "no-reply@classpulse.edu"}>`;
+  // 2. Check for Gmail / SMTP credentials
+  const smtpUser = (process.env.GMAIL_USER || process.env.SMTP_USER || "").trim();
+  const rawPass = (process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASSWORD || "").trim();
+  // Strip any spaces Google places in 16-character App Passwords (e.g. 'abcd efgh ijkl mnop' -> 'abcdefghijklmnop')
+  const smtpPass = rawPass.replace(/\s+/g, "");
+
+  const smtpHost = (process.env.SMTP_HOST || "smtp.gmail.com").trim();
+  const smtpPort = parseInt(process.env.SMTP_PORT || "587", 10);
+  const isGmail =
+    Boolean(process.env.GMAIL_USER) ||
+    Boolean(process.env.GMAIL_APP_PASSWORD) ||
+    smtpHost.toLowerCase().includes("gmail");
+
+  const smtpFrom =
+    process.env.SMTP_FROM ||
+    process.env.GMAIL_FROM ||
+    `"ClassPulse" <${smtpUser || "no-reply@classpulse.edu"}>`;
 
   if (smtpUser && smtpPass) {
     try {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-      });
+      console.log(`[EMAIL DISPATCH] Initiating Gmail/SMTP delivery to ${to} using ${smtpUser}...`);
+
+      const transportConfig: any = isGmail
+        ? {
+            service: "gmail",
+            auth: {
+              user: smtpUser,
+              pass: smtpPass,
+            },
+          }
+        : {
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpPort === 465,
+            auth: {
+              user: smtpUser,
+              pass: smtpPass,
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000,
+          };
+
+      const transporter = nodemailer.createTransport(transportConfig);
 
       const info = await transporter.sendMail({
         from: smtpFrom,
@@ -187,7 +210,7 @@ export async function sendOtpEmail({
         html: htmlContent,
       });
 
-      console.log(`[EMAIL DISPATCH SUCCESS - SMTP] Delivered OTP to ${to} (Message ID: ${info.messageId})`);
+      console.log(`✅ [GMAIL SMTP SUCCESS] Real email delivered to ${to} (Message ID: ${info.messageId})`);
       return {
         success: true,
         delivered: true,
@@ -196,19 +219,25 @@ export async function sendOtpEmail({
         code,
       };
     } catch (err: any) {
-      console.error("❌ [EMAIL DISPATCH ERROR - SMTP]", {
+      console.error("❌ [EMAIL DISPATCH ERROR - GMAIL/SMTP]", {
         recipient: to,
         error: err.message,
         code: err.code,
         response: err.response,
         command: err.command,
-        stack: err.stack,
       });
+
+      let helpfulAdvice = err.message;
+      if (err.code === "EAUTH") {
+        helpfulAdvice =
+          "Gmail authentication failed (EAUTH). Ensure you generated a 16-character App Password (Google Account -> Security -> 2-Step Verification -> App passwords) and did not use your normal Google account password.";
+      }
+
       return {
         success: false,
         delivered: false,
         provider: "smtp",
-        error: `SMTP error (${err.code || "UNKNOWN"}): ${err.message}`,
+        error: `Gmail/SMTP error (${err.code || "UNKNOWN"}): ${helpfulAdvice}`,
         code,
         fallback: true,
       };
