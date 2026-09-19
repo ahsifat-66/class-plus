@@ -72,9 +72,13 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json(
         {
-          error: "Your account email is not yet verified. A 6-digit verification code has been sent to your inbox.",
+          error: mailResult.delivered
+            ? "Your account email is not yet verified. A 6-digit verification code has been sent to your inbox."
+            : `Your account is not verified, but email delivery failed (${mailResult.error || "No email provider configured"}). Check server console for === DEV OTP CODE ===`,
           requireVerification: true,
           email: normalizedEmail,
+          emailDelivered: mailResult.delivered,
+          emailError: mailResult.error,
           devCode: mailResult?.fallback ? otpCode : undefined,
         },
         { status: 403 }

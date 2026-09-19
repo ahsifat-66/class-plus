@@ -65,7 +65,15 @@ export default function ForgotPasswordPage() {
 
       setStep("RESET");
       setResendCooldown(30);
-      setSuccess(`A 6-digit reset code has been sent to ${email.trim().toLowerCase()}!`);
+      if (data.emailDelivered === false) {
+        setError(
+          data.emailError
+            ? `Reset code generated, but email delivery failed (${data.emailError}). Check server console for === DEV OTP CODE ===`
+            : "Reset code generated, but email delivery failed. Check server console for === DEV OTP CODE ==="
+        );
+      } else {
+        setSuccess(`A 6-digit reset code has been sent to ${email.trim().toLowerCase()}!`);
+      }
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     } catch (err: any) {
       setError(err.message || "Failed to process request.");

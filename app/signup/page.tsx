@@ -111,7 +111,15 @@ function SignUpContent() {
       if (data.requireVerification) {
         setStep("VERIFY");
         setResendCooldown(30);
-        setSuccess(`Verification code sent to ${email.trim().toLowerCase()}!`);
+        if (data.emailDelivered === false) {
+          setError(
+            data.emailError
+              ? `Email delivery notice: ${data.emailError}. Check server console for === DEV OTP CODE ===`
+              : "Email delivery notice: Could not send email. Check server console for === DEV OTP CODE ==="
+          );
+        } else {
+          setSuccess(`Verification code sent to ${email.trim().toLowerCase()}!`);
+        }
         setTimeout(() => inputRefs.current[0]?.focus(), 100);
       } else {
         setSuccess(`Account created! Welcome, ${data.user.name}!`);
@@ -240,7 +248,15 @@ function SignUpContent() {
       }
 
       setResendCooldown(30);
-      setSuccess(`A fresh verification code was sent to ${email}!`);
+      if (data.emailDelivered === false) {
+        setError(
+          data.emailError
+            ? `New code generated, but delivery failed: ${data.emailError}. Check server console for === DEV OTP CODE ===`
+            : "New code generated, but delivery failed. Check server console for === DEV OTP CODE ==="
+        );
+      } else {
+        setSuccess(`A fresh verification code was sent to ${email}!`);
+      }
     } catch (err: any) {
       setError(err.message || "Failed to resend code.");
     } finally {

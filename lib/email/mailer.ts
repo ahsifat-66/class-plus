@@ -7,12 +7,27 @@ interface SendOtpOptions {
   type?: "SIGNUP" | "RESET_PASSWORD";
 }
 
+export interface SendOtpResult {
+  success: boolean;
+  delivered: boolean;
+  provider: "resend" | "smtp" | "dev_fallback";
+  error?: string;
+  code: string;
+  messageId?: string;
+  fallback?: boolean;
+}
+
 export function generateOtpCode(): string {
   // Generate a cryptographically distributed 6-digit code
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-export async function sendOtpEmail({ to, code, name, type = "SIGNUP" }: SendOtpOptions) {
+export async function sendOtpEmail({
+  to,
+  code,
+  name,
+  type = "SIGNUP",
+}: SendOtpOptions): Promise<SendOtpResult> {
   const isReset = type === "RESET_PASSWORD";
   const greeting = name ? `Hello ${name},` : "Hello,";
   const actionTitle = isReset ? "Password Reset Code" : "Verify Your Email Address";
@@ -24,11 +39,9 @@ export async function sendOtpEmail({ to, code, name, type = "SIGNUP" }: SendOtpO
     ? `ClassPulse Password Reset Code: ${code}`
     : `Your ClassPulse Verification Code: ${code}`;
 
-  const host = process.env.SMTP_HOST || "smtp.gmail.com";
-  const port = parseInt(process.env.SMTP_PORT || "465", 10);
-  const user = process.env.SMTP_USER || process.env.GMAIL_USER;
-  const pass = process.env.SMTP_PASSWORD || process.env.GMAIL_APP_PASSWORD;
-  const from = process.env.SMTP_FROM || `"ClassPulse" <${user || "no-reply@classpulse.edu"}>`;
+  // Always log dev OTP code to terminal/Vercel console for debugging and local testing
+  console.log("=== DEV OTP CODE ===", code);
+  console.log(`[OTP DISPATCH] Recipient: ${to} | Action: ${type} | Code: ${code}`);
 
   // HTML Email Template
   const htmlContent = `
@@ -77,34 +90,134 @@ export async function sendOtpEmail({ to, code, name, type = "SIGNUP" }: SendOtpO
 </html>
   `.trim();
 
-  // If credentials exist, attempt real delivery via SMTP
-  if (user && pass) {
+  // 1. Check for Resend API Key (Recommended for Vercel / Serverless environments)
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (resendApiKey && resendApiKey.trim().length > 0) {
+    const resendFrom =
+      process.env.RESEND_FROM ||
+      process.env.EMAIL_FROM ||
+      "ClassPulse <onboarding@resend.dev>";
+
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey.trim()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: resendFrom,
+          to: [to],
+          subject,
+          html: htmlContent,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        const errorDetail = data?.message || data?.error?.message || JSON.stringify(data);
+        console.error("❌ [EMAIL DISPATCH ERROR - RESEND]", {
+          recipient: to,
+          statusCode: res.status,
+          error: errorDetail,
+          sender: resendFrom,
+        });
+        return {
+          success: false,
+          delivered: false,
+          provider: "resend",
+          error: `Resend error (${res.status}): ${errorDetail}`,
+          code,
+          fallback: true,
+        };
+      }
+
+      console.log(`[EMAIL DISPATCH SUCCESS - RESEND] Delivered OTP to ${to} (Message ID: ${data.id})`);
+      return {
+        success: true,
+        delivered: true,
+        provider: "resend",
+        messageId: data.id,
+        code,
+      };
+    } catch (err: any) {
+      console.error("❌ [EMAIL DISPATCH ERROR - RESEND]", {
+        recipient: to,
+        error: err.message,
+        stack: err.stack,
+      });
+      return {
+        success: false,
+        delivered: false,
+        provider: "resend",
+        error: `Resend connection failed: ${err.message}`,
+        code,
+        fallback: true,
+      };
+    }
+  }
+
+  // 2. Check for SMTP / Nodemailer credentials (Gmail App Password or custom SMTP)
+  const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
+  const smtpPass = process.env.SMTP_PASSWORD || process.env.GMAIL_APP_PASSWORD;
+  const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+  const smtpPort = parseInt(process.env.SMTP_PORT || "465", 10);
+  const smtpFrom = process.env.SMTP_FROM || `"ClassPulse" <${smtpUser || "no-reply@classpulse.edu"}>`;
+
+  if (smtpUser && smtpPass) {
     try {
       const transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465,
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
         auth: {
-          user,
-          pass,
+          user: smtpUser,
+          pass: smtpPass,
         },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
       });
 
       const info = await transporter.sendMail({
-        from,
+        from: smtpFrom,
         to,
         subject,
         html: htmlContent,
       });
 
-      console.log(`[EMAIL DISPATCH SUCCESS] Sent OTP to ${to} (Message ID: ${info.messageId})`);
-      return { success: true, messageId: info.messageId };
+      console.log(`[EMAIL DISPATCH SUCCESS - SMTP] Delivered OTP to ${to} (Message ID: ${info.messageId})`);
+      return {
+        success: true,
+        delivered: true,
+        provider: "smtp",
+        messageId: info.messageId,
+        code,
+      };
     } catch (err: any) {
-      console.warn(`[SMTP SEND FAILED] Falling back to console logger: ${err.message}`);
+      console.error("❌ [EMAIL DISPATCH ERROR - SMTP]", {
+        recipient: to,
+        error: err.message,
+        code: err.code,
+        response: err.response,
+        command: err.command,
+        stack: err.stack,
+      });
+      return {
+        success: false,
+        delivered: false,
+        provider: "smtp",
+        error: `SMTP error (${err.code || "UNKNOWN"}): ${err.message}`,
+        code,
+        fallback: true,
+      };
     }
   }
 
-  // Fallback logger for dev/test environments without active SMTP
+  // 3. No external provider configured in environment
+  console.warn("⚠️ [EMAIL DISPATCH WARNING] No email provider configured.");
+  console.warn("   To send real emails, set RESEND_API_KEY or SMTP credentials (SMTP_USER & SMTP_PASSWORD / GMAIL_USER & GMAIL_APP_PASSWORD).");
   console.log("==================================================");
   console.log(`✉️ [OTP EMAIL DEV LOG]`);
   console.log(`Recipient: ${to}`);
@@ -112,5 +225,12 @@ export async function sendOtpEmail({ to, code, name, type = "SIGNUP" }: SendOtpO
   console.log(`👉 6-DIGIT OTP CODE: ${code}`);
   console.log("==================================================");
 
-  return { success: true, fallback: true, code };
+  return {
+    success: true,
+    delivered: false,
+    provider: "dev_fallback",
+    error: "No email service configured (missing RESEND_API_KEY or SMTP_USER/SMTP_PASSWORD). Check server console for === DEV OTP CODE ===",
+    code,
+    fallback: true,
+  };
 }

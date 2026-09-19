@@ -55,12 +55,20 @@ export async function POST(req: NextRequest) {
       type: "RESET_PASSWORD",
     });
 
+    const emailDelivered = mailResult.delivered;
+    const emailError = mailResult.error;
+
     return NextResponse.json({
       success: true,
       requireOtp: true,
       email: normalizedEmail,
+      emailDelivered,
+      emailError,
+      provider: mailResult.provider,
       devCode: mailResult?.fallback ? otpCode : undefined,
-      message: `A 6-digit password reset code has been sent to ${normalizedEmail}.`,
+      message: emailDelivered
+        ? `A 6-digit password reset code has been sent to ${normalizedEmail}.`
+        : `Reset code generated, but email delivery failed (${emailError || "No email provider configured"}). Check server console for === DEV OTP CODE ===.`,
     });
   } catch (error: any) {
     console.error("Error in forgot-password:", error);

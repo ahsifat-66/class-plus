@@ -64,11 +64,19 @@ export async function POST(req: NextRequest) {
       type: otpType,
     });
 
+    const emailDelivered = mailResult.delivered;
+    const emailError = mailResult.error;
+
     return NextResponse.json({
       success: true,
       email: normalizedEmail,
+      emailDelivered,
+      emailError,
+      provider: mailResult.provider,
       devCode: mailResult?.fallback ? otpCode : undefined,
-      message: `A new 6-digit verification code has been sent to ${normalizedEmail}.`,
+      message: emailDelivered
+        ? `A new 6-digit verification code has been sent to ${normalizedEmail}.`
+        : `New verification code generated, but email delivery failed (${emailError || "No email provider configured"}). Check server console for === DEV OTP CODE ===.`,
     });
   } catch (error: any) {
     console.error("Error resending OTP:", error);

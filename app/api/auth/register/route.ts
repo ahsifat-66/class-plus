@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 5. Send OTP Email via Nodemailer
+    // 5. Send OTP Email via Nodemailer or Resend
     const mailResult = await sendOtpEmail({
       to: normalizedEmail,
       code: otpCode,
@@ -117,15 +117,23 @@ export async function POST(req: NextRequest) {
       type: "SIGNUP",
     });
 
+    const emailDelivered = mailResult.delivered;
+    const emailError = mailResult.error;
+
     return NextResponse.json({
       success: true,
       requireVerification: true,
       email: normalizedEmail,
       userId: user.id,
       role: user.role,
+      emailDelivered,
+      emailError,
+      provider: mailResult.provider,
       // Provide devCode in development/fallback for automated testing
       devCode: mailResult?.fallback ? otpCode : undefined,
-      message: `A 6-digit verification code has been sent to ${normalizedEmail}. Please verify to activate your account.`,
+      message: emailDelivered
+        ? `A 6-digit verification code has been sent to ${normalizedEmail}. Please verify to activate your account.`
+        : `Account created, but email could not be sent (${emailError || "No email provider configured"}). Check server console for === DEV OTP CODE ===.`,
     });
   } catch (error: any) {
     console.error("Error in registration:", error);
