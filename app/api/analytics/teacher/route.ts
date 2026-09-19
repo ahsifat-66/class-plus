@@ -22,8 +22,28 @@ export async function GET(req: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { user: null, classes: [], students: [], metrics: null, error: "Unauthorized" },
-        { status: 200 }
+        { error: "Unauthorized: Please sign in to view teacher analytics." },
+        { status: 401 }
+      );
+    }
+
+    // Verify user exists and check role
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatar: true,
+        avatarUrl: true,
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "User account not found." },
+        { status: 404 }
       );
     }
 
@@ -39,6 +59,7 @@ export async function GET(req: NextRequest) {
                 name: true,
                 email: true,
                 avatar: true,
+                avatarUrl: true,
                 institution: true,
                 grade: true,
               },
@@ -53,16 +74,35 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    // If teacher has 0 classrooms created yet, return complete schema with zero metrics
+    // to prevent undefined property crashes on the frontend
     if (teacherClasses.length === 0) {
       return NextResponse.json({
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
         classes: [],
         students: [],
         metrics: {
           totalStudents: 0,
+          totalActiveStudents: 0,
           totalCourses: 0,
           totalAssignments: 0,
+          assignmentsPosted: 0,
           totalSubmissions: 0,
+          submissionsPendingGrading: 0,
+          gradedSubmissionsCount: 0,
         },
+        gradeDistribution: [
+          { range: "90-100%", count: 0, color: "#10b981" },
+          { range: "80-89%", count: 0, color: "#3b82f6" },
+          { range: "70-79%", count: 0, color: "#f59e0b" },
+          { range: "<70%", count: 0, color: "#ef4444" },
+        ],
+        turnInRates: [],
       });
     }
 
@@ -74,6 +114,7 @@ export async function GET(req: NextRequest) {
         name: string;
         email: string;
         avatar: string | null;
+        avatarUrl: string | null;
         institution: string | null;
         grade: string | null;
         classrooms: Array<{ id: string; name: string; subject: string }>;
@@ -85,8 +126,6 @@ export async function GET(req: NextRequest) {
     >();
 
     for (const c of teacherClasses) {
-      const classAssignmentIds = new Set(c.assignments.map((a) => a.id));
-
       for (const en of c.enrollments) {
         const s = en.user;
         if (!studentMap.has(s.id)) {
@@ -95,6 +134,7 @@ export async function GET(req: NextRequest) {
             name: s.name,
             email: s.email,
             avatar: s.avatar,
+            avatarUrl: s.avatarUrl || s.avatar,
             institution: s.institution,
             grade: s.grade,
             classrooms: [],
@@ -116,7 +156,8 @@ export async function GET(req: NextRequest) {
             entry.submittedCount++;
             if (sub.grade !== null) {
               entry.gradedCount++;
-              entry.scores.push({ earned: sub.grade, max: a.maxPoints });
+              const maxPts = a.maxPoints > 0 ? a.maxPoints : 100;
+              entry.scores.push({ earned: sub.grade, max: maxPts });
             }
           }
         }
@@ -127,7 +168,7 @@ export async function GET(req: NextRequest) {
       const averageGrade =
         s.scores.length > 0
           ? Math.round(
-              (s.scores.reduce((acc, sc) => acc + (sc.earned / sc.max) * 100, 0) /
+              (s.scores.reduce((acc, sc) => acc + (sc.earned / (sc.max || 100)) * 100, 0) /
                 s.scores.length) *
                 10
             ) / 10
@@ -143,6 +184,7 @@ export async function GET(req: NextRequest) {
         name: s.name,
         email: s.email,
         avatar: s.avatar,
+        avatarUrl: s.avatarUrl,
         institution: s.institution,
         grade: s.grade,
         classrooms: s.classrooms,
@@ -176,7 +218,10 @@ export async function GET(req: NextRequest) {
       for (const a of c.assignments) {
         const turnedIn = a.submissions.length;
         const missing = Math.max(0, classEnrollmentCount - turnedIn);
-        const rate = classEnrollmentCount > 0 ? Math.round((turnedIn / classEnrollmentCount) * 100) : 0;
+        const rate =
+          classEnrollmentCount > 0
+            ? Math.round((turnedIn / classEnrollmentCount) * 100)
+            : 0;
 
         allTeacherAssignments.push({
           id: a.id,
@@ -193,7 +238,8 @@ export async function GET(req: NextRequest) {
           if (sub.grade === null) {
             pendingGradingCount++;
           } else {
-            allEarnedPercentages.push(Math.round((sub.grade / a.maxPoints) * 100));
+            const maxPts = a.maxPoints > 0 ? a.maxPoints : 100;
+            allEarnedPercentages.push(Math.round((sub.grade / maxPts) * 100));
           }
         }
       }
@@ -245,6 +291,12 @@ export async function GET(req: NextRequest) {
     );
 
     return NextResponse.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
       classes: classesList,
       students,
       metrics: {
@@ -262,6 +314,9 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("Teacher analytics error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error while fetching teacher analytics." },
+      { status: 500 }
+    );
   }
 }

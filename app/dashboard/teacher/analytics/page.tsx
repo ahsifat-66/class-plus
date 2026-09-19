@@ -26,11 +26,23 @@ import {
   RefreshCw,
   AlertTriangle,
   ChevronRight,
-  Sparkles,
+  Plus,
+  LogIn,
+  X,
+  Calendar,
+  CheckCircle2,
+  TrendingUp,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { useUser } from "@/context/UserContext";
 
 interface TeacherAnalyticsData {
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
   classes: Array<{
     id: string;
     name: string;
@@ -82,26 +94,42 @@ interface TeacherAnalyticsData {
 }
 
 export default function TeacherAnalyticsPage() {
+  const { currentUser } = useUser();
   const [data, setData] = useState<TeacherAnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourseFilter, setSelectedCourseFilter] = useState("all");
 
+  // In-page Student Drill-down inspection modal
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [drillDownData, setDrillDownData] = useState<any | null>(null);
+  const [isLoadingDrillDown, setIsLoadingDrillDown] = useState(false);
+
   const fetchAnalytics = async () => {
     try {
       setIsLoading(true);
       setError(null);
       const res = await fetch("/api/analytics/teacher", { cache: "no-store" });
-      if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error(errJson.error || "Failed to load teacher analytics.");
-      }
       const json = await res.json();
+
+      if (!res.ok || json.error) {
+        if (res.status === 401) {
+          setError("Unauthorized: Please sign in to view your teacher analytics.");
+        } else if (res.status === 403) {
+          setError(json.error || "Access restricted: Teacher analytics is for faculty only.");
+        } else {
+          setError(json.error || "Failed to load teacher analytics.");
+        }
+        setData(null);
+        return;
+      }
+
       setData(json);
     } catch (err: any) {
       console.error("Failed to load teacher analytics:", err);
-      setError(err.message || "Failed to load analytics.");
+      setError(err.message || "Failed to load teacher analytics.");
+      setData(null);
     } finally {
       setIsLoading(false);
     }
@@ -111,21 +139,46 @@ export default function TeacherAnalyticsPage() {
     fetchAnalytics();
   }, []);
 
+  const handleOpenStudentDrillDown = async (studentId: string) => {
+    setSelectedStudentId(studentId);
+    try {
+      setIsLoadingDrillDown(true);
+      const res = await fetch(`/api/analytics/student/${studentId}`);
+      if (res.ok) {
+        const d = await res.json();
+        setDrillDownData(d);
+      }
+    } catch (e) {
+      console.error("Failed to load student drill down", e);
+    } finally {
+      setIsLoadingDrillDown(false);
+    }
+  };
+
+  const handleCloseDrillDown = () => {
+    setSelectedStudentId(null);
+    setDrillDownData(null);
+  };
+
   const filteredStudents = (data?.students || []).filter((s) => {
     const matchesSearch =
       s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCourse =
       selectedCourseFilter === "all" ||
-      s.classrooms.some((c) => c.id === selectedCourseFilter);
+      (s.classrooms || []).some((c) => c.id === selectedCourseFilter);
     return matchesSearch && matchesCourse;
   });
 
-  const getInitials = (name: string) => {
+  const getInitials = (name?: string) => {
+    if (!name) return "ST";
     const parts = name.trim().split(" ");
     if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
     return name.slice(0, 2).toUpperCase();
   };
+
+  const isUnauthorized = error && error.toLowerCase().includes("unauthorized");
+  const isStudentError = error && error.toLowerCase().includes("student");
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -177,7 +230,7 @@ export default function TeacherAnalyticsPage() {
                     Active Courses
                   </span>
                   <span className="text-2xl font-black text-white">
-                    {data.metrics.totalCourses}
+                    {data.metrics.totalCourses ?? 0}
                   </span>
                 </div>
               </div>
@@ -185,16 +238,50 @@ export default function TeacherAnalyticsPage() {
           </div>
         </div>
 
-        {/* Error Notification */}
+        {/* Error Notification Card */}
         {error && (
-          <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 flex items-center gap-3 text-xs sm:text-sm text-rose-700 shadow-sm animate-in fade-in">
-            <AlertTriangle className="h-5 w-5 shrink-0 text-rose-600" />
-            <span>{error}</span>
+          <div className="rounded-3xl bg-white border border-rose-200 p-6 sm:p-8 text-center space-y-4 shadow-sm animate-in fade-in">
+            <div className="h-12 w-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <div className="space-y-1 max-w-md mx-auto">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                {isUnauthorized ? "Sign In Required" : "Analytics Notice"}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-500">{error}</p>
+            </div>
+            <div className="pt-2 flex items-center justify-center gap-3">
+              {isUnauthorized && (
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-purple-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-purple-600/20 hover:bg-purple-500 transition-all"
+                >
+                  <LogIn className="h-4 w-4" />
+                  <span>Sign In</span>
+                </Link>
+              )}
+              {isStudentError && (
+                <Link
+                  href="/dashboard/student/analytics"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500 transition-all"
+                >
+                  <GraduationCap className="h-4 w-4" />
+                  <span>Open Student Analytics</span>
+                </Link>
+              )}
+              <button
+                onClick={fetchAnalytics}
+                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-all"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Try Again</span>
+              </button>
+            </div>
           </div>
         )}
 
         {/* Loading Spinner */}
-        {isLoading && !data ? (
+        {isLoading && !data && !error ? (
           <div className="py-20 text-center space-y-3">
             <div className="h-10 w-10 border-3 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto" />
             <p className="text-xs sm:text-sm text-slate-500">Loading classroom oversight analytics...</p>
@@ -211,7 +298,7 @@ export default function TeacherAnalyticsPage() {
                   <Users className="h-4 w-4 text-purple-500" />
                 </div>
                 <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-                  {data.metrics.totalActiveStudents}
+                  {data.metrics?.totalActiveStudents ?? 0}
                 </div>
                 <span className="text-[11px] text-slate-500">Enrolled across classes</span>
               </div>
@@ -224,7 +311,7 @@ export default function TeacherAnalyticsPage() {
                   <FileText className="h-4 w-4 text-indigo-500" />
                 </div>
                 <div className="text-2xl sm:text-3xl font-extrabold text-indigo-600">
-                  {data.metrics.assignmentsPosted}
+                  {data.metrics?.assignmentsPosted ?? 0}
                 </div>
                 <span className="text-[11px] text-slate-500">Active coursework</span>
               </div>
@@ -237,7 +324,7 @@ export default function TeacherAnalyticsPage() {
                   <Clock className="h-4 w-4 text-amber-500" />
                 </div>
                 <div className="text-2xl sm:text-3xl font-extrabold text-amber-600">
-                  {data.metrics.submissionsPendingGrading}
+                  {data.metrics?.submissionsPendingGrading ?? 0}
                 </div>
                 <span className="text-[11px] text-slate-500">Needs teacher review</span>
               </div>
@@ -250,11 +337,35 @@ export default function TeacherAnalyticsPage() {
                   <GraduationCap className="h-4 w-4 text-emerald-500" />
                 </div>
                 <div className="text-2xl sm:text-3xl font-extrabold text-emerald-600">
-                  {data.metrics.totalSubmissions}
+                  {data.metrics?.totalSubmissions ?? 0}
                 </div>
                 <span className="text-[11px] text-slate-500">Received from students</span>
               </div>
             </div>
+
+            {/* Zero Classrooms Banner if teacher hasn't created classes yet */}
+            {(data.classes || []).length === 0 && (
+              <div className="rounded-3xl border border-dashed border-purple-200 bg-purple-50/50 p-8 sm:p-10 text-center space-y-4 shadow-sm">
+                <div className="h-14 w-14 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+                  <BookOpen className="h-7 w-7" />
+                </div>
+                <div className="space-y-1 max-w-md mx-auto">
+                  <h3 className="text-lg font-bold text-slate-900">No Classrooms Created Yet</h3>
+                  <p className="text-xs sm:text-sm text-slate-500">
+                    You have not created any classrooms yet. Once you create a class and enroll students, your real-time performance analytics, turn-in rates, and grade distribution charts will automatically update here.
+                  </p>
+                </div>
+                <div className="pt-2">
+                  <Link
+                    href="/dashboard?view=teaching"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-purple-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-purple-600/20 hover:bg-purple-500 transition-all active:scale-95"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Create Your First Classroom</span>
+                  </Link>
+                </div>
+              </div>
+            )}
 
             {/* Visual Charts: Performance Distribution & Turn-in Rate */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -277,7 +388,7 @@ export default function TeacherAnalyticsPage() {
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={data.gradeDistribution}
+                      data={data.gradeDistribution || []}
                       margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -286,7 +397,7 @@ export default function TeacherAnalyticsPage() {
                       <Tooltip
                         formatter={(val: any, name: any, item: any) => [
                           `${val} student submission(s)`,
-                          item.payload.range,
+                          item?.payload?.range || "",
                         ]}
                         contentStyle={{
                           backgroundColor: "#ffffff",
@@ -297,7 +408,7 @@ export default function TeacherAnalyticsPage() {
                         }}
                       />
                       <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                        {data.gradeDistribution.map((entry, index) => (
+                        {(data.gradeDistribution || []).map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Bar>
@@ -323,14 +434,15 @@ export default function TeacherAnalyticsPage() {
                 </div>
 
                 <div className="h-64 w-full">
-                  {data.turnInRates.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-xs text-slate-400">
-                      No assignments posted yet. Create assignments to see turn-in rates.
+                  {(!data.turnInRates || data.turnInRates.length === 0) ? (
+                    <div className="h-full flex flex-col items-center justify-center text-xs text-slate-400 space-y-2">
+                      <FileText className="h-8 w-8 text-slate-300" />
+                      <span>No assignments posted yet. Coursework turn-in rates will appear here.</span>
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
-                        data={data.turnInRates.slice(0, 8)}
+                        data={(data.turnInRates || []).slice(0, 8)}
                         margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -339,10 +451,14 @@ export default function TeacherAnalyticsPage() {
                           stroke="#94a3b8"
                           fontSize={10}
                           tickLine={false}
-                          tickFormatter={(t) => (t.length > 10 ? `${t.slice(0, 8)}…` : t)}
+                          tickFormatter={(t) => (t && t.length > 10 ? `${t.slice(0, 8)}…` : t || "")}
                         />
                         <YAxis stroke="#94a3b8" fontSize={11} allowDecimals={false} tickLine={false} />
                         <Tooltip
+                          formatter={(val: any, name: any) => [
+                            `${val} student(s)`,
+                            name,
+                          ]}
                           contentStyle={{
                             backgroundColor: "#ffffff",
                             borderRadius: "12px",
@@ -402,7 +518,7 @@ export default function TeacherAnalyticsPage() {
                     />
                   </div>
 
-                  {data.classes.length > 1 && (
+                  {(data.classes || []).length > 1 && (
                     <select
                       value={selectedCourseFilter}
                       onChange={(e) => setSelectedCourseFilter(e.target.value)}
@@ -420,8 +536,9 @@ export default function TeacherAnalyticsPage() {
               </div>
 
               {filteredStudents.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-400">
-                  No students found matching your search.
+                <div className="py-12 text-center text-xs text-slate-400 space-y-1">
+                  <Users className="h-6 w-6 mx-auto text-slate-300" />
+                  <p>No student enrollment records found.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -432,7 +549,7 @@ export default function TeacherAnalyticsPage() {
                         <th className="pb-3 font-semibold">Course(s)</th>
                         <th className="pb-3 font-semibold">Submission Progress</th>
                         <th className="pb-3 font-semibold text-center">Avg Grade</th>
-                        <th className="pb-3 font-semibold text-right">Drill-down</th>
+                        <th className="pb-3 font-semibold text-right">Inspect</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -461,7 +578,7 @@ export default function TeacherAnalyticsPage() {
 
                           <td className="py-3 pr-3 text-slate-600">
                             <div className="flex flex-wrap gap-1 max-w-[200px]">
-                              {s.classrooms.map((c) => (
+                              {(s.classrooms || []).map((c) => (
                                 <span
                                   key={c.id}
                                   className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-[10px] text-slate-700"
@@ -518,13 +635,13 @@ export default function TeacherAnalyticsPage() {
                           </td>
 
                           <td className="py-3 text-right">
-                            <Link
-                              href={`/analytics?studentId=${s.id}`}
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600 hover:text-purple-800 transition-colors"
+                            <button
+                              onClick={() => handleOpenStudentDrillDown(s.id)}
+                              className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 hover:text-purple-800 transition-colors"
                             >
                               <span>Inspect</span>
                               <ChevronRight className="h-3.5 w-3.5" />
-                            </Link>
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -536,6 +653,164 @@ export default function TeacherAnalyticsPage() {
           </>
         ) : null}
       </main>
+
+      {/* Drill-Down Student Analytics Modal */}
+      {selectedStudentId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-6">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-purple-100 text-purple-700">
+                  <GraduationCap className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                    Student Performance Profile
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Detailed task completion, deliverables, and assignment scores
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleCloseDrillDown}
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {isLoadingDrillDown ? (
+              <div className="py-16 text-center text-xs text-slate-400 space-y-3">
+                <div className="h-8 w-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                <span>Loading student analytics...</span>
+              </div>
+            ) : drillDownData ? (
+              <div className="space-y-6">
+                {/* Student Bio */}
+                <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                  {(drillDownData.student?.avatarUrl || drillDownData.student?.avatar) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={drillDownData.student?.avatarUrl || drillDownData.student?.avatar}
+                      alt={drillDownData.student?.name}
+                      className="h-12 w-12 rounded-full object-cover ring-2 ring-purple-500/20"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold text-sm">
+                      {getInitials(drillDownData.student?.name)}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-slate-900 text-sm truncate">
+                      {drillDownData.student?.name}
+                    </h3>
+                    <p className="text-xs text-slate-400 truncate">
+                      {drillDownData.student?.email}
+                    </p>
+                  </div>
+                  {(drillDownData.metrics?.averageGrade !== null && drillDownData.metrics?.averageGrade !== undefined) ? (
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">
+                        Average Grade
+                      </span>
+                      <span className="text-xl font-black text-purple-700">
+                        {drillDownData.metrics?.averageGrade}%
+                      </span>
+                    </div>
+                  ) : (drillDownData.metrics?.overallGradeAvg !== null && drillDownData.metrics?.overallGradeAvg !== undefined) ? (
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">
+                        Average Grade
+                      </span>
+                      <span className="text-xl font-black text-purple-700">
+                        {drillDownData.metrics?.overallGradeAvg}%
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Quick Stats Grid */}
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                      Enrolled Courses
+                    </span>
+                    <span className="text-lg font-bold text-slate-900">
+                      {drillDownData.metrics?.enrolledCount ?? drillDownData.classrooms?.length ?? 0}
+                    </span>
+                  </div>
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                      Turn-In Rate
+                    </span>
+                    <span className="text-lg font-bold text-emerald-600">
+                      {drillDownData.metrics?.completionRate ?? 0}%
+                    </span>
+                  </div>
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                      Submissions
+                    </span>
+                    <span className="text-lg font-bold text-indigo-600">
+                      {drillDownData.metrics?.submittedCount ?? 0}/{drillDownData.metrics?.totalAssignments ?? 0}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Deliverables List */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    Course Deliverables & Tasks
+                  </h4>
+                  {(() => {
+                    const tasks = drillDownData.assignments || drillDownData.deliverables || [];
+                    if (tasks.length === 0) {
+                      return <p className="text-xs text-slate-400 italic">No deliverables assigned yet.</p>;
+                    }
+                    return (
+                      <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                        {tasks.map((d: any) => {
+                          const isSubmitted = d.isSubmitted || !!d.submission;
+                          const grade = d.grade !== undefined && d.grade !== null ? d.grade : d.submission?.grade ?? null;
+                          return (
+                            <div
+                              key={d.id}
+                              className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white hover:bg-slate-50/50 transition-colors text-xs"
+                            >
+                              <div className="space-y-0.5">
+                                <span className="font-bold text-slate-900 block">{d.title}</span>
+                                <span className="text-[11px] text-slate-400">
+                                  {d.classroomName} • Max {d.maxPoints} pts
+                                </span>
+                              </div>
+                              <div>
+                                {grade !== null ? (
+                                  <span className="inline-flex items-center gap-1 text-emerald-600 font-semibold">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    {grade}/{d.maxPoints} pts
+                                  </span>
+                                ) : isSubmitted ? (
+                                  <span className="text-blue-600 font-semibold">Turned In</span>
+                                ) : (
+                                  <span className="text-amber-600 font-semibold">Pending</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-rose-500">Failed to load student drill-down profile.</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
