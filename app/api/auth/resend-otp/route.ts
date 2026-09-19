@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generateOtpCode, sendOtpEmail } from "@/lib/email/mailer";
+import { Resend } from "resend";
+import { generateOtpCode, getVerificationEmailHtml, sendOtpEmail } from "@/lib/email/mailer";
 
 export const dynamic = "force-dynamic";
 
@@ -57,23 +58,60 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const mailResult = await sendOtpEmail({
-      to: normalizedEmail,
-      code: otpCode,
-      name: user.name,
-      type: otpType,
-    });
+    // Always log the OTP to console.log in case the API key is not yet loaded
+    console.log("=== DEV OTP CODE ===", otpCode);
+    if (!process.env.RESEND_API_KEY) {
+      console.log(`[RESEND NOTICE] RESEND_API_KEY is not loaded. OTP for ${normalizedEmail} is: ${otpCode}`);
+    }
 
-    const emailDelivered = mailResult.delivered;
-    const emailError = mailResult.error;
+    // Send verification email via Resend
+    let emailDelivered = false;
+    let emailError: string | undefined;
+    let provider: "resend" | "smtp" | "dev_fallback" = "resend";
+
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const { data, error } = await resend.emails.send({
+          from: "onboarding@resend.dev",
+          to: normalizedEmail,
+          subject: "Your ClassPlus Verification Code",
+          html: getVerificationEmailHtml(otpCode, otpType === "RESET_PASSWORD"),
+        });
+
+        if (error) {
+          console.error("❌ [RESEND ERROR - RESEND-OTP]", error);
+          emailDelivered = false;
+          emailError = error.message || "Failed to send email via Resend.";
+        } else {
+          emailDelivered = true;
+          console.log(`✅ [RESEND SUCCESS - RESEND-OTP] Verification email sent to ${normalizedEmail} (ID: ${data?.id})`);
+        }
+      } catch (err: any) {
+        console.error("❌ [RESEND EXCEPTION - RESEND-OTP]", err);
+        emailDelivered = false;
+        emailError = err.message || "Resend connection error.";
+      }
+    } else {
+      // If RESEND_API_KEY is not set, try sendOtpEmail fallback (SMTP if configured, else dev fallback)
+      const fallbackResult = await sendOtpEmail({
+        to: normalizedEmail,
+        code: otpCode,
+        name: user.name,
+        type: otpType,
+      });
+      emailDelivered = fallbackResult.delivered;
+      emailError = fallbackResult.error || "RESEND_API_KEY is not loaded in environment variables. Check server console for === DEV OTP CODE ===";
+      provider = fallbackResult.provider;
+    }
 
     return NextResponse.json({
       success: true,
       email: normalizedEmail,
       emailDelivered,
       emailError,
-      provider: mailResult.provider,
-      devCode: mailResult?.fallback ? otpCode : undefined,
+      provider,
+      devCode: !emailDelivered ? otpCode : undefined,
       message: emailDelivered
         ? `A new 6-digit verification code has been sent to ${normalizedEmail}.`
         : `New verification code generated, but email delivery failed (${emailError || "No email provider configured"}). Check server console for === DEV OTP CODE ===.`,

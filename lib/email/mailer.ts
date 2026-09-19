@@ -1,3 +1,4 @@
+import { Resend } from "resend";
 import nodemailer from "nodemailer";
 
 interface SendOtpOptions {
@@ -22,41 +23,30 @@ export function generateOtpCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-export async function sendOtpEmail({
-  to,
-  code,
-  name,
-  type = "SIGNUP",
-}: SendOtpOptions): Promise<SendOtpResult> {
-  const isReset = type === "RESET_PASSWORD";
-  const greeting = name ? `Hello ${name},` : "Hello,";
-  const actionTitle = isReset ? "Password Reset Code" : "Verify Your Email Address";
+/**
+ * Generates clean, responsive HTML email body displaying the 6-digit OTP code clearly.
+ */
+export function getVerificationEmailHtml(code: string, isReset = false): string {
+  const actionTitle = isReset ? "Password Reset Code" : "Verification Code";
   const actionDescription = isReset
-    ? "We received a request to reset your ClassPulse account password. Enter this 6-digit code to proceed with setting your new password."
-    : "Welcome to ClassPulse! Please verify your email address to activate your account and access your learning dashboard.";
+    ? "We received a request to reset your ClassPlus account password. Enter this 6-digit code to proceed with setting your new password."
+    : "Welcome to ClassPlus! Please enter this 6-digit verification code to activate your account and access your learning dashboard.";
 
-  const subject = isReset
-    ? `ClassPulse Password Reset Code: ${code}`
-    : `Your ClassPulse Verification Code: ${code}`;
-
-  // Always log dev OTP code to terminal/Vercel console for debugging and local testing
-  console.log("=== DEV OTP CODE ===", code);
-  console.log(`[OTP DISPATCH] Recipient: ${to} | Action: ${type} | Code: ${code}`);
-
-  // HTML Email Template
-  const htmlContent = `
+  return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your ClassPlus Verification Code</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 0; }
-    .container { max-width: 540px; margin: 30px auto; background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+    .container { max-width: 520px; margin: 30px auto; background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
     .header { background: linear-gradient(135deg, #4f46e5 0%, #0d9488 100%); padding: 32px 24px; text-align: center; color: #ffffff; }
     .header h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
     .header p { margin: 6px 0 0; font-size: 13px; opacity: 0.9; }
     .body { padding: 32px 28px; color: #1e293b; }
-    .code-box { background-color: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 16px; padding: 20px; text-align: center; margin: 24px 0; }
+    .code-box { background-color: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 16px; padding: 22px; text-align: center; margin: 24px 0; }
     .code { font-family: monospace; font-size: 38px; font-weight: 900; letter-spacing: 8px; color: #4f46e5; margin: 0; }
     .expiry { font-size: 12px; color: #64748b; margin-top: 8px; font-weight: 500; }
     .footer { padding: 20px 28px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center; font-size: 11px; color: #94a3b8; }
@@ -65,12 +55,11 @@ export async function sendOtpEmail({
 <body>
   <div class="container">
     <div class="header">
-      <h1>ClassPulse</h1>
+      <h1>ClassPlus</h1>
       <p>Secure Student & Teacher Educational Platform</p>
     </div>
     <div class="body">
       <h2 style="margin-top:0; font-size: 18px; color: #0f172a;">${actionTitle}</h2>
-      <p style="font-size: 14px; line-height: 1.6; color: #475569;">${greeting}</p>
       <p style="font-size: 14px; line-height: 1.6; color: #475569;">${actionDescription}</p>
       
       <div class="code-box">
@@ -83,66 +72,77 @@ export async function sendOtpEmail({
       </p>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} ClassPulse Educational Hub. All rights reserved.
+      &copy; ${new Date().getFullYear()} ClassPlus Educational Hub. All rights reserved.
     </div>
   </div>
 </body>
 </html>
   `.trim();
+}
 
-  // 1. Check for Resend API Key (Recommended for Vercel / Serverless environments)
-  const resendApiKey = process.env.RESEND_API_KEY;
-  if (resendApiKey && resendApiKey.trim().length > 0) {
-    const resendFrom =
-      process.env.RESEND_FROM ||
-      process.env.EMAIL_FROM ||
-      "ClassPulse <onboarding@resend.dev>";
+/**
+ * Primary OTP Email Sender
+ * Uses official Resend SDK when RESEND_API_KEY is provided.
+ * Always logs DEV OTP CODE to console so developer testing is never blocked.
+ */
+export async function sendOtpEmail({
+  to,
+  code,
+  name,
+  type = "SIGNUP",
+}: SendOtpOptions): Promise<SendOtpResult> {
+  const isReset = type === "RESET_PASSWORD";
+  const subject = "Your ClassPlus Verification Code";
 
+  // Always log dev OTP code to terminal/Vercel console for debugging and local testing
+  console.log("=== DEV OTP CODE ===", code);
+  console.log(`[OTP DISPATCH] Recipient: ${to} | Action: ${type} | Code: ${code}`);
+
+  // Notice if RESEND_API_KEY is not yet loaded
+  if (!process.env.RESEND_API_KEY) {
+    console.log(`⚠️ [RESEND NOTICE] RESEND_API_KEY is not loaded in environment variables.`);
+  }
+
+  const htmlContent = getVerificationEmailHtml(code, isReset);
+
+  // 1. Check for Resend API Key (Primary Provider)
+  const resendApiKey = process.env.RESEND_API_KEY?.trim();
+  if (resendApiKey) {
     try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendApiKey.trim()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: resendFrom,
-          to: [to],
-          subject,
-          html: htmlContent,
-        }),
+      const resend = new Resend(resendApiKey);
+      const { data, error } = await resend.emails.send({
+        from: "onboarding@resend.dev",
+        to: to,
+        subject,
+        html: htmlContent,
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        const errorDetail = data?.message || data?.error?.message || JSON.stringify(data);
+      if (error) {
         console.error("❌ [EMAIL DISPATCH ERROR - RESEND]", {
           recipient: to,
-          statusCode: res.status,
-          error: errorDetail,
-          sender: resendFrom,
+          error: error.message,
+          name: error.name,
         });
         return {
           success: false,
           delivered: false,
           provider: "resend",
-          error: `Resend error (${res.status}): ${errorDetail}`,
+          error: `Resend error: ${error.message}`,
           code,
           fallback: true,
         };
       }
 
-      console.log(`[EMAIL DISPATCH SUCCESS - RESEND] Delivered OTP to ${to} (Message ID: ${data.id})`);
+      console.log(`✅ [EMAIL DISPATCH SUCCESS - RESEND] Delivered OTP to ${to} (Message ID: ${data?.id})`);
       return {
         success: true,
         delivered: true,
         provider: "resend",
-        messageId: data.id,
+        messageId: data?.id,
         code,
       };
     } catch (err: any) {
-      console.error("❌ [EMAIL DISPATCH ERROR - RESEND]", {
+      console.error("❌ [EMAIL DISPATCH ERROR - RESEND EXCEPTION]", {
         recipient: to,
         error: err.message,
         stack: err.stack,
@@ -158,10 +158,9 @@ export async function sendOtpEmail({
     }
   }
 
-  // 2. Check for Gmail / SMTP credentials
+  // 2. Check for Gmail / SMTP credentials as alternative
   const smtpUser = (process.env.GMAIL_USER || process.env.SMTP_USER || "").trim();
   const rawPass = (process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASSWORD || "").trim();
-  // Strip any spaces Google places in 16-character App Passwords (e.g. 'abcd efgh ijkl mnop' -> 'abcdefghijklmnop')
   const smtpPass = rawPass.replace(/\s+/g, "");
 
   const smtpHost = (process.env.SMTP_HOST || "smtp.gmail.com").trim();
@@ -174,7 +173,7 @@ export async function sendOtpEmail({
   const smtpFrom =
     process.env.SMTP_FROM ||
     process.env.GMAIL_FROM ||
-    `"ClassPulse" <${smtpUser || "no-reply@classpulse.edu"}>`;
+    `"ClassPlus" <${smtpUser || "no-reply@classplus.edu"}>`;
 
   if (smtpUser && smtpPass) {
     try {
@@ -223,21 +222,13 @@ export async function sendOtpEmail({
         recipient: to,
         error: err.message,
         code: err.code,
-        response: err.response,
-        command: err.command,
       });
-
-      let helpfulAdvice = err.message;
-      if (err.code === "EAUTH") {
-        helpfulAdvice =
-          "Gmail authentication failed (EAUTH). Ensure you generated a 16-character App Password (Google Account -> Security -> 2-Step Verification -> App passwords) and did not use your normal Google account password.";
-      }
 
       return {
         success: false,
         delivered: false,
         provider: "smtp",
-        error: `Gmail/SMTP error (${err.code || "UNKNOWN"}): ${helpfulAdvice}`,
+        error: `Gmail/SMTP error (${err.code || "UNKNOWN"}): ${err.message}`,
         code,
         fallback: true,
       };
@@ -246,7 +237,7 @@ export async function sendOtpEmail({
 
   // 3. No external provider configured in environment
   console.warn("⚠️ [EMAIL DISPATCH WARNING] No email provider configured.");
-  console.warn("   To send real emails, set RESEND_API_KEY or SMTP credentials (SMTP_USER & SMTP_PASSWORD / GMAIL_USER & GMAIL_APP_PASSWORD).");
+  console.warn("   To send real emails, set RESEND_API_KEY (or GMAIL_USER & GMAIL_APP_PASSWORD).");
   console.log("==================================================");
   console.log(`✉️ [OTP EMAIL DEV LOG]`);
   console.log(`Recipient: ${to}`);
@@ -258,7 +249,7 @@ export async function sendOtpEmail({
     success: true,
     delivered: false,
     provider: "dev_fallback",
-    error: "No email service configured (missing RESEND_API_KEY or SMTP_USER/SMTP_PASSWORD). Check server console for === DEV OTP CODE ===",
+    error: "No email service configured (missing RESEND_API_KEY). Check server console for === DEV OTP CODE ===",
     code,
     fallback: true,
   };
