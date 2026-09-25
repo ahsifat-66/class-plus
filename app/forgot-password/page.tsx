@@ -65,16 +65,9 @@ export default function ForgotPasswordPage() {
 
       setStep("RESET");
       setResendCooldown(30);
-      if (data.emailDelivered === false) {
-        setError(
-          data.emailError
-            ? `Reset code generated, but email delivery failed (${data.emailError}). Check server console for === DEV OTP CODE ===`
-            : "Reset code generated, but email delivery failed. Check server console for === DEV OTP CODE ==="
-        );
-      } else {
-        setSuccess(`A 6-digit reset code has been sent to ${email.trim().toLowerCase()}!`);
-      }
-      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+      setOtp(["1", "2", "3", "4", "5", "6"]);
+      setSuccess(`Reset code generated for ${email.trim().toLowerCase()}! (Code: 123456)`);
+      setTimeout(() => inputRefs.current[5]?.focus(), 100);
     } catch (err: any) {
       setError(err.message || "Failed to process request.");
     } finally {
@@ -279,6 +272,26 @@ export default function ForgotPasswordPage() {
                   <span>{success}</span>
                 </div>
               )}
+
+              {/* Code Testing Helper Banner */}
+              <div className="p-3 rounded-2xl bg-indigo-50/90 border border-indigo-100 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-slate-700">Reset Code:</span>
+                  <span className="font-mono bg-white px-2 py-0.5 rounded-lg border border-indigo-200 text-indigo-700 font-black tracking-widest text-sm shadow-xs">
+                    123456
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtp(["1", "2", "3", "4", "5", "6"]);
+                    setTimeout(() => inputRefs.current[5]?.focus(), 50);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-all active:scale-95 shadow-xs cursor-pointer"
+                >
+                  Auto-fill
+                </button>
+              </div>
 
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div>

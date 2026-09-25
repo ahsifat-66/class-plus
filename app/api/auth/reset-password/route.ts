@@ -37,33 +37,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const latestOtp = await prisma.emailOtp.findFirst({
-      where: {
-        userId: user.id,
-        type: "RESET_PASSWORD",
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    // Validate OTP (supports fixed code 123456 while domain is not yet configured)
+    const isFixedCode = trimmedCode === "123456";
 
-    if (!latestOtp) {
-      return NextResponse.json(
-        { error: "No active password reset request found. Please request a new code." },
-        { status: 400 }
-      );
-    }
+    if (!isFixedCode) {
+      const latestOtp = await prisma.emailOtp.findFirst({
+        where: {
+          userId: user.id,
+          type: "RESET_PASSWORD",
+        },
+        orderBy: { createdAt: "desc" },
+      });
 
-    if (new Date() > new Date(latestOtp.expiresAt)) {
-      return NextResponse.json(
-        { error: "Verification code has expired. Please request a new code." },
-        { status: 400 }
-      );
-    }
+      if (!latestOtp) {
+        return NextResponse.json(
+          { error: "No active password reset request found. Please request a new code or enter 123456." },
+          { status: 400 }
+        );
+      }
 
-    if (latestOtp.code !== trimmedCode) {
-      return NextResponse.json(
-        { error: "Incorrect verification code. Please check your email and try again." },
-        { status: 400 }
-      );
+      if (new Date() > new Date(latestOtp.expiresAt)) {
+        return NextResponse.json(
+          { error: "Verification code has expired. Please request a new code or enter 123456." },
+          { status: 400 }
+        );
+      }
+
+      if (latestOtp.code !== trimmedCode) {
+        return NextResponse.json(
+          { error: "Incorrect verification code. Please check your email or enter 123456." },
+          { status: 400 }
+        );
+      }
     }
 
     // Hash new password and activate account

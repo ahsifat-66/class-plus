@@ -19,8 +19,8 @@ export interface SendOtpResult {
 }
 
 export function generateOtpCode(): string {
-  // Generate a cryptographically distributed 6-digit code
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  // Use 123456 as requested for testing/development while custom domain is not yet configured
+  return "123456";
 }
 
 /**
