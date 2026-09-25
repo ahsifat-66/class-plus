@@ -259,21 +259,21 @@ function UnifiedDashboardContent() {
         )}
 
         {/* Top View Selector Bar & Dual Quick Action Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 shadow-sm">
           {/* Tabs Pill Switcher */}
-          <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+          <div className="flex overflow-x-auto w-full sm:w-auto rounded-xl bg-slate-100 p-1 border border-slate-200 scrollbar-none">
             <button
               onClick={() => handleTabChange("teaching")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap min-h-[38px] ${
                 activeTab === "teaching"
                   ? "bg-white text-purple-900 shadow-sm"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              <ShieldCheck className="h-4 w-4 text-purple-600" />
+              <ShieldCheck className="h-4 w-4 text-purple-600 shrink-0" />
               <span>Teaching</span>
               <span
-                className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${
                   activeTab === "teaching"
                     ? "bg-purple-100 text-purple-800"
                     : "bg-slate-200 text-slate-600"
@@ -285,16 +285,16 @@ function UnifiedDashboardContent() {
 
             <button
               onClick={() => handleTabChange("enrolled")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap min-h-[38px] ${
                 activeTab === "enrolled"
                   ? "bg-white text-emerald-900 shadow-sm"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              <GraduationCap className="h-4 w-4 text-emerald-600" />
+              <GraduationCap className="h-4 w-4 text-emerald-600 shrink-0" />
               <span>Enrolled</span>
               <span
-                className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${
                   activeTab === "enrolled"
                     ? "bg-emerald-100 text-emerald-800"
                     : "bg-slate-200 text-slate-600"
@@ -306,16 +306,16 @@ function UnifiedDashboardContent() {
 
             <button
               onClick={() => handleTabChange("analytics")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap min-h-[38px] ${
                 activeTab === "analytics"
                   ? "bg-white text-indigo-900 shadow-sm"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              <BarChart3 className="h-4 w-4 text-indigo-600" />
+              <BarChart3 className="h-4 w-4 text-indigo-600 shrink-0" />
               <span>Analytics</span>
               <span
-                className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${
                   activeTab === "analytics"
                     ? "bg-indigo-100 text-indigo-800"
                     : "bg-slate-200 text-slate-600"
@@ -327,19 +327,19 @@ function UnifiedDashboardContent() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => setIsCreateOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-purple-700 transition-all active:scale-95"
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-purple-700 transition-all active:scale-95 min-h-[38px]"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4 shrink-0" />
               <span>Create Class</span>
             </button>
             <button
               onClick={() => setIsJoinOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 min-h-[38px]"
             >
-              <LogIn className="h-4 w-4" />
+              <LogIn className="h-4 w-4 shrink-0" />
               <span>Join Class</span>
             </button>
           </div>

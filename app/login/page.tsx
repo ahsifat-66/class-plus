@@ -243,7 +243,7 @@ export default function LoginPage() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 flex items-center justify-center p-3 sm:p-6 lg:p-8 my-2 sm:my-6">
         <Suspense fallback={<div className="text-xs text-slate-400">Loading sign in...</div>}>
           <LoginForm />
         </Suspense>

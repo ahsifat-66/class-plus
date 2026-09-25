@@ -470,19 +470,19 @@ export default function AcademicLockerPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
               <Link
                 href="/dashboard/student/analytics"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold border border-white/20 backdrop-blur-md transition-all active:scale-95 shadow-sm"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-semibold border border-white/20 backdrop-blur-md transition-all active:scale-95 shadow-sm min-h-[42px]"
               >
-                <BarChart2 className="w-4 h-4 text-emerald-300" />
-                <span>My Study Analytics</span>
+                <BarChart2 className="w-4 h-4 text-emerald-300 shrink-0" />
+                <span>My Analytics</span>
               </Link>
               <button
                 onClick={handleOpenCreateNote}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white text-emerald-700 hover:bg-emerald-50 text-sm font-bold shadow-lg transition-all active:scale-95"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-2xl bg-white text-emerald-700 hover:bg-emerald-50 text-xs sm:text-sm font-bold shadow-lg transition-all active:scale-95 min-h-[42px]"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 shrink-0" />
                 <span>New Study Note</span>
               </button>
             </div>
@@ -508,7 +508,7 @@ export default function AcademicLockerPage() {
         {/* Top Grid: Pomodoro Timer & Personal Goals Widget */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Pomodoro Timer Widget */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-emerald-600" />
@@ -602,7 +602,7 @@ export default function AcademicLockerPage() {
           </div>
 
           {/* Personal Goals Widget */}
-          <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div className="lg:col-span-2 bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -715,8 +715,8 @@ export default function AcademicLockerPage() {
         </div>
 
         {/* Locker Search & Subject Filter Bar */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-stretch sm:items-center">
             {/* Search Input */}
             <div className="relative w-full sm:w-80">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -924,12 +924,12 @@ export default function AcademicLockerPage() {
 
         {/* Note Editor Modal */}
         {isEditorOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-white rounded-2xl sm:rounded-3xl max-w-xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-emerald-600" />
-                  <h3 className="font-bold text-slate-900 text-lg">
+                  <h3 className="font-bold text-slate-900 text-base sm:text-lg">
                     {editingNote ? "Edit Study Note" : "Create Personal Study Note"}
                   </h3>
                 </div>
@@ -952,7 +952,7 @@ export default function AcademicLockerPage() {
                     placeholder="e.g. Relational Calculus & Normal Forms"
                     value={noteForm.title}
                     onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 sm:py-2 text-base sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
 
@@ -966,7 +966,7 @@ export default function AcademicLockerPage() {
                       placeholder="e.g. Math, Physics, Computer Science"
                       value={noteForm.subject}
                       onChange={(e) => setNoteForm({ ...noteForm, subject: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 sm:py-2 text-base sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>
 
@@ -979,7 +979,7 @@ export default function AcademicLockerPage() {
                       placeholder="e.g. formulas, exam-review, ch2"
                       value={noteForm.tags}
                       onChange={(e) => setNoteForm({ ...noteForm, tags: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 sm:py-2 text-base sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -1062,7 +1062,7 @@ export default function AcademicLockerPage() {
                     placeholder="Write your study notes, formulas, questions, or definitions here..."
                     value={noteForm.content}
                     onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none font-sans"
+                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none font-sans"
                   />
                 </div>
 
@@ -1070,14 +1070,14 @@ export default function AcademicLockerPage() {
                   <button
                     type="button"
                     onClick={() => setIsEditorOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+                    className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 min-h-[42px]"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSavingNote}
-                    className="px-5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow hover:bg-emerald-700 transition-all disabled:opacity-50"
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs sm:text-sm font-bold shadow hover:bg-emerald-700 transition-all disabled:opacity-50 min-h-[42px]"
                   >
                     {isSavingNote ? "Saving..." : editingNote ? "Update Note" : "Save to Locker"}
                   </button>
@@ -1089,8 +1089,8 @@ export default function AcademicLockerPage() {
 
         {/* AI Study Helper Modal: Quiz or Summary */}
         {(isAiLoading || quizData || summaryData || aiError) && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full p-4 sm:p-8 shadow-2xl border border-slate-200 space-y-5 sm:space-y-6 max-h-[92vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 rounded-xl bg-purple-100 text-purple-700">
