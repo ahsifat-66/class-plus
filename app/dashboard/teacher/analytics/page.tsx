@@ -181,10 +181,10 @@ export default function TeacherAnalyticsPage() {
   const isStudentError = error && error.toLowerCase().includes("student");
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-slate-100 transition-colors">
       <Navbar />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 md:pb-8 space-y-6">
         {/* Top Breadcrumb & Action Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <Link

@@ -31,6 +31,8 @@ import {
   RotateCcw,
   Flame,
   X,
+  FolderPlus,
+  CheckCircle2,
 } from "lucide-react";
 import { formatRelativeDueDate } from "@/lib/utils";
 import StudentAnalyticsView from "@/components/analytics/StudentAnalyticsView";
@@ -165,7 +167,7 @@ function UnifiedDashboardContent() {
 
   // Set initial tab from query param or role
   useEffect(() => {
-    if (viewParam === "enrolled") {
+    if (viewParam === "enrolled" || viewParam === "deadlines") {
       setActiveTab("enrolled");
     } else if (viewParam === "teaching") {
       setActiveTab("teaching");
@@ -240,13 +242,13 @@ function UnifiedDashboardContent() {
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-slate-100 transition-colors">
       <Navbar
         onCreateClassOpen={() => setIsCreateOpen(true)}
         onJoinClassOpen={() => setIsJoinOpen(true)}
       />
 
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8 space-y-8">
         {/* Role Access Notice if redirected with notice */}
         {errorParam && (
           <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 flex items-center gap-3 text-xs sm:text-sm text-amber-900 shadow-sm animate-in fade-in">
@@ -421,21 +423,32 @@ function UnifiedDashboardContent() {
                   ))}
                 </div>
               ) : teachingClasses.length === 0 ? (
-                <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-white p-12 text-center space-y-3">
-                  <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
-                  <h3 className="text-base font-bold text-slate-900">
-                    You haven't created any classrooms yet
-                  </h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    Create your first course to start sharing assignments, announcements, and managing discussion channels.
-                  </p>
-                  <div>
+                <div className="rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center space-y-4">
+                  <div className="w-16 h-16 rounded-2xl bg-purple-50 dark:bg-purple-950/50 flex items-center justify-center mx-auto text-purple-600 dark:text-purple-400">
+                    <FolderPlus className="h-8 w-8" strokeWidth={1.75} />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                      Create or Join a Classroom
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                      Create your first course to start sharing assignments, announcements, and managing discussion channels.
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-3 pt-1">
                     <button
                       onClick={() => setIsCreateOpen(true)}
-                      className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-purple-700 transition-all"
+                      className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-purple-700 transition-all min-h-[44px]"
                     >
-                      <Plus className="h-4 w-4" />
-                      <span>Create Your First Classroom</span>
+                      <Plus className="h-4 w-4" strokeWidth={1.75} />
+                      <span>Create Classroom</span>
+                    </button>
+                    <button
+                      onClick={() => setIsJoinOpen(true)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all min-h-[44px]"
+                    >
+                      <LogIn className="h-4 w-4" strokeWidth={1.75} />
+                      <span>Join Classroom</span>
                     </button>
                   </div>
                 </div>
@@ -631,8 +644,15 @@ function UnifiedDashboardContent() {
                     {String(Math.floor(timeLeftSeconds / 60)).padStart(2, "0")}:
                     {String(timeLeftSeconds % 60).padStart(2, "0")}
                   </span>
-                  <span className="text-[11px] font-semibold text-slate-400 mt-1">
-                    {isTimerRunning ? "⏱ Focus Timer Running" : "Timer Ready"}
+                  <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1.5">
+                    {isTimerRunning ? (
+                      <>
+                        <Clock strokeWidth={1.75} size={12} className="text-emerald-500 animate-spin" />
+                        <span>Focus Timer Active</span>
+                      </>
+                    ) : (
+                      <span>Timer Ready</span>
+                    )}
                   </span>
                 </div>
 
@@ -718,56 +738,56 @@ function UnifiedDashboardContent() {
             </div>
 
             {/* Action Center: Due Soon Queue */}
-            {dueSoonTasks.length > 0 && (
-              <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-amber-500" />
-                    <h3 className="text-base font-bold text-slate-900">
-                      Action Center: Due Soon
-                    </h3>
-                  </div>
-                  <span className="text-xs font-semibold text-slate-400">
-                    Priority Queue across all enrolled courses
-                  </span>
+            <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-amber-500" strokeWidth={1.75} />
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                    Action Center: Due Soon
+                  </h3>
                 </div>
+                <span className="text-xs font-semibold text-slate-400">
+                  Priority Queue across all enrolled courses
+                </span>
+              </div>
 
+              {dueSoonTasks.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {dueSoonTasks.slice(0, 6).map((task) => (
                     <div
                       key={task.id}
-                      className="rounded-2xl border border-slate-200/90 bg-slate-50/50 p-4 hover:bg-white hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between space-y-3"
+                      className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 p-4 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md transition-all flex flex-col justify-between space-y-3"
                     >
                       <div className="space-y-1">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block truncate">
                           {task.classroomName}
                         </span>
-                        <h4 className="text-sm font-bold text-slate-900 line-clamp-1">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 line-clamp-1">
                           {task.title}
                         </h4>
                       </div>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-xs">
-                        <div className="flex items-center gap-1.5 text-slate-500">
-                          <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-700 text-xs">
+                        <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400" strokeWidth={1.75} />
                           <span>{formatRelativeDueDate(task.dueDate)}</span>
                         </div>
 
                         {task.isSubmitted ? (
                           task.grade !== null && task.grade !== undefined ? (
-                            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-[10px]">
-                              <Award className="h-3 w-3" />
+                            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-2 py-0.5 rounded-full text-[10px]">
+                              <Award className="h-3 w-3" strokeWidth={1.75} />
                               {task.grade}/{task.maxPoints} pts
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full text-[10px]">
-                              <FileCheck className="h-3 w-3" />
+                            <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300 px-2 py-0.5 rounded-full text-[10px]">
+                              <FileCheck className="h-3 w-3" strokeWidth={1.75} />
                               Turned In
                             </span>
                           )
                         ) : (
-                          <span className="inline-flex items-center gap-1 font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full text-[10px]">
-                            <AlertCircle className="h-3 w-3" />
+                          <span className="inline-flex items-center gap-1 font-bold text-amber-700 bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-2 py-0.5 rounded-full text-[10px]">
+                            <AlertCircle className="h-3 w-3" strokeWidth={1.75} />
                             Pending
                           </span>
                         )}
@@ -775,17 +795,29 @@ function UnifiedDashboardContent() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 p-8 text-center space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center mx-auto text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="h-6 w-6" strokeWidth={1.75} />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    All coursework completed. No pending assignments.
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    You are caught up across all your enrolled courses.
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Enrolled Courses Grid */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-emerald-600" />
-                  <h2 className="text-lg font-bold text-slate-900">Your Enrolled Courses</h2>
+                  <BookOpen className="h-5 w-5 text-emerald-600" strokeWidth={1.75} />
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Your Enrolled Courses</h2>
                 </div>
-                <span className="text-xs font-semibold text-slate-500">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {enrolledClasses.length} Course{enrolledClasses.length === 1 ? "" : "s"}
                 </span>
               </div>
@@ -793,25 +825,36 @@ function UnifiedDashboardContent() {
               {isLoadingClasses ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-56 rounded-3xl border border-slate-200 bg-white p-6 animate-pulse" />
+                    <div key={i} className="h-56 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 animate-pulse" />
                   ))}
                 </div>
               ) : enrolledClasses.length === 0 ? (
-                <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-white p-12 text-center space-y-3">
-                  <GraduationCap className="mx-auto h-12 w-12 text-slate-300" />
-                  <h3 className="text-base font-bold text-slate-900">
-                    You aren't enrolled in any classrooms yet
-                  </h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    Ask your teacher for a 6-character class code, or click below to enroll in a course.
-                  </p>
-                  <div>
+                <div className="rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center space-y-4">
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center mx-auto text-emerald-600 dark:text-emerald-400">
+                    <FolderPlus className="h-8 w-8" strokeWidth={1.75} />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                      Create or Join a Classroom
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                      Ask your teacher for a 6-character class code, or click below to enroll in a course.
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-3 pt-1">
                     <button
                       onClick={() => setIsJoinOpen(true)}
-                      className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-all"
+                      className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-all min-h-[44px]"
                     >
-                      <LogIn className="h-4 w-4" />
+                      <LogIn className="h-4 w-4" strokeWidth={1.75} />
                       <span>Join Classroom</span>
+                    </button>
+                    <button
+                      onClick={() => setIsCreateOpen(true)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all min-h-[44px]"
+                    >
+                      <Plus className="h-4 w-4" strokeWidth={1.75} />
+                      <span>Create Classroom</span>
                     </button>
                   </div>
                 </div>

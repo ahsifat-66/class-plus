@@ -132,15 +132,15 @@ export async function POST(req: NextRequest) {
         });
 
         if (error) {
-          console.error("❌ [RESEND ERROR - SIGNUP]", error);
+          console.error("[RESEND ERROR - SIGNUP]", error);
           emailDelivered = false;
           emailError = error.message || "Failed to send email via Resend.";
         } else {
           emailDelivered = true;
-          console.log(`✅ [RESEND SUCCESS - SIGNUP] Verification email sent to ${normalizedEmail} (ID: ${data?.id})`);
+          console.log(`[RESEND SUCCESS - SIGNUP] Verification email sent to ${normalizedEmail} (ID: ${data?.id})`);
         }
       } catch (err: any) {
-        console.error("❌ [RESEND EXCEPTION - SIGNUP]", err);
+        console.error("[RESEND EXCEPTION - SIGNUP]", err);
         emailDelivered = false;
         emailError = err.message || "Resend connection error.";
       }

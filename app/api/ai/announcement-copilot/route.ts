@@ -8,22 +8,22 @@ function generateMockAnnouncement(notes: string, tone: string, className?: strin
 
   let toneIntro = "";
   let toneClosing = "";
-  let icon = "📢";
+  let tag = "[ANNOUNCEMENT]";
 
   switch (tone.toLowerCase()) {
     case "urgent":
-      icon = "🚨";
+      tag = "[URGENT]";
       toneIntro = `> **URGENT ATTENTION REQUIRED: Immediate Course Schedule & Task Update**\n>\n> Please review these time-sensitive adjustments for **${course}** effective immediately.`;
       toneClosing = "Please make sure to set personal reminders right away. If there are severe emergency conflicts, reach out immediately via email or direct message.";
       break;
     case "supportive":
-      icon = "🌟";
-      toneIntro = `> **Friendly Reminder & Support Note**\n>\n> Hello everyone! We are entering an important milestone in **${course}**. Take a deep breath—you've been working hard, and you have all the tools needed to succeed!`;
+      tag = "[SUPPORTIVE]";
+      toneIntro = `> **Course Advisory & Support Note**\n>\n> Hello everyone! We are entering an important milestone in **${course}**. Take a deep breath—you've been working hard, and you have all the tools needed to succeed!`;
       toneClosing = "Remember that my office hours are open, and our teaching assistants are available in the `#lab-help` channel to assist you. You've got this!";
       break;
     case "formal":
     default:
-      icon = "📋";
+      tag = "[ACADEMIC NOTICE]";
       toneIntro = `> **Official Course Notification: Academic Update & Logistics**\n>\n> This notice provides formal instruction regarding upcoming deliverables and schedule modifications for **${course}**.`;
       toneClosing = "All students are expected to adhere strictly to the stated deadlines and academic integrity guidelines. Direct inquiries to the designated course discussion channels.";
       break;
@@ -40,7 +40,7 @@ function generateMockAnnouncement(notes: string, tone: string, className?: strin
       ? noteLines.map((n) => `* **Action Item / Key Note:** ${n}`).join("\n")
       : `* **Schedule Adjustment:** Refer to updated class timeline.\n* **Preparation Material:** Review all assigned lecture readings and lab notes.\n* **Permitted Resources:** Standard authorized course materials only.`;
 
-  const title = `${icon} Important Update: ${noteLines[0] ? noteLines[0].slice(0, 45) : "Course Schedule & Requirements"}`;
+  const title = `${tag} ${noteLines[0] ? noteLines[0].slice(0, 45) : "Course Schedule & Requirements"}`;
 
   const markdownContent = `
 ${toneIntro}
@@ -90,7 +90,7 @@ Teacher's Rough Notes:
 
 Generate a polished, professional, Markdown-formatted announcement.
 Requirements:
-1. Provide a concise, engaging Title starting with an appropriate emoji.
+1. Provide a concise, formal academic Title without any emojis.
 2. Structure the body with clear headings, bullet points highlighting all key items from the rough notes.
 3. Automatically generate an "Anticipated FAQs" section with 2-3 likely questions students would ask about these notes and concise, reassuring answers.
 4. Format output strictly in JSON with two fields:

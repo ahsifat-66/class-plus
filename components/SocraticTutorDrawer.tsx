@@ -238,9 +238,10 @@ export default function SocraticTutorDrawer({
                   key={idx}
                   onClick={() => handleSend(p)}
                   disabled={isLoading}
-                  className="text-left text-[11px] bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 text-slate-700 rounded-xl px-2.5 py-1.5 transition-colors truncate"
+                  className="flex items-center gap-1.5 text-left text-[11px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 hover:bg-indigo-50/50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-xl px-2.5 py-1.5 transition-colors truncate"
                 >
-                  💡 {p}
+                  <Lightbulb strokeWidth={1.75} size={13} className="text-amber-500 shrink-0" />
+                  <span className="truncate">{p}</span>
                 </button>
               ))}
             </div>

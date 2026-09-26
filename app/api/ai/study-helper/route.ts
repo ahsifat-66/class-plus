@@ -62,11 +62,11 @@ function generateFallbackSummary(content: string, title?: string) {
 
   const takeaways =
     lines.length > 0
-      ? lines.slice(0, 5).map((line) => `📌 ${line}`)
+      ? lines.slice(0, 5).map((line) => line)
       : [
-          `📌 Core focus centered around ${title || "the selected subject"}.`,
-          "📌 Emphasizes understanding underlying structural mechanics over rote memorization.",
-          "📌 Key formula and syntax references should be practiced regularly.",
+          `Core focus centered around ${title || "the selected subject"}.`,
+          "Emphasizes understanding underlying structural mechanics over rote memorization.",
+          "Key formula and syntax references should be practiced regularly.",
         ];
 
   const flashcards = lines.slice(0, 4).map((line, idx) => ({

@@ -25,6 +25,7 @@ import {
   Clock,
   Award,
   CheckCircle2,
+  CheckCircle,
   AlertCircle,
   FileCheck,
   Plus,
@@ -32,6 +33,8 @@ import {
   MessageSquare,
   ShieldCheck,
   UserCheck,
+  Video,
+  ExternalLink,
 } from "lucide-react";
 import { formatDate, formatRelativeDueDate } from "@/lib/utils";
 
@@ -127,6 +130,7 @@ export default function ClassroomHub() {
   const [newMessage, setNewMessage] = useState("");
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [submissionToast, setSubmissionToast] = useState<string | null>(null);
 
   // Modals
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
@@ -231,7 +235,13 @@ export default function ClassroomHub() {
     if (!classroom?.code) return;
     navigator.clipboard.writeText(classroom.code);
     setCopiedCode(true);
+    setSubmissionToast(`Course code "${classroom.code}" copied to clipboard.`);
     setTimeout(() => setCopiedCode(false), 2000);
+    setTimeout(() => setSubmissionToast(null), 3000);
+  };
+
+  const handleJoinLecture = () => {
+    window.open("https://meet.google.com/new", "_blank", "noopener,noreferrer");
   };
 
   const isTeacher = currentUser?.role === "TEACHER";
@@ -256,7 +266,7 @@ export default function ClassroomHub() {
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar />
 
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-8 space-y-6">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between">
           <Link
@@ -313,16 +323,48 @@ export default function ClassroomHub() {
               </div>
             </div>
 
-            {/* Quick action: Teacher AI Copilot or Student Socratic Help */}
-            {isTeacher && (
+            {/* Actions: Join Lecture, Copy Code, and AI Copilot */}
+            <div className="flex items-center gap-2.5 flex-wrap">
               <button
-                onClick={() => setIsAiModalOpen(true)}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/25 hover:from-amber-300 hover:to-amber-400 active:scale-95 transition-all"
+                type="button"
+                onClick={handleJoinLecture}
+                className="inline-flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2.5 text-xs sm:text-sm font-bold text-white transition-all backdrop-blur-md active:scale-95 shadow-sm min-h-[44px]"
+                title="Launch virtual lecture room"
               >
-                <Sparkles className="h-4 w-4 text-slate-900" />
-                <span>Draft with AI Copilot</span>
+                <Video strokeWidth={1.75} size={18} />
+                <span>Join Lecture</span>
+                <ExternalLink strokeWidth={1.75} size={14} className="opacity-70" />
               </button>
-            )}
+
+              <button
+                type="button"
+                onClick={copyCode}
+                className="inline-flex items-center gap-1.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-white transition-all backdrop-blur-md active:scale-95 min-h-[44px]"
+                title="Copy Course Code"
+              >
+                {copiedCode ? (
+                  <>
+                    <Check strokeWidth={1.75} size={16} className="text-emerald-300" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy strokeWidth={1.75} size={16} />
+                    <span>{classroom.code}</span>
+                  </>
+                )}
+              </button>
+
+              {isTeacher && (
+                <button
+                  onClick={() => setIsAiModalOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-indigo-500 hover:bg-indigo-400 border border-indigo-400/40 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md active:scale-95 transition-all min-h-[44px]"
+                >
+                  <Bot strokeWidth={1.75} size={18} />
+                  <span>Draft with AI</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -508,11 +550,16 @@ export default function ClassroomHub() {
 
             <div className="space-y-4">
               {classroom.assignments.length === 0 ? (
-                <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center">
-                  <BookOpen className="mx-auto h-10 w-10 text-slate-300" />
-                  <h4 className="mt-3 text-sm font-bold text-slate-900">
-                    No assignments posted yet
+                <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center space-y-3 shadow-sm">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 strokeWidth={1.75} size={24} />
+                  </div>
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                    All coursework completed. No pending assignments.
                   </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                    New deliverables, lab exercises, and projects will appear here once published by faculty.
+                  </p>
                 </div>
               ) : (
                 classroom.assignments.map((assignment) => {
@@ -870,7 +917,11 @@ export default function ClassroomHub() {
         isOpen={!!selectedAssignmentForSubmit}
         onClose={() => setSelectedAssignmentForSubmit(null)}
         assignment={selectedAssignmentForSubmit}
-        onSubmitted={fetchClassroom}
+        onSubmitted={() => {
+          fetchClassroom();
+          setSubmissionToast("Coursework deliverable submitted successfully.");
+          setTimeout(() => setSubmissionToast(null), 3500);
+        }}
       />
 
       {/* Grade Submissions Modal (Teacher) */}
@@ -878,8 +929,20 @@ export default function ClassroomHub() {
         isOpen={!!selectedAssignmentForGrading}
         onClose={() => setSelectedAssignmentForGrading(null)}
         assignment={selectedAssignmentForGrading}
-        onGraded={fetchClassroom}
+        onGraded={() => {
+          fetchClassroom();
+          setSubmissionToast("Student grade and feedback recorded.");
+          setTimeout(() => setSubmissionToast(null), 3500);
+        }}
       />
+
+      {/* Subtle Toast Feedback (No Confetti) */}
+      {submissionToast && (
+        <div className="fixed bottom-20 md:bottom-8 right-4 md:right-8 z-50 flex items-center gap-2.5 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/90 px-4 py-3 text-xs sm:text-sm font-semibold text-emerald-800 dark:text-emerald-200 shadow-xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <CheckCircle strokeWidth={1.75} size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span>{submissionToast}</span>
+        </div>
+      )}
     </div>
   );
 }

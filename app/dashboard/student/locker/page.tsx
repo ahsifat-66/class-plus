@@ -449,10 +449,10 @@ export default function AcademicLockerPage() {
   const goalProgressRate = goals.length > 0 ? Math.round((completedGoalsCount / goals.length) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8 space-y-8">
         {/* Hero Header */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-700 p-6 sm:p-8 text-white shadow-xl">
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -1195,7 +1195,7 @@ export default function AcademicLockerPage() {
                               isCorrect ? "bg-emerald-100/70 text-emerald-800" : "bg-slate-200/70 text-slate-700"
                             }`}
                           >
-                            <span className="font-bold">{isCorrect ? "✓ Correct: " : "💡 Explanation: "}</span>
+                            <span className="font-bold">{isCorrect ? "Correct: " : "Explanation: "}</span>
                             {q.explanation}
                           </div>
                         )}

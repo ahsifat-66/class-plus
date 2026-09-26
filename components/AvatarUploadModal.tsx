@@ -229,25 +229,30 @@ export default function AvatarUploadModal({
   const displayAvatar = previewUrl || currentAvatar;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="relative w-full max-w-md max-h-[92vh] flex flex-col rounded-3xl bg-white shadow-2xl border border-slate-100 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="relative w-full max-w-md max-h-[90vh] sm:max-h-[92vh] flex flex-col rounded-t-[28px] sm:rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
+        {/* Mobile Drag Handle */}
+        <div className="sm:hidden flex justify-center pt-2.5 pb-1">
+          <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 pb-3 sm:pb-4 border-b border-slate-100 shrink-0">
+        <div className="flex items-center justify-between p-4 sm:p-6 pb-3 sm:pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 shrink-0">
-              <Camera className="h-5 w-5" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 shrink-0">
+              <Camera strokeWidth={1.75} size={18} />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">Manage Profile Picture</h2>
-              <p className="text-[11px] sm:text-xs text-slate-500">Upload a custom image or photo</p>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">Manage Profile Picture</h2>
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">Upload a custom image or photo</p>
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+            className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
             aria-label="Close modal"
           >
-            <X className="h-5 w-5" />
+            <X strokeWidth={1.75} size={18} />
           </button>
         </div>
 
@@ -285,7 +290,7 @@ export default function AvatarUploadModal({
               )}
               {previewUrl && (
                 <span className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-white text-[10px] font-bold shadow ring-2 ring-white">
-                  ✓
+                  <Check strokeWidth={2.5} size={12} />
                 </span>
               )}
             </div>

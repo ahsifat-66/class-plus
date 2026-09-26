@@ -80,15 +80,15 @@ export async function POST(req: NextRequest) {
         });
 
         if (error) {
-          console.error("❌ [RESEND ERROR - RESEND-OTP]", error);
+          console.error("[RESEND ERROR - RESEND-OTP]", error);
           emailDelivered = false;
           emailError = error.message || "Failed to send email via Resend.";
         } else {
           emailDelivered = true;
-          console.log(`✅ [RESEND SUCCESS - RESEND-OTP] Verification email sent to ${normalizedEmail} (ID: ${data?.id})`);
+          console.log(`[RESEND SUCCESS - RESEND-OTP] Verification email sent to ${normalizedEmail} (ID: ${data?.id})`);
         }
       } catch (err: any) {
-        console.error("❌ [RESEND EXCEPTION - RESEND-OTP]", err);
+        console.error("[RESEND EXCEPTION - RESEND-OTP]", err);
         emailDelivered = false;
         emailError = err.message || "Resend connection error.";
       }

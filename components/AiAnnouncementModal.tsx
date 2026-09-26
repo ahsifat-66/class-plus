@@ -9,9 +9,7 @@ import {
   Check,
   Bot,
   RefreshCw,
-  Flame,
-  HeartHandshake,
-  GraduationCap,
+  BookOpen,
 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 
@@ -119,17 +117,22 @@ export default function AiAnnouncementModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl max-h-[90vh] sm:max-h-[92vh] overflow-y-auto rounded-t-[28px] sm:rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-2xl animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
+        {/* Mobile Drag Handle */}
+        <div className="sm:hidden flex justify-center pb-2">
+          <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-100">
-              <Bot className="h-5 w-5" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-100 dark:shadow-none shrink-0">
+              <Bot strokeWidth={1.75} size={20} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-slate-900">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                   AI Announcement Copilot
                 </h3>
                 <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 border border-indigo-200/60">
@@ -187,40 +190,40 @@ export default function AiAnnouncementModal({
               <button
                 type="button"
                 onClick={() => setTone("urgent")}
-                className={`flex items-center justify-center gap-2 rounded-xl border p-2.5 text-xs font-bold transition-all ${
+                className={`flex items-center justify-center gap-1.5 rounded-xl border p-2.5 text-xs font-bold transition-all min-h-[44px] ${
                   tone === "urgent"
-                    ? "border-rose-500 bg-rose-50 text-rose-700 shadow-sm ring-1 ring-rose-500"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    ? "border-rose-500 bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 shadow-sm ring-1 ring-rose-500"
+                    : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750"
                 }`}
               >
-                <Flame className="h-4 w-4 text-rose-500" />
-                <span>Urgent 🚨</span>
+                <AlertCircle strokeWidth={1.75} size={16} className="text-rose-500" />
+                <span>Urgent</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setTone("supportive")}
-                className={`flex items-center justify-center gap-2 rounded-xl border p-2.5 text-xs font-bold transition-all ${
+                className={`flex items-center justify-center gap-1.5 rounded-xl border p-2.5 text-xs font-bold transition-all min-h-[44px] ${
                   tone === "supportive"
-                    ? "border-amber-500 bg-amber-50 text-amber-800 shadow-sm ring-1 ring-amber-500"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    ? "border-amber-500 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 shadow-sm ring-1 ring-amber-500"
+                    : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750"
                 }`}
               >
-                <HeartHandshake className="h-4 w-4 text-amber-500" />
-                <span>Supportive 🌟</span>
+                <Sparkles strokeWidth={1.75} size={16} className="text-amber-500" />
+                <span>Supportive</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setTone("formal")}
-                className={`flex items-center justify-center gap-2 rounded-xl border p-2.5 text-xs font-bold transition-all ${
+                className={`flex items-center justify-center gap-1.5 rounded-xl border p-2.5 text-xs font-bold transition-all min-h-[44px] ${
                   tone === "formal"
-                    ? "border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-500"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 shadow-sm ring-1 ring-indigo-500"
+                    : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750"
                 }`}
               >
-                <GraduationCap className="h-4 w-4 text-indigo-500" />
-                <span>Formal 🎓</span>
+                <BookOpen strokeWidth={1.75} size={16} className="text-indigo-500" />
+                <span>Formal</span>
               </button>
             </div>
           </div>

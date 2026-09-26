@@ -64,7 +64,7 @@ export function getVerificationEmailHtml(code: string, isReset = false): string 
       
       <div class="code-box">
         <div class="code">${code}</div>
-        <div class="expiry">⏱ This code expires in <strong>15 minutes</strong>.</div>
+        <div class="expiry">This verification code expires in <strong>15 minutes</strong>.</div>
       </div>
 
       <p style="font-size: 12px; color: #64748b; line-height: 1.5;">
@@ -100,7 +100,7 @@ export async function sendOtpEmail({
 
   // Notice if RESEND_API_KEY is not yet loaded
   if (!process.env.RESEND_API_KEY) {
-    console.log(`⚠️ [RESEND NOTICE] RESEND_API_KEY is not loaded in environment variables.`);
+    console.log(`[RESEND NOTICE] RESEND_API_KEY is not loaded in environment variables.`);
   }
 
   const htmlContent = getVerificationEmailHtml(code, isReset);
@@ -118,7 +118,7 @@ export async function sendOtpEmail({
       });
 
       if (error) {
-        console.error("❌ [EMAIL DISPATCH ERROR - RESEND]", {
+        console.error("[EMAIL DISPATCH ERROR - RESEND]", {
           recipient: to,
           error: error.message,
           name: error.name,
@@ -133,7 +133,7 @@ export async function sendOtpEmail({
         };
       }
 
-      console.log(`✅ [EMAIL DISPATCH SUCCESS - RESEND] Delivered OTP to ${to} (Message ID: ${data?.id})`);
+      console.log(`[EMAIL DISPATCH SUCCESS - RESEND] Delivered OTP to ${to} (Message ID: ${data?.id})`);
       return {
         success: true,
         delivered: true,
@@ -142,7 +142,7 @@ export async function sendOtpEmail({
         code,
       };
     } catch (err: any) {
-      console.error("❌ [EMAIL DISPATCH ERROR - RESEND EXCEPTION]", {
+      console.error("[EMAIL DISPATCH ERROR - RESEND EXCEPTION]", {
         recipient: to,
         error: err.message,
         stack: err.stack,
@@ -209,7 +209,7 @@ export async function sendOtpEmail({
         html: htmlContent,
       });
 
-      console.log(`✅ [GMAIL SMTP SUCCESS] Real email delivered to ${to} (Message ID: ${info.messageId})`);
+      console.log(`[GMAIL SMTP SUCCESS] Real email delivered to ${to} (Message ID: ${info.messageId})`);
       return {
         success: true,
         delivered: true,
@@ -218,7 +218,7 @@ export async function sendOtpEmail({
         code,
       };
     } catch (err: any) {
-      console.error("❌ [EMAIL DISPATCH ERROR - GMAIL/SMTP]", {
+      console.error("[EMAIL DISPATCH ERROR - GMAIL/SMTP]", {
         recipient: to,
         error: err.message,
         code: err.code,
@@ -236,13 +236,13 @@ export async function sendOtpEmail({
   }
 
   // 3. No external provider configured in environment
-  console.warn("⚠️ [EMAIL DISPATCH WARNING] No email provider configured.");
+  console.warn("[EMAIL DISPATCH WARNING] No email provider configured.");
   console.warn("   To send real emails, set RESEND_API_KEY (or GMAIL_USER & GMAIL_APP_PASSWORD).");
   console.log("==================================================");
-  console.log(`✉️ [OTP EMAIL DEV LOG]`);
+  console.log(`[OTP EMAIL DEV LOG]`);
   console.log(`Recipient: ${to}`);
   console.log(`Action: ${type}`);
-  console.log(`👉 6-DIGIT OTP CODE: ${code}`);
+  console.log(`6-DIGIT OTP CODE: ${code}`);
   console.log("==================================================");
 
   return {
