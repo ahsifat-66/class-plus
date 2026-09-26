@@ -13,8 +13,8 @@ export async function POST(
     const submission = await prisma.submission.update({
       where: { id },
       data: {
-        grade: grade !== undefined && grade !== null ? Number(grade) : undefined,
-        feedback: feedback !== undefined ? feedback : undefined,
+        ...(grade !== undefined && { grade: grade === null ? null : Number(grade) }),
+        ...(feedback !== undefined && { feedback: feedback === null ? null : String(feedback) }),
       },
       include: {
         student: true,
