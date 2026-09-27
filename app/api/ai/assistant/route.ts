@@ -30,177 +30,227 @@ const STUDENT_SYSTEM_PROMPT =
 const TEACHER_SYSTEM_PROMPT =
   "You are a professional Academic Faculty Assistant for ClassPulse educators. Provide structured, high-rigor pedagogical material, assignment descriptions with clear objectives, grading rubrics, or institutional announcements. Deliver clean, institutional markdown without emojis.";
 
-// Intelligent fallback generator when GEMINI_API_KEY is absent or API limit reached
-function generateAcademicFallback(
-  role: "STUDENT" | "TEACHER",
-  mode: string,
-  prompt: string,
+// Bangladesh NCTB Curriculum Tiers
+type NctbTier = "PRIMARY" | "LOWER_SECONDARY" | "SECONDARY" | "HIGHER_SECONDARY";
+
+interface GradeDetectionResult {
+  gradeNumber: number | null; // 1 to 12
+  gradeLabel: string;
+  tier: NctbTier;
+}
+
+const BENGALI_DIGITS: Record<string, number> = {
+  "০": 0, "১": 1, "২": 2, "৩": 3, "৪": 4, "৫": 5, "৬": 6, "৭": 7, "৮": 8, "৯": 9,
+};
+
+const BENGALI_ORDINALS: Record<string, number> = {
+  "১ম": 1, "প্রথম": 1,
+  "২য়": 2, "দ্বিতীয়": 2,
+  "৩য়": 3, "তৃতীয়": 3,
+  "৪র্থ": 4, "চতুর্থ": 4,
+  "৫ম": 5, "পঞ্চম": 5,
+  "৬ষ্ঠ": 6, "ষষ্ঠ": 6,
+  "৭ম": 7, "সপ্তম": 7,
+  "৮ম": 8, "অষ্টম": 8,
+  "৯ম": 9, "নবম": 9,
+  "১০ম": 10, "দশম": 10,
+  "১১শ": 11, "একাদশ": 11,
+  "১২শ": 12, "দ্বাদশ": 12,
+};
+
+function detectNctbGradeAndTier(
+  explicitGrade?: string,
+  prompt?: string,
   context?: string
-) {
-  const p = prompt.trim();
-  const topic = p.length > 0 ? p : "the selected academic topic";
-  const courseContext = context ? ` (${context})` : "";
+): GradeDetectionResult {
+  const combined = `${explicitGrade || ""} ${prompt || ""} ${context || ""}`.toLowerCase();
+  let gradeNum: number | null = null;
 
-  if (role === "TEACHER") {
-    if (mode === "draft_assignment") {
-      const cleanTopic = topic.replace(/^assignment\s*on\s*/i, "").replace(/^draft\s*/i, "");
-      const title = `Assignment: ${cleanTopic.slice(0, 50)}`;
-      const description = `### Course Context & Overview${courseContext}
-This assignment provides comprehensive academic assessment for **${cleanTopic}**. Students are expected to demonstrate theoretical mastery, systematic analysis, and verified problem-solving accuracy.
-
----
-
-### Learning Objectives
-* **Conceptual Comprehension**: Formulate and explain foundational definitions, theorems, and structural mechanics of ${cleanTopic}.
-* **Practical Application**: Implement and verify algorithms, schemas, or problem sets under specified constraints.
-* **Analytical Rigor**: Evaluate edge cases, computational efficiency, and trade-offs in real-world scenarios.
-
----
-
-### Deliverables & Submission Requirements
-1. **Annotated Written Work**: Complete all mathematical derivations and theoretical explanations in structured markdown or PDF format.
-2. **Implementation / Computational Models**: Provide fully executable scripts or queries with unit tests demonstrating correctness.
-3. **Synthesis Report**: Include a short discussion documenting assumptions, methodology, and performance benchmarks.
-
----
-
-### Institutional Grading Rubric
-* **Theoretical Rigor & Correctness (40%)**: Accurate application of core theorems, proofs, and principles.
-* **Implementation & Verification (30%)**: Executable deliverables meet all functional criteria without syntax or runtime regressions.
-* **Edge Case & Constraint Analysis (20%)**: Exhaustive review of boundary conditions and stability constraints.
-* **Documentation & Academic Integrity (10%)**: Professional formatting, citations of authorized course references, and clear presentation.`;
-
-      return {
-        reply: description,
-        title,
-        description,
-        maxPoints: 100,
-      };
+  // 1. Check explicit grade if provided
+  if (explicitGrade && explicitGrade.trim()) {
+    const cleanExplicit = explicitGrade.trim().toLowerCase();
+    const classMatch = cleanExplicit.match(/(?:class|grade)\s*(\d{1,2})/i);
+    if (classMatch) {
+      const n = parseInt(classMatch[1], 10);
+      if (n >= 1 && n <= 12) gradeNum = n;
+    } else if (cleanExplicit.includes("ssc") || cleanExplicit.includes("matric")) {
+      gradeNum = 10;
+    } else if (cleanExplicit.includes("hsc") || cleanExplicit.includes("college")) {
+      gradeNum = 12;
+    } else if (cleanExplicit.includes("primary") || cleanExplicit.includes("প্রাথমিক")) {
+      gradeNum = 5;
     }
+  }
 
-    if (mode === "announcement") {
-      const title = `[ACADEMIC NOTICE] ${topic.slice(0, 45)}`;
-      const content = `> **Institutional Course Advisory${courseContext}**
->
-> This notice provides formal instructions regarding course updates, deliverables, and upcoming milestones.
-
-### Summary of Updates
-* **Core Subject**: ${topic}
-* **Timeline & Expectations**: Please review all assigned readings and problem sets ahead of scheduled sessions.
-* **Office Hours & Support**: Teaching assistants are available during designated office hours to assist with clarification questions.
-
----
-
-### Anticipated Student FAQs
-* **Q: Where can I find reference materials and lecture notes?**
-  * *A:* Primary lecture notes and supplementary readings are archived in the course repository.
-* **Q: What is the policy regarding deadline extensions?**
-  * *A:* Extensions require formal advance notification accompanied by relevant academic documentation.
-* **Q: Are collaborative study groups permitted for this deliverable?**
-  * *A:* Conceptual discussions are encouraged; however, all submitted work must be individual and comply with the institutional Honor Code.`;
-
-      return {
-        reply: content,
-        title,
-        content,
-      };
+  // 2. Check Bengali ordinals in combined text (e.g. "৮ম শ্রেণি", "দশম শ্রেণির")
+  if (!gradeNum) {
+    for (const [key, val] of Object.entries(BENGALI_ORDINALS)) {
+      if (combined.includes(key)) {
+        gradeNum = val;
+        break;
+      }
     }
-
-    // Default teacher material / quiz generator
-    const reply = `### Academic Curriculum Blueprint: ${topic}
-
-#### 1. Core Foundational Concepts
-* **Definition & Scope**: Systematic formulation of ${topic}.
-* **Key Analytical Models**: Standard mathematical definitions and formal properties.
-
-#### 2. Socratic Discussion Questions for Lecture
-1. How does the primary constraint of ${topic} influence systemic performance under heavy load?
-2. What are the key distinctions between standard implementations versus specialized heuristics?
-3. If boundary parameters are altered by a factor of 10, how does the complexity class adapt?
-
-#### 3. Formative Assessment Questions
-* **Question 1**: Explain the primary trade-off inherent in ${topic} using a formal invariant.
-* **Question 2**: Provide a counterexample illustrating why naive assumptions fail without proper precondition verification.`;
-
-    return { reply };
   }
 
-  // STUDENT Role Fallbacks
-  if (mode === "quiz") {
-    const reply = `### Practice Self-Assessment: ${topic}
-
-Review each question carefully and test your recall before checking the conceptual explanations.
-
----
-
-#### Question 1
-**In the study of ${topic}, what is the principal purpose of enforcing formal structural constraints?**
-* **A)** To eliminate the need for secondary verification tests.
-* **B)** To guarantee deterministic consistency and prevent invalid state transitions.
-* **C)** To bypass algorithmic complexity limits in physical hardware.
-* **D)** To ensure backward compatibility with deprecated single-threaded systems.
-
-*Guiding Clue: Think about what guarantees an invariant provides throughout each iteration of an algorithm.*
-
----
-
-#### Question 2
-**When analyzing the time or memory complexity of ${topic}, which condition represents the typical bottleneck?**
-* **A)** Sequential read access on pre-indexed memory blocks.
-* **B)** Unbalanced branch factors or unindexed lookups across large sets.
-* **C)** Register allocation in modern multi-core processors.
-* **D)** Constant-factor arithmetic additions.
-
-*Guiding Clue: Recall how tree depth or table traversal scales when no indexing mechanism is available.*
-
----
-
-#### Reflection Prompt
-What question above felt most uncertain? Formulate your reasoning and ask for a targeted clue!`;
-
-    return { reply };
+  // 3. Check Bengali digits (e.g. "৮ শ্রেণি", "১০ম শ্রেণি", "৭ম")
+  if (!gradeNum) {
+    const bengaliNumMatch = combined.match(/([১-৯]|১০|১১|১২)\s*(?:ম|য়|র্থ|ষ্ঠ|শ|তম)?\s*(?:শ্রেণি|শ্রেণী|ক্লাস)/);
+    if (bengaliNumMatch) {
+      const raw = bengaliNumMatch[1];
+      if (raw === "১০") gradeNum = 10;
+      else if (raw === "১১") gradeNum = 11;
+      else if (raw === "১২") gradeNum = 12;
+      else if (BENGALI_DIGITS[raw] !== undefined) gradeNum = BENGALI_DIGITS[raw];
+    }
   }
 
-  if (mode === "hint") {
-    const reply = `### Conceptual Hint & Formula Synthesis: ${topic}
-
-#### 1. Foundational Clue
-When tackling problems involving ${topic}, break the problem into two distinct stages:
-1. **The Invariant Condition**: What property must remain strictly true before and after each transformation?
-2. **The Terminal State**: What exact condition signals that the algorithm or calculation is finished?
-
-#### 2. Key Mathematical / Logical Relationships
-* **Conservation / Equilibrium**: Ensure all inputs and outputs balance across boundaries.
-* **Worst-Case Bound**: $O(f(n))$ depends directly on the most nested operations, not peripheral setup code.
-
-#### 3. Socratic Guiding Question
-Before writing out your complete proof or code, can you identify the single edge case where the default logic could produce a \`NULL\`, zero division, or cycle?`;
-
-    return { reply };
+  // 4. Check English patterns in combined text (e.g. "class 4", "class 11", "grade 9")
+  if (!gradeNum) {
+    const enMatch = combined.match(/(?:class|grade)\s*(\d{1,2})/i);
+    if (enMatch) {
+      const n = parseInt(enMatch[1], 10);
+      if (n >= 1 && n <= 12) gradeNum = n;
+    }
   }
 
-  // Default mode: "explain"
-  const reply = `### Conceptual Walkthrough: ${topic}
+  // 5. Keyword checks (SSC, HSC, College, Primary)
+  if (!gradeNum) {
+    if (
+      combined.includes("hsc") ||
+      combined.includes("higher secondary") ||
+      combined.includes("উচ্চ মাধ্যমিক") ||
+      combined.includes("college")
+    ) {
+      gradeNum = 12;
+    } else if (
+      combined.includes("ssc") ||
+      combined.includes("secondary school certificate") ||
+      combined.includes("দাখিল") ||
+      combined.includes("মাধ্যমিক")
+    ) {
+      gradeNum = 10;
+    }
+  }
 
-Let's examine **${topic}** step-by-step from first principles.
+  // Tier classification:
+  // Tier 1: PRIMARY (Class 1 - 5)
+  // Tier 2: LOWER SECONDARY (Class 6 - 8)
+  // Tier 3: SECONDARY / SSC (Class 9 - 10)
+  // Tier 4: HIGHER SECONDARY / HSC (Class 11 - 12)
+  let tier: NctbTier = "SECONDARY";
+  let gradeLabel = "Class 8-9 (Secondary)";
 
-#### 1. The Core Analogy
-Imagine you are organizing a specialized reference library. Rather than searching through thousands of books one by one, you maintain an index directory where every entry points directly to a catalog shelf. 
+  if (gradeNum !== null) {
+    if (gradeNum >= 1 && gradeNum <= 5) {
+      tier = "PRIMARY";
+      gradeLabel = `Class ${gradeNum} (Primary)`;
+    } else if (gradeNum >= 6 && gradeNum <= 8) {
+      tier = "LOWER_SECONDARY";
+      gradeLabel = `Class ${gradeNum} (Lower Secondary)`;
+    } else if (gradeNum === 9 || gradeNum === 10) {
+      tier = "SECONDARY";
+      gradeLabel = `Class ${gradeNum} (Secondary / SSC)`;
+    } else if (gradeNum === 11 || gradeNum === 12) {
+      tier = "HIGHER_SECONDARY";
+      gradeLabel = `Class ${gradeNum} (HSC / College)`;
+    }
+  }
 
-In the same way, ${topic} serves as a structured bridge between raw data operations and predictable, efficient outcomes.
+  return { gradeNumber: gradeNum, gradeLabel, tier };
+}
 
-#### 2. Step-by-Step Breakdown
-1. **Initialization**: We establish initial conditions and identify all known constraints.
-2. **Transformation**: The system evaluates each parameter against established rules.
-3. **Verification**: We verify whether the output adheres to expected invariants without introducing side effects.
+function getNctbTierSystemPrompt(tier: NctbTier, gradeLabel: string): string {
+  switch (tier) {
+    case "PRIMARY":
+      return `BANGLADESH NCTB CURRICULUM LEVEL: ${gradeLabel} (Tier 1: Primary, Class 1-5).
+Pedagogical Directives:
+- Tone: Gentle, extremely simple, warm, and highly encouraging.
+- Vocabulary: Use simple, everyday words. Avoid abstract or technical jargon entirely.
+- Curriculum Reference: Bangladesh NCTB Primary textbooks (প্রাথমিক গণিত, প্রাথমিক বিজ্ঞান, বাংলা, English For Today, বাংলাদেশ ও বিশ্বপরিচয়, ধর্ম ও নৈতিক শিক্ষা).
+- Examples: Use concrete, real-world objects relatable to primary students (e.g., ফল, খেলনা, পরিবার, পাখি, গাছপালা).
+- Style: Explain one small step at a time with simple guiding questions.`;
 
-#### 3. Guiding Socratic Question
-Now that you see the high-level framework:
-*How would you explain the difference between the primary goal of this concept and its nearest alternative in your own words?*
+    case "LOWER_SECONDARY":
+      return `BANGLADESH NCTB CURRICULUM LEVEL: ${gradeLabel} (Tier 2: Lower Secondary, Class 6-8).
+Pedagogical Directives:
+- Tone: Inquisitive, activity-based, experiential, and engaging.
+- Curriculum Reference: Bangladesh NCTB Lower Secondary curriculum (গণিত, বিজ্ঞান - অনুসন্ধানী ও অনুশীলন পাঠ, ইতিহাস ও সামাজিক বিজ্ঞান, ডিজিটাল প্রযুক্তি, জীবন ও জীবিকা, বাংলা, English).
+- Pedagogy: Concept-driven with step-by-step logic and practical life skills. Guide students to discover concepts through inquiry and real-world experiments without direct solution spoilers.`;
 
-Tell me your thoughts, and we will refine the logic together!`;
+    case "SECONDARY":
+      return `BANGLADESH NCTB CURRICULUM LEVEL: ${gradeLabel} (Tier 3: Secondary / SSC, Class 9-10).
+Pedagogical Directives:
+- Tone: Structured, analytical, and SSC Board-exam focused standard.
+- Curriculum Reference: Bangladesh NCTB Secondary textbooks across streams: Science (Physics, Chemistry, Biology, Higher Math), Business Studies (Accounting, Finance), Humanities, and General subjects.
+- Pedagogy: Provide exact definitions, formulas, geometric theorems (উপপাদ্য/সম্পাদ্য), chemical equations, and structured problem-solving steps strictly aligned with SSC board question patterns.`;
 
-  return { reply };
+    case "HIGHER_SECONDARY":
+      return `BANGLADESH NCTB CURRICULUM LEVEL: ${gradeLabel} (Tier 4: Higher Secondary / HSC, Class 11-12 / College).
+Pedagogical Directives:
+- Tone: Academic, rigorous, college & university admission standard.
+- Curriculum Reference: Advanced Physics, Chemistry, Biology, Higher Math, ICT, Economics, Accounting.
+- Pedagogy: Provide comprehensive mathematical derivations, calculus foundations, formal scientific rigor, and deep conceptual clarity preparing students for both HSC Board exams and university entrance exams.`;
+
+    default:
+      return `BANGLADESH NCTB CURRICULUM LEVEL: ${gradeLabel}. Adhere strictly to Bangladesh NCTB textbooks and guidelines. Deliver clean, structured markdown.`;
+  }
+}
+
+function getLanguageDirective(language: string, promptText: string): { directive: string; effectiveLang: "bn" | "en" } {
+  const isBengaliScript = /[\u0980-\u09FF]/.test(promptText);
+
+  if (language === "bn" || (language === "auto" && isBengaliScript)) {
+    return {
+      effectiveLang: "bn",
+      directive:
+        "Language Directive: You MUST respond strictly in clean, standard, and natural Bengali (প্রমিত বাংলা). Use official NCTB Bengali terminology (e.g., অধ্যায়, সমীকরণ, সালোকসংশ্লেষণ, ভগ্নাংশ). Even if the user asks in English or Banglish, formulate your entire response in fluent Bengali.",
+    };
+  }
+
+  if (language === "en" || (language === "auto" && !isBengaliScript)) {
+    return {
+      effectiveLang: "en",
+      directive:
+        "Language Directive: You MUST respond strictly in clear, grammatically sound English. Follow the NCTB English Version textbook curriculum and standards. Avoid regional slang or complex academic jargon.",
+    };
+  }
+
+  // Fallback auto
+  return {
+    effectiveLang: isBengaliScript ? "bn" : "en",
+    directive:
+      "Language Directive: Automatically match the user's language. If the query is in Bengali or Banglish, answer in fluent Bengali. If in English, answer in clear English.",
+  };
+}
+
+function isGreetingOrCasual(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  // English greetings
+  if (/^(hi|hello|hey|good morning|good afternoon|good evening|how are you|how r u|what's up|sup|yo)\b/i.test(t)) return true;
+  // Banglish greetings
+  if (/^(kmn acho|kemon acho|kemon aso|kmn aso|valo acho|bhalo acho|ki obostha|ki khobor|kire|assalamu alaikum|salam)\b/i.test(t)) return true;
+  // Bengali greetings
+  if (/^(কেমন আছ|কেমন আছেন|কেমন আছো|হ্যালো|হাই|সালাম|আসসালামু আলাইকুম|কি খবর|শুভ সকাল|শুভ সন্ধ্যা)\b/i.test(t)) return true;
+  // Short greetings
+  if (t.length <= 15 && (/^(hi|hello|hey|salam|kire)$/i.test(t) || /^(হাই|হ্যালো|সালাম)$/.test(t))) return true;
+  return false;
+}
+
+function getGreetingReply(text: string, isBn: boolean): string {
+  const t = text.trim().toLowerCase();
+  if (/kmn|kemon|valo|bhalo|obostha|khobor|আছ|আছেন|খবর/i.test(t)) {
+    return isBn || /kmn|kemon|bhalo|valo/i.test(t)
+      ? "Alhamdulillah, ami bhalo achi. Tomar porashona kemon cholche? Ajke kon subject porbe?"
+      : "I am doing well, thank you! How are your studies going? What topic would you like to explore today?";
+  }
+  if (/salam|সালাম/i.test(t)) {
+    return isBn || /salam/i.test(t)
+      ? "Wa alaikumus salam! Tomar porashona kemon cholche? Ajke kon subject porbe?"
+      : "Wa alaikumus salam! How are your studies going? What topic would you like to explore today?";
+  }
+  return isBn || /kmn|kemon|bhalo|valo/i.test(t)
+    ? "Alhamdulillah, ami bhalo achi. Tomar porashona kemon cholche? Ajke kon subject porbe?"
+    : "Hello! How are your studies going? What topic would you like to explore today?";
 }
 
 export async function POST(req: NextRequest) {
@@ -211,6 +261,8 @@ export async function POST(req: NextRequest) {
       context,
       mode = "explain",
       role: requestedRole,
+      gradeLevel: explicitGrade,
+      language: requestedLanguage = "auto",
     } = body;
 
     if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
@@ -236,8 +288,22 @@ export async function POST(req: NextRequest) {
       resolvedRole = "TEACHER";
     }
 
-    const systemPrompt =
+    // Detect Bangladesh NCTB Grade & Tier
+    const nctbGrade = detectNctbGradeAndTier(explicitGrade, prompt, context);
+    const tierPrompt = getNctbTierSystemPrompt(nctbGrade.tier, nctbGrade.gradeLabel);
+
+    // Language directive
+    const { directive: languageDirective, effectiveLang } = getLanguageDirective(
+      requestedLanguage,
+      prompt
+    );
+
+    const baseRolePrompt =
       resolvedRole === "TEACHER" ? TEACHER_SYSTEM_PROMPT : STUDENT_SYSTEM_PROMPT;
+
+    const casualGreetingDirective = `
+CASUAL GREETINGS & SMALL TALK:
+When a student asks casual or greeting questions (e.g., 'Kmn acho?' or 'Hi' or 'কেমন আছো?' or 'Assalamu alaikum'), reply naturally, politely, and warmly in fluent Bengali or English (e.g., 'Alhamdulillah, ami bhalo achi. Tomar porashona kemon cholche? Ajke kon subject porbe?' / 'Hello! I am doing well, thank you. How are your studies going? What topic would you like to explore today?'). Never treat friendly greetings as homework problems.`;
 
     const apiKey = process.env.GEMINI_API_KEY;
 
@@ -245,9 +311,17 @@ export async function POST(req: NextRequest) {
       try {
         const ai = new GoogleGenAI({ apiKey: apiKey.trim() });
 
-        let promptInstruction = `${systemPrompt}
+        let promptInstruction = `${baseRolePrompt}
+
+${tierPrompt}
+
+${languageDirective}
+
+${casualGreetingDirective}
 
 User Role: ${resolvedRole}
+Target Grade: ${nctbGrade.gradeLabel} (Tier: ${nctbGrade.tier})
+Response Language: ${effectiveLang === "bn" ? "Bengali" : "English"}
 Mode: ${mode}
 ${context ? `Reference Context: """\n${context}\n"""` : ""}
 
@@ -260,7 +334,7 @@ User Prompt / Instruction:
 TASK REQUIREMENT:
 You must output a structured assignment draft in JSON format with exactly three fields:
 {
-  "title": "Concise, academic assignment title without emojis",
+  "title": "Concise academic assignment title without emojis",
   "description": "Comprehensive markdown description containing: 1. Overview, 2. Learning Objectives, 3. Core Requirements / Problem Specs, 4. Detailed Institutional Grading Rubric.",
   "maxPoints": 100
 }
@@ -296,6 +370,9 @@ Strictly output valid JSON only. Do NOT enclose in backticks or markdown fences.
                 success: true,
                 role: resolvedRole,
                 mode,
+                gradeLevel: nctbGrade.gradeLabel,
+                tier: nctbGrade.tier,
+                language: effectiveLang,
                 title: stripEmojis(parsed.title),
                 description: stripEmojis(parsed.description),
                 maxPoints: Number(parsed.maxPoints) || 100,
@@ -320,6 +397,9 @@ Strictly output valid JSON only. Do NOT enclose in backticks or markdown fences.
                 success: true,
                 role: resolvedRole,
                 mode,
+                gradeLevel: nctbGrade.gradeLabel,
+                tier: nctbGrade.tier,
+                language: effectiveLang,
                 title: stripEmojis(parsed.title),
                 content: stripEmojis(parsed.content),
                 reply: stripEmojis(parsed.content),
@@ -336,38 +416,51 @@ Strictly output valid JSON only. Do NOT enclose in backticks or markdown fences.
           success: true,
           role: resolvedRole,
           mode,
+          gradeLevel: nctbGrade.gradeLabel,
+          tier: nctbGrade.tier,
+          language: effectiveLang,
           reply: cleanReply,
           source: "gemini-live",
         });
       } catch (geminiError: any) {
         console.warn(
-          "Gemini API execution error; serving intelligent academic fallback:",
+          "Gemini API execution error:",
           geminiError?.message || geminiError
         );
       }
     }
 
-    // Intelligent pedagogical fallback when API key is missing or calls are throttled
-    const fallbackData = generateAcademicFallback(
-      resolvedRole,
-      mode,
-      prompt,
-      context
-    );
-
-    return NextResponse.json(
-      {
+    // If student asked casual greeting question and API key is missing or failed
+    if (isGreetingOrCasual(prompt)) {
+      const greetingReply = getGreetingReply(prompt, effectiveLang === "bn");
+      return NextResponse.json({
         success: true,
         role: resolvedRole,
         mode,
-        ...fallbackData,
-        source: "academic-fallback",
-        notice:
-          "GEMINI_API_KEY is not configured or rate-limited. Serving intelligent academic fallback response.",
+        gradeLevel: nctbGrade.gradeLabel,
+        tier: nctbGrade.tier,
+        language: effectiveLang,
+        reply: greetingReply,
+        source: "greeting-fallback",
+      });
+    }
+
+    // Clean offline message if API key is missing or failed - DO NOT fall back to any hardcoded CS template
+    return NextResponse.json(
+      {
+        success: false,
+        role: resolvedRole,
+        mode,
+        gradeLevel: nctbGrade.gradeLabel,
+        tier: nctbGrade.tier,
+        language: effectiveLang,
+        reply: "AI tutor is temporarily offline. Please verify API configuration.",
+        error: "AI tutor is temporarily offline. Please verify API configuration.",
+        source: "offline-notice",
       },
       {
         headers: {
-          "X-AI-Notice": "Fallback-Model-Active",
+          "X-AI-Notice": "API-Offline",
         },
       }
     );

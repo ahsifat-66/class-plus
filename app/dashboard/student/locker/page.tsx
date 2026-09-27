@@ -1324,7 +1324,7 @@ export default function AcademicLockerPage() {
             ? `Note Title: ${activeAiNote.title}\nSubject: ${activeAiNote.subject}\nContent:\n${activeAiNote.content}`
             : undefined
         }
-        buttonPositionClass="bottom-20 md:bottom-6 right-5"
+        buttonPositionClass="bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-6 right-4"
       />
     </div>
   );

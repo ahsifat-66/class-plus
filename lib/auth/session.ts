@@ -7,7 +7,7 @@ export const AUTH_COOKIE_NAME = "classpulse_token";
 
 export async function getSessionUser(req?: NextRequest): Promise<AuthJwtPayload | null> {
   // 1. Try to read from incoming NextRequest cookies
-  let token = req?.cookies.get(AUTH_COOKIE_NAME)?.value;
+  let token = req?.cookies?.get(AUTH_COOKIE_NAME)?.value;
 
   // 2. Try Authorization header: Bearer <token>
   if (!token && req) {
@@ -34,7 +34,7 @@ export async function getSessionUser(req?: NextRequest): Promise<AuthJwtPayload 
   }
 
   // 5. Fallback session recovery using email cookie if token is missing/expired
-  let fallbackEmail: string | undefined = req?.cookies.get("classpulse_user_email")?.value;
+  let fallbackEmail: string | undefined = req?.cookies?.get("classpulse_user_email")?.value;
   if (!fallbackEmail) {
     try {
       const cookieStore = cookies();

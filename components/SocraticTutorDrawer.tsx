@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   Sparkles,
   X,
@@ -27,6 +27,56 @@ interface ChatMessage {
   timestamp: Date;
 }
 
+function getDynamicQuickQuestions(classroomName: string, subject: string): string[] {
+  const combined = `${classroomName} ${subject}`.toLowerCase();
+  const isCsOrDbms =
+    combined.includes("dbms") ||
+    combined.includes("database") ||
+    combined.includes("computer science") ||
+    combined.includes("software engineering");
+
+  // Only University / College with explicit DBMS / CS / SWE
+  if (isCsOrDbms) {
+    return [
+      "When should I use LEFT JOIN vs INNER JOIN in SQL?",
+      "How does indexing improve query retrieval speed?",
+      "What is the principle of Database Normalization (3NF/BCNF)?",
+    ];
+  }
+
+  // Determine grade number
+  let grade: number | null = null;
+  const match = combined.match(/(?:class|grade)\s*(\d{1,2})/i);
+  if (match) grade = parseInt(match[1], 10);
+  else if (combined.includes("hsc") || combined.includes("college")) grade = 12;
+  else if (combined.includes("ssc")) grade = 10;
+
+  // Secondary / SSC (Class 9-10)
+  if (grade === 9 || grade === 10) {
+    return [
+      "নিউটনের গতির দ্বিতীয় সূত্রটি ব্যাখ্যা করো",
+      "মৌলের যোজনী কীভাবে বের করে?",
+      "ত্রিকোণমিতিক অভেদাবলি মনে রাখার সহজ উপায় কী?",
+    ];
+  }
+
+  // College / HSC (Class 11-12)
+  if (grade && grade >= 11) {
+    return [
+      "ক্যালকুলাসে অন্তরীকরণ ও যোগজীকরণের মৌলিক পার্থক্য কী?",
+      "জারণ-বিজারণ বিক্রিয়া শনাক্ত করার সহজ নিয়ম কী?",
+      "আইসিটিতে বাইনারি থেকে ডেসিমাল রূপান্তরের পদ্ধতি কী?",
+    ];
+  }
+
+  // Primary & Lower Secondary (Class 1–8, e.g., Class 6) - Default for school
+  return [
+    "উদ্ভিদ কীভাবে নিজের খাদ্য তৈরি করে?",
+    "লসাগু ও গসাগু নির্ণয়ের সহজ নিয়ম কী?",
+    "কম্পিউটারের ইনপুট ও আউটপুট ডিভাইসের পার্থক্য কী?",
+  ];
+}
+
 export default function SocraticTutorDrawer({
   classroomName,
   subject,
@@ -46,11 +96,10 @@ export default function SocraticTutorDrawer({
     },
   ]);
 
-  const quickPrompts = [
-    "When should I use LEFT JOIN vs INNER JOIN in SQL?",
-    "How does COALESCE handle NULL values in calculations?",
-    "Why does a B+ Tree store all record pointers in leaf nodes?",
-  ];
+  const quickPrompts = useMemo(
+    () => getDynamicQuickQuestions(classroomName, subject),
+    [classroomName, subject]
+  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -125,7 +174,7 @@ export default function SocraticTutorDrawer({
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 rounded-full bg-gradient-to-r from-teal-500 via-indigo-600 to-purple-600 px-4 py-3 text-white shadow-xl shadow-indigo-500/25 hover:shadow-2xl hover:scale-105 active:scale-95 transition-all group"
+          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-6 right-4 z-50 flex items-center gap-2.5 rounded-full bg-gradient-to-r from-teal-500 via-indigo-600 to-purple-600 px-4 py-3 text-white shadow-xl shadow-indigo-500/25 hover:shadow-2xl hover:scale-105 active:scale-95 transition-all group min-h-[48px] min-w-[48px]"
         >
           <div className="relative">
             <Sparkles className="h-5 w-5 text-amber-300 animate-spin" style={{ animationDuration: "6s" }} />

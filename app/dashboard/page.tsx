@@ -33,6 +33,7 @@ import {
   X,
   FolderPlus,
   CheckCircle2,
+  CalendarClock,
 } from "lucide-react";
 import { formatRelativeDueDate } from "@/lib/utils";
 import StudentAnalyticsView from "@/components/analytics/StudentAnalyticsView";
@@ -67,6 +68,35 @@ interface Classroom {
   announcements: Array<{ id: string; title: string }>;
 }
 
+function getDeadlineStatus(dueDateStr: string): { label: string; isOverdue: boolean; isDueSoon: boolean } {
+  const now = new Date().getTime();
+  const due = new Date(dueDateStr).getTime();
+  const diffMs = due - now;
+
+  if (diffMs < 0) {
+    const diffHoursAgo = Math.floor(Math.abs(diffMs) / (1000 * 60 * 60));
+    if (diffHoursAgo < 24) {
+      return { label: `Overdue by ${diffHoursAgo || 1}h`, isOverdue: true, isDueSoon: false };
+    }
+    const diffDaysAgo = Math.floor(diffHoursAgo / 24);
+    return { label: `Overdue by ${diffDaysAgo}d`, isOverdue: true, isDueSoon: false };
+  }
+
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  if (diffHours < 1) {
+    const diffMinutes = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+    return { label: `Due in ${diffMinutes}m`, isOverdue: false, isDueSoon: true };
+  }
+  if (diffHours < 24) {
+    return { label: `Due in ${diffHours}h`, isOverdue: false, isDueSoon: true };
+  }
+  const diffDays = Math.ceil(diffHours / 24);
+  if (diffDays === 1) {
+    return { label: "Due tomorrow", isOverdue: false, isDueSoon: true };
+  }
+  return { label: `Due in ${diffDays} days`, isOverdue: false, isDueSoon: diffDays <= 3 };
+}
+
 function UnifiedDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -75,8 +105,8 @@ function UnifiedDashboardContent() {
 
   const { currentUser, userSummary, refreshUser } = useUser();
 
-  // Mode state: "teaching", "enrolled", or "analytics"
-  const [activeTab, setActiveTab] = useState<"teaching" | "enrolled" | "analytics">("teaching");
+  // Mode state: "teaching", "enrolled", "deadlines", or "analytics"
+  const [activeTab, setActiveTab] = useState<"teaching" | "enrolled" | "deadlines" | "analytics">("teaching");
 
   const [teachingClasses, setTeachingClasses] = useState<Classroom[]>([]);
   const [enrolledClasses, setEnrolledClasses] = useState<Classroom[]>([]);
@@ -167,7 +197,9 @@ function UnifiedDashboardContent() {
 
   // Set initial tab from query param or role
   useEffect(() => {
-    if (viewParam === "enrolled" || viewParam === "deadlines") {
+    if (viewParam === "deadlines") {
+      setActiveTab("deadlines");
+    } else if (viewParam === "enrolled") {
       setActiveTab("enrolled");
     } else if (viewParam === "teaching") {
       setActiveTab("teaching");
@@ -211,7 +243,7 @@ function UnifiedDashboardContent() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const handleTabChange = (tab: "teaching" | "enrolled" | "analytics") => {
+  const handleTabChange = (tab: "teaching" | "enrolled" | "deadlines" | "analytics") => {
     setActiveTab(tab);
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set("view", tab);
@@ -240,6 +272,47 @@ function UnifiedDashboardContent() {
       })
     )
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+  // Aggregate all active assignments from enrolled classes (and teaching classes if teacher) with a dueDate
+  const upcomingDeadlines = React.useMemo(() => {
+    const enrolledTasks = enrolledClasses.flatMap((cls) =>
+      cls.assignments
+        .filter((a) => !!a.dueDate)
+        .map((a) => {
+          const mySubmission = a.submissions?.find(
+            (s) => s.studentId === currentUser?.id
+          );
+          return {
+            ...a,
+            classroomId: cls.id,
+            classroomName: cls.name,
+            subject: cls.subject,
+            isSubmitted: !!mySubmission,
+            grade: mySubmission?.grade,
+          };
+        })
+    );
+
+    const teachingTasks =
+      currentUser?.role === "TEACHER" && enrolledClasses.length === 0
+        ? teachingClasses.flatMap((cls) =>
+            cls.assignments
+              .filter((a) => !!a.dueDate)
+              .map((a) => ({
+                ...a,
+                classroomId: cls.id,
+                classroomName: cls.name,
+                subject: cls.subject,
+                isSubmitted: false,
+                grade: null,
+              }))
+          )
+        : [];
+
+    return [...enrolledTasks, ...teachingTasks].sort(
+      (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    );
+  }, [enrolledClasses, teachingClasses, currentUser?.id, currentUser?.role]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-slate-100 transition-colors">
@@ -303,6 +376,27 @@ function UnifiedDashboardContent() {
                 }`}
               >
                 {enrolledClasses.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => handleTabChange("deadlines")}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap min-h-[38px] ${
+                activeTab === "deadlines"
+                  ? "bg-white text-amber-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <CalendarClock className="h-4 w-4 text-amber-600 shrink-0" strokeWidth={1.75} />
+              <span>Deadlines</span>
+              <span
+                className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${
+                  activeTab === "deadlines"
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-slate-200 text-slate-600"
+                }`}
+              >
+                {upcomingDeadlines.length}
               </span>
             </button>
 
@@ -919,7 +1013,150 @@ function UnifiedDashboardContent() {
           </div>
         )}
 
-        {/* TAB 3: ANALYTICS VIEW */}
+        {/* TAB 3: DEADLINES VIEW */}
+        {activeTab === "deadlines" && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            {/* Deadlines Hero Banner */}
+            <div className="rounded-3xl bg-gradient-to-r from-amber-950 via-slate-900 to-indigo-950 p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-200 backdrop-blur-md border border-amber-400/20">
+                    <CalendarClock className="h-3.5 w-3.5 text-amber-300" strokeWidth={1.75} />
+                    <span>Academic Deadlines & Schedule</span>
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                    Upcoming Deliverables
+                  </h1>
+                  <p className="text-sm text-amber-200/90 max-w-2xl leading-relaxed">
+                    All active coursework deadlines across your enrolled classes, sorted chronologically to help you plan your study sessions.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/dashboard/student/locker"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-3 text-sm font-bold text-white transition-all active:scale-95"
+                  >
+                    <BookOpen className="h-4 w-4" strokeWidth={1.75} />
+                    <span>Academic Locker</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Deadlines Content */}
+            {upcomingDeadlines.length === 0 ? (
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center shadow-sm">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 mb-4">
+                  <CheckCircle2 className="h-8 w-8" strokeWidth={1.75} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  No upcoming deadlines
+                </h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  No upcoming deadlines. You are all caught up with your coursework.
+                </p>
+                <div className="mt-6 flex justify-center gap-3">
+                  <button
+                    onClick={() => handleTabChange("enrolled")}
+                    className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 text-white px-4 py-2.5 text-xs font-bold shadow-sm hover:bg-indigo-700 transition-all min-h-[44px]"
+                  >
+                    <GraduationCap className="h-4 w-4" strokeWidth={1.75} />
+                    <span>View Enrolled Classes</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {upcomingDeadlines.map((task) => {
+                  const status = getDeadlineStatus(task.dueDate);
+                  return (
+                    <div
+                      key={task.id}
+                      className="flex flex-col justify-between rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm hover:shadow-md transition-all group"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-full truncate max-w-[170px]">
+                            {task.classroomName}
+                          </span>
+
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                              status.isOverdue
+                                ? "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/50"
+                                : status.isDueSoon
+                                ? "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/50"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                            }`}
+                          >
+                            <Clock className="h-3 w-3" strokeWidth={1.75} />
+                            {status.label}
+                          </span>
+                        </div>
+
+                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                          {task.title}
+                        </h3>
+
+                        {task.description && (
+                          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                            {task.description}
+                          </p>
+                        )}
+
+                        <div className="mt-4 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3.5 w-3.5 text-slate-400" strokeWidth={1.75} />
+                            <span>
+                              Due:{" "}
+                              {new Date(task.dueDate).toLocaleDateString(undefined, {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 font-semibold text-slate-600 dark:text-slate-300">
+                            <Award className="h-3.5 w-3.5 text-amber-500" strokeWidth={1.75} />
+                            <span>{task.maxPoints} pts</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <div>
+                          {task.isSubmitted ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                              <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              <span>Submitted</span>
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                              Pending Submission
+                            </span>
+                          )}
+                        </div>
+
+                        <Link
+                          href={`/classroom/${task.classroomId}?tab=assignments`}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-500 px-3.5 py-1.5 text-xs font-bold transition-all min-h-[36px]"
+                        >
+                          <span>Open Assignment</span>
+                          <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: ANALYTICS VIEW */}
         {activeTab === "analytics" && (
           <div className="space-y-6 animate-in fade-in duration-150">
             {/* Analytics Hero Banner */}

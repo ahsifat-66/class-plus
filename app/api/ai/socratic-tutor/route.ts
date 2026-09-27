@@ -1,41 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 
-function getSocraticFallbackResponse(question: string, history: Array<{ role: string; content: string }>) {
-  const q = question.toLowerCase();
+function isGreetingOrCasual(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  if (/^(hi|hello|hey|good morning|good afternoon|good evening|how are you|how r u|what's up|sup|yo)\b/i.test(t)) return true;
+  if (/^(kmn acho|kemon acho|kemon aso|kmn aso|valo acho|bhalo acho|ki obostha|ki khobor|kire|assalamu alaikum|salam)\b/i.test(t)) return true;
+  if (/^(কেমন আছ|কেমন আছেন|কেমন আছো|হ্যালো|হাই|সালাম|আসসালামু আলাইকুম|কি খবর|শুভ সকাল|শুভ সন্ধ্যা)\b/i.test(t)) return true;
+  if (t.length <= 15 && (/^(hi|hello|hey|salam|kire)$/i.test(t) || /^(হাই|হ্যালো|সালাম)$/.test(t))) return true;
+  return false;
+}
 
-  if (q.includes("join") || q.includes("left join") || q.includes("inner join")) {
-    return "Think about what happens to rows that don't have a matching pair in the other table. If a customer has never made any purchases yet, which type of JOIN guarantees they still appear in your result set?";
+function getGreetingReply(text: string): string {
+  const t = text.trim().toLowerCase();
+  if (/kmn|kemon|valo|bhalo|obostha|khobor|আছ|আছেন|খবর/i.test(t)) {
+    return "Alhamdulillah, ami bhalo achi. Tomar porashona kemon cholche? Ajke kon subject porbe?";
   }
-
-  if (q.includes("null") || q.includes("coalesce")) {
-    return "When an arithmetic operation like `price * quantity` encounters a `NULL` value, what does SQL evaluate that entire expression to? How might `COALESCE` act as a safety shield before you multiply?";
+  if (/salam|সালাম/i.test(t)) {
+    return "Wa alaikumus salam! Tomar porashona kemon cholche? Ajke kon subject porbe?";
   }
-
-  if (q.includes("group by") || q.includes("aggregate") || q.includes("sum") || q.includes("count")) {
-    return "Notice that you are calculating lifetime value using `SUM()`. What columns in your `SELECT` list are NOT wrapped inside an aggregate function, and where must all of those columns be declared?";
-  }
-
-  if (q.includes("index") || q.includes("b+ tree") || q.includes("b tree")) {
-    return "Consider how a B+ Tree stores its keys versus how it stores pointers to actual record rows. Why does storing all actual record pointers in leaf nodes make range scans (e.g. `BETWEEN 10 AND 50`) much faster than a standard binary search tree?";
-  }
-
-  if (q.includes("normalization") || q.includes("bcnf") || q.includes("3nf")) {
-    return "What is the primary condition that defines Boyce-Codd Normal Form (BCNF) regarding functional dependencies $X \\rightarrow Y$? Specifically, what must $X$ be for every non-trivial dependency?";
-  }
-
-  if (q.includes("error") || q.includes("syntax") || q.includes("not working") || q.includes("help")) {
-    return "Let's isolate the issue step-by-step. If you run only the inner `SELECT` or subquery by itself, does it return the rows and column types you expect, or does the error happen when the outer clauses execute?";
-  }
-
-  // Generic encouraging Socratic guidance
-  return "That's an insightful question! Before writing the full solution, what is the core concept or constraint in the problem description that you think holds the key to the first step?";
+  return "Hello! How are your studies going? What topic would you like to explore today?";
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { question, history = [], classroomContext = "Database Systems (45-I)" } = body;
+    const { question, history = [], classroomContext = "ClassPulse Academic Classroom" } = body;
 
     if (!question || typeof question !== "string") {
       return NextResponse.json(
@@ -44,15 +33,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check for conversational greetings
+    if (isGreetingOrCasual(question)) {
+      return NextResponse.json({
+        reply: getGreetingReply(question),
+        source: "greeting-handler",
+      });
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (apiKey && apiKey.trim().length > 0) {
       try {
         const ai = new GoogleGenAI({ apiKey });
         const systemInstruction = `You are a warm, encouraging Socratic tutor in the ClassPulse educational hub for "${classroomContext}".
-CRITICAL RULE: When students ask questions about assignments, homework, SQL, or code, do NOT give direct solutions or complete answers.
+CRITICAL RULE: When students ask questions about assignments, homework, or concepts, do NOT give direct solutions or complete answers.
 Always guide them by giving them exactly 1 thoughtful guiding question or 1 logical hint at a time.
-Keep your response concise (2-4 sentences max).
+Keep your response concise (2-4 sentences max). Strictly avoid emojis.
 Acknowledge their effort, point them in the right conceptual direction, and ask a guiding question to test their understanding.`;
 
         // Format conversation history
@@ -84,14 +81,13 @@ Socratic Tutor Response:`;
           });
         }
       } catch (geminiError) {
-        console.warn("Live Gemini API call failed in Socratic tutor; falling back to pedagogical guidance:", geminiError);
+        console.warn("Live Gemini API call failed in Socratic tutor:", geminiError);
       }
     }
 
-    const reply = getSocraticFallbackResponse(question, history);
     return NextResponse.json({
-      reply,
-      source: "socratic-fallback",
+      reply: "AI tutor is temporarily offline. Please verify API configuration.",
+      source: "offline-notice",
     });
   } catch (error) {
     console.error("Error in Socratic tutor endpoint:", error);
