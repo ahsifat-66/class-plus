@@ -13,6 +13,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
+import MarkdownViewer from "@/components/MarkdownViewer";
 
 interface SocraticTutorDrawerProps {
   classroomName: string;
@@ -77,16 +78,14 @@ export default function SocraticTutorDrawer({
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/ai/socratic-tutor", {
+      const res = await fetch("/api/ai/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          question: text.trim(),
-          classroomContext: `${classroomName} (${subject})`,
-          history: messages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          prompt: text.trim(),
+          context: `${classroomName} (${subject})`,
+          mode: "explain",
+          role: "STUDENT",
         }),
       });
 
@@ -201,11 +200,15 @@ export default function SocraticTutorDrawer({
                 <div
                   className={`rounded-2xl px-4 py-2.5 text-xs leading-relaxed max-w-[82%] shadow-sm ${
                     m.role === "user"
-                      ? "bg-indigo-600 text-white"
-                      : "bg-slate-100 border border-slate-200/80 text-slate-800 whitespace-pre-wrap"
+                      ? "bg-indigo-600 text-white whitespace-pre-wrap"
+                      : "bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-slate-800 dark:text-slate-200"
                   }`}
                 >
-                  {m.content}
+                  {m.role === "assistant" ? (
+                    <MarkdownViewer content={m.content} />
+                  ) : (
+                    m.content
+                  )}
                 </div>
               </div>
             ))}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, FileText, Calendar, Award } from "lucide-react";
+import { X, FileText, Calendar, Award, Sparkles, RefreshCw, Check } from "lucide-react";
 
 interface CreateAssignmentModalProps {
   isOpen: boolean;
@@ -22,7 +22,46 @@ export default function CreateAssignmentModal({
   const [maxPoints, setMaxPoints] = useState("100");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [aiTopic, setAiTopic] = useState("");
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [aiSuccessMessage, setAiSuccessMessage] = useState("");
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
+
+  const handleGenerateWithAi = async () => {
+    if (!aiTopic.trim()) {
+      setError("Please enter a topic or concept for AI assignment generation.");
+      return;
+    }
+    try {
+      setIsAiGenerating(true);
+      setError("");
+      setAiSuccessMessage("");
+
+      const res = await fetch("/api/ai/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: aiTopic.trim(),
+          mode: "draft_assignment",
+          role: "TEACHER",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to draft assignment with AI");
+      }
+
+      if (data.title) setTitle(data.title);
+      if (data.description) setDescription(data.description);
+      if (data.maxPoints) setMaxPoints(data.maxPoints.toString());
+      setAiSuccessMessage("Draft generated with syllabus objectives, core requirements, and rubric!");
+    } catch (err: any) {
+      setError(err.message || "Failed to generate assignment with AI.");
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartY(e.touches[0].clientY);
@@ -114,6 +153,56 @@ export default function CreateAssignmentModal({
             {error}
           </div>
         )}
+
+        {/* Auto-Generate with AI Panel */}
+        <div className="mt-4 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/50 dark:bg-indigo-950/30 p-3.5 sm:p-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-indigo-900 dark:text-indigo-300">
+              <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400" strokeWidth={1.75} />
+              <span>Auto-Generate with Gemini AI</span>
+            </div>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+              Teacher Copilot
+            </span>
+          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
+            Enter a topic to auto-populate title, syllabus objectives, problem specifications, and a grading rubric.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              value={aiTopic}
+              onChange={(e) => setAiTopic(e.target.value)}
+              placeholder="e.g. Linear Algebra - Matrix Inversion & Eigenvalues"
+              className="flex-1 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 px-3 py-2 text-base sm:text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[44px]"
+              disabled={isAiGenerating}
+            />
+            <button
+              type="button"
+              onClick={handleGenerateWithAi}
+              disabled={isAiGenerating || !aiTopic.trim()}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition-all disabled:opacity-50 min-h-[44px] shrink-0"
+            >
+              {isAiGenerating ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                  <span>Drafting...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" strokeWidth={1.75} />
+                  <span>Auto-Generate</span>
+                </>
+              )}
+            </button>
+          </div>
+          {aiSuccessMessage && (
+            <div className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+              <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+              <span>{aiSuccessMessage}</span>
+            </div>
+          )}
+        </div>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>

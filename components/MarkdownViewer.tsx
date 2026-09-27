@@ -21,7 +21,7 @@ export default function MarkdownViewer({
   const flushList = (key: string) => {
     if (listItems.length > 0) {
       renderedElements.push(
-        <ul key={key} className="my-2 list-disc list-inside space-y-1 text-slate-700 pl-1">
+        <ul key={key} className="my-2 list-disc list-inside space-y-1 text-slate-700 dark:text-slate-300 pl-1">
           {listItems.map((item, idx) => (
             <li key={idx} className="text-xs sm:text-sm">
               <span dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
@@ -38,7 +38,7 @@ export default function MarkdownViewer({
       renderedElements.push(
         <pre
           key={key}
-          className="my-3 overflow-x-auto rounded-xl bg-slate-900 p-3.5 text-xs font-mono text-emerald-400 shadow-inner leading-relaxed"
+          className="my-3 overflow-x-auto rounded-xl bg-slate-900 dark:bg-black p-3.5 text-xs font-mono text-emerald-400 dark:text-emerald-300 shadow-inner leading-relaxed border border-slate-800"
         >
           {codeBlockContent.join("\n")}
         </pre>
@@ -49,9 +49,9 @@ export default function MarkdownViewer({
 
   const formatInline = (text: string): string => {
     return text
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*\*(.*?)\*\*/g, "<strong class='font-bold text-slate-900 dark:text-slate-100'>$1</strong>")
       .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(/`([^`]+)`/g, "<code class='bg-slate-100 text-indigo-700 px-1.5 py-0.5 rounded font-mono text-[11px] border border-slate-200'>$1</code>");
+      .replace(/`([^`]+)`/g, "<code class='bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded font-mono text-[11px] border border-slate-200 dark:border-slate-700'>$1</code>");
   };
 
   lines.forEach((line, index) => {
@@ -77,7 +77,7 @@ export default function MarkdownViewer({
     if (trimmed === "---" || trimmed === "***") {
       flushList(`list-before-hr-${index}`);
       renderedElements.push(
-        <hr key={`hr-${index}`} className="my-4 border-slate-200" />
+        <hr key={`hr-${index}`} className="my-4 border-slate-200 dark:border-slate-800" />
       );
       return;
     }
@@ -88,7 +88,7 @@ export default function MarkdownViewer({
       renderedElements.push(
         <h4
           key={`h3-${index}`}
-          className="mt-3 mb-1 text-sm sm:text-base font-bold text-slate-900"
+          className="mt-3 mb-1 text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100"
           dangerouslySetInnerHTML={{ __html: formatInline(trimmed.slice(4)) }}
         />
       );
@@ -100,7 +100,7 @@ export default function MarkdownViewer({
       renderedElements.push(
         <h3
           key={`h2-${index}`}
-          className="mt-4 mb-1.5 text-base sm:text-lg font-extrabold text-slate-900"
+          className="mt-4 mb-1.5 text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100"
           dangerouslySetInnerHTML={{ __html: formatInline(trimmed.slice(3)) }}
         />
       );
@@ -112,7 +112,7 @@ export default function MarkdownViewer({
       renderedElements.push(
         <h2
           key={`h1-${index}`}
-          className="mt-4 mb-2 text-lg sm:text-xl font-black text-slate-900"
+          className="mt-4 mb-2 text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100"
           dangerouslySetInnerHTML={{ __html: formatInline(trimmed.slice(2)) }}
         />
       );
@@ -125,7 +125,7 @@ export default function MarkdownViewer({
       renderedElements.push(
         <blockquote
           key={`quote-${index}`}
-          className="my-2 border-l-4 border-indigo-500 bg-indigo-50/50 px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-800 rounded-r-xl"
+          className="my-2 border-l-4 border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/40 px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 rounded-r-xl"
           dangerouslySetInnerHTML={{ __html: formatInline(trimmed.slice(2)) }}
         />
       );
@@ -149,7 +149,7 @@ export default function MarkdownViewer({
     renderedElements.push(
       <p
         key={`p-${index}`}
-        className="my-1 text-xs sm:text-sm leading-relaxed text-slate-700"
+        className="my-1 text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300"
         dangerouslySetInnerHTML={{ __html: formatInline(trimmed) }}
       />
     );

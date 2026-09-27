@@ -34,6 +34,7 @@ import {
   Upload,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import StudentAiAssistantDrawer from "@/components/StudentAiAssistantDrawer";
 
 interface PersonalNote {
   id: string;
@@ -1314,6 +1315,17 @@ export default function AcademicLockerPage() {
           </div>
         )}
       </main>
+
+      {/* Floating Socratic AI Academic Assistant Drawer */}
+      <StudentAiAssistantDrawer
+        noteTitle={activeAiNote?.title || (notes.length > 0 ? notes[0].title : undefined)}
+        initialContext={
+          activeAiNote
+            ? `Note Title: ${activeAiNote.title}\nSubject: ${activeAiNote.subject}\nContent:\n${activeAiNote.content}`
+            : undefined
+        }
+        buttonPositionClass="bottom-20 md:bottom-6 right-5"
+      />
     </div>
   );
 }

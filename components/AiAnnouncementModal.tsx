@@ -56,13 +56,14 @@ export default function AiAnnouncementModal({
       setIsGenerating(true);
       setError("");
 
-      const res = await fetch("/api/ai/announcement-copilot", {
+      const res = await fetch("/api/ai/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          notes: notes.trim(),
-          tone,
-          className: classNameTitle,
+          prompt: `Tone: ${tone}. Course: ${classNameTitle}. Notes: ${notes.trim()}`,
+          context: `Course: ${classNameTitle}, Preferred Tone: ${tone}`,
+          mode: "announcement",
+          role: "TEACHER",
         }),
       });
 
@@ -72,9 +73,9 @@ export default function AiAnnouncementModal({
       }
 
       const data = await res.json();
-      setGeneratedTitle(data.title);
-      setGeneratedContent(data.content);
-      setGenerationSource(data.source);
+      setGeneratedTitle(data.title || "Course Announcement");
+      setGeneratedContent(data.content || data.reply || "");
+      setGenerationSource(data.source || "gemini-live");
     } catch (err: any) {
       setError(err.message || "Something went wrong while generating.");
     } finally {
