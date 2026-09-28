@@ -2,6 +2,10 @@ export const GEMINI_MODELS = [
   "gemini-1.5-flash",
   "gemini-2.0-flash",
   "gemini-1.5-pro",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
+  "gemini-flash-latest",
 ];
 
 export function getGeminiApiKey(): string | null {
@@ -22,7 +26,7 @@ export async function generateAcademicContent(
   }
 
   const cleanKey = apiKey.replace(/['"]+/g, "").trim();
-  const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+  const models = GEMINI_MODELS;
 
   let lastError: any = null;
 
@@ -52,6 +56,7 @@ export async function generateAcademicContent(
       }
     } catch (err: any) {
       lastError = err;
+      console.warn(`[Gemini REST] Model ${model} failed:`, err?.message || err);
       continue;
     }
   }
