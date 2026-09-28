@@ -1,5 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
-
 export const GEMINI_MODELS = [
   "gemini-1.5-flash",
   "gemini-2.0-flash",
@@ -15,64 +13,48 @@ export function getGeminiApiKey(): string | null {
   return key.trim().length > 0 ? key.trim() : null;
 }
 
-export function createGeminiClient(): GoogleGenAI | null {
-  const apiKey = getGeminiApiKey();
-  if (!apiKey) return null;
-  return new GoogleGenAI({ apiKey });
-}
-
 export async function generateAcademicContent(
-  prompt: string,
-  customModels: string[] = GEMINI_MODELS
+  prompt: string
 ): Promise<{ text: string; model: string }> {
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
-    throw new Error("Missing Gemini API key in environment (GEMINI_API_KEY).");
+    throw new Error("Missing GEMINI_API_KEY in environment variables.");
   }
 
-  const ai = new GoogleGenAI({ apiKey });
+  const cleanKey = apiKey.replace(/['"]+/g, "").trim();
+  const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
+
   let lastError: any = null;
 
-  for (const model of customModels) {
+  for (const model of models) {
     try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: prompt,
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": cleanKey,
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
       });
 
-      const raw =
-        typeof response.text === "function"
-          ? (response.text as any)()
-          : response.text || "";
+      const data = await response.json();
 
-      if (typeof raw === "string" && raw.trim().length > 0) {
-        return { text: raw.trim(), model };
+      if (!response.ok) {
+        throw new Error(data?.error?.message || `HTTP ${response.status}: Failed to generate`);
+      }
+
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text && typeof text === "string" && text.trim().length > 0) {
+        return { text: text.trim(), model };
       }
     } catch (err: any) {
       lastError = err;
-      const status = err?.status || err?.code;
-      const msg = err?.message || String(err);
-
-      // Check if transient or unsupported model error; continue to next model
-      const isRecoverable =
-        status === 404 ||
-        status === 429 ||
-        status === 500 ||
-        status === 503 ||
-        msg.includes("not found") ||
-        msg.includes("no longer available") ||
-        msg.includes("high demand") ||
-        msg.includes("Resource has been exhausted") ||
-        msg.includes("UNAVAILABLE");
-
-      if (isRecoverable) {
-        console.warn(`[Gemini] Model ${model} unavailable (${status}). Trying next candidate...`);
-        continue;
-      }
-
-      throw err;
+      continue;
     }
   }
 
-  throw lastError || new Error("All candidate Gemini models failed to generate content.");
+  throw lastError || new Error("Failed to generate response from Gemini API.");
 }
