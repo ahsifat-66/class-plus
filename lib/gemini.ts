@@ -1,12 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Verified available generation models ordered by speed, capability, and quota stability
 export const GEMINI_MODELS = [
-  "gemini-3.6-flash",
-  "gemini-3.5-flash-lite",
-  "gemini-3.1-flash-lite",
-  "gemini-3-flash-preview",
-  "gemini-robotics-er-2-preview",
+  "gemini-1.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-pro",
 ];
 
 export function getGeminiApiKey(): string | null {
