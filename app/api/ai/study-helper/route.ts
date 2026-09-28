@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import { generateAcademicContent } from "@/lib/gemini";
 
 export const dynamic = "force-dynamic";
 
@@ -22,12 +22,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY;
 
     if (apiKey && apiKey.trim().length > 0) {
       try {
-        const ai = new GoogleGenAI({ apiKey });
-
         if (action === "quiz") {
           const prompt = `You are an expert university tutor. Generate 3 to 5 high-quality multiple-choice practice questions based strictly on the following student note:
 
@@ -50,12 +48,7 @@ Format your response strictly as a JSON array with objects in this exact structu
 Note: "correctAnswer" MUST be the 0-based integer index (0, 1, 2, or 3) pointing to the correct option.
 Do NOT enclose with Markdown codeblocks like \`\`\`json. Output raw JSON only.`;
 
-          const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-          });
-
-          const rawText = response.text?.trim() || "";
+          const { text: rawText } = await generateAcademicContent(prompt);
           const cleaned = rawText.replace(/^```json/i, "").replace(/```$/, "").trim();
 
           try {
@@ -98,12 +91,7 @@ Format your response strictly as a JSON object with this exact structure:
 }
 Do NOT enclose with Markdown codeblocks like \`\`\`json. Output raw JSON only.`;
 
-          const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-          });
-
-          const rawText = response.text?.trim() || "";
+          const { text: rawText } = await generateAcademicContent(prompt);
           const cleaned = rawText.replace(/^```json/i, "").replace(/```$/, "").trim();
 
           try {
@@ -121,7 +109,7 @@ Do NOT enclose with Markdown codeblocks like \`\`\`json. Output raw JSON only.`;
           }
         }
       } catch (geminiError) {
-        console.warn("Live Gemini API call failed in study helper, using fallback generator:", geminiError);
+        console.warn("Live Gemini API call failed in study helper:", geminiError);
       }
     }
 

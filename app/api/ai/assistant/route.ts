@@ -253,6 +253,8 @@ function getGreetingReply(text: string, isBn: boolean): string {
     : "Hello! How are your studies going? What topic would you like to explore today?";
 }
 
+import { generateAcademicContent } from "@/lib/gemini";
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
@@ -305,13 +307,34 @@ export async function POST(req: NextRequest) {
 CASUAL GREETINGS & SMALL TALK:
 When a student asks casual or greeting questions (e.g., 'Kmn acho?' or 'Hi' or 'কেমন আছো?' or 'Assalamu alaikum'), reply naturally, politely, and warmly in fluent Bengali or English (e.g., 'Alhamdulillah, ami bhalo achi. Tomar porashona kemon cholche? Ajke kon subject porbe?' / 'Hello! I am doing well, thank you. How are your studies going? What topic would you like to explore today?'). Never treat friendly greetings as homework problems.`;
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Check for conversational greetings
+    if (isGreetingOrCasual(prompt)) {
+      const greetingReply = getGreetingReply(prompt, effectiveLang === "bn");
+      return NextResponse.json({
+        success: true,
+        role: resolvedRole,
+        mode,
+        gradeLevel: nctbGrade.gradeLabel,
+        tier: nctbGrade.tier,
+        language: effectiveLang,
+        reply: greetingReply,
+        source: "greeting-handler",
+      }, { status: 200 });
+    }
 
-    if (apiKey && apiKey.trim().length > 0) {
-      try {
-        const ai = new GoogleGenAI({ apiKey: apiKey.trim() });
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY;
 
-        let promptInstruction = `${baseRolePrompt}
+    if (!apiKey || !apiKey.trim()) {
+      const errorMsg = "Missing Gemini API key. Please configure GEMINI_API_KEY, GOOGLE_GENAI_API_KEY, or GOOGLE_API_KEY in your environment.";
+      console.error("GEMINI_ERROR:", errorMsg);
+      return NextResponse.json({
+        error: errorMsg,
+        reply: "Debug Error: " + errorMsg,
+      }, { status: 200 });
+    }
+
+    try {
+      let promptInstruction = `${baseRolePrompt}
 
 ${tierPrompt}
 
@@ -328,8 +351,8 @@ ${context ? `Reference Context: """\n${context}\n"""` : ""}
 User Prompt / Instruction:
 "${prompt.trim()}"`;
 
-        if (mode === "draft_assignment") {
-          promptInstruction += `
+      if (mode === "draft_assignment") {
+        promptInstruction += `
 
 TASK REQUIREMENT:
 You must output a structured assignment draft in JSON format with exactly three fields:
@@ -339,8 +362,8 @@ You must output a structured assignment draft in JSON format with exactly three 
   "maxPoints": 100
 }
 Strictly output valid JSON only. Do NOT enclose in backticks or markdown fences. Avoid emojis entirely.`;
-        } else if (mode === "announcement") {
-          promptInstruction += `
+      } else if (mode === "announcement") {
+        promptInstruction += `
 
 TASK REQUIREMENT:
 You must output a structured institutional announcement in JSON format with exactly two fields:
@@ -349,90 +372,64 @@ You must output a structured institutional announcement in JSON format with exac
   "content": "Professional markdown announcement body with headings, bullet items, and an Anticipated Student FAQs section."
 }
 Strictly output valid JSON only. Do NOT enclose in backticks or markdown fences. Avoid emojis entirely.`;
-        }
-
-        const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: promptInstruction,
-        });
-
-        const rawText = response.text?.trim() || "";
-
-        if (mode === "draft_assignment") {
-          const cleaned = rawText
-            .replace(/^```json\s*/i, "")
-            .replace(/```\s*$/, "")
-            .trim();
-          try {
-            const parsed = JSON.parse(cleaned);
-            if (parsed.title && parsed.description) {
-              return NextResponse.json({
-                success: true,
-                role: resolvedRole,
-                mode,
-                gradeLevel: nctbGrade.gradeLabel,
-                tier: nctbGrade.tier,
-                language: effectiveLang,
-                title: stripEmojis(parsed.title),
-                description: stripEmojis(parsed.description),
-                maxPoints: Number(parsed.maxPoints) || 100,
-                reply: stripEmojis(parsed.description),
-                source: "gemini-live",
-              });
-            }
-          } catch {
-            // fallback to returning reply text if JSON parsing fails
-          }
-        }
-
-        if (mode === "announcement") {
-          const cleaned = rawText
-            .replace(/^```json\s*/i, "")
-            .replace(/```\s*$/, "")
-            .trim();
-          try {
-            const parsed = JSON.parse(cleaned);
-            if (parsed.title && parsed.content) {
-              return NextResponse.json({
-                success: true,
-                role: resolvedRole,
-                mode,
-                gradeLevel: nctbGrade.gradeLabel,
-                tier: nctbGrade.tier,
-                language: effectiveLang,
-                title: stripEmojis(parsed.title),
-                content: stripEmojis(parsed.content),
-                reply: stripEmojis(parsed.content),
-                source: "gemini-live",
-              });
-            }
-          } catch {
-            // fallback if JSON parsing fails
-          }
-        }
-
-        const cleanReply = stripEmojis(rawText);
-        return NextResponse.json({
-          success: true,
-          role: resolvedRole,
-          mode,
-          gradeLevel: nctbGrade.gradeLabel,
-          tier: nctbGrade.tier,
-          language: effectiveLang,
-          reply: cleanReply,
-          source: "gemini-live",
-        });
-      } catch (geminiError: any) {
-        console.warn(
-          "Gemini API execution error:",
-          geminiError?.message || geminiError
-        );
       }
-    }
 
-    // If student asked casual greeting question and API key is missing or failed
-    if (isGreetingOrCasual(prompt)) {
-      const greetingReply = getGreetingReply(prompt, effectiveLang === "bn");
+      const { text: rawText, model: usedModel } = await generateAcademicContent(promptInstruction);
+
+      if (mode === "draft_assignment") {
+        const cleaned = rawText
+          .replace(/^```json\s*/i, "")
+          .replace(/```\s*$/, "")
+          .trim();
+        try {
+          const parsed = JSON.parse(cleaned);
+          if (parsed.title && parsed.description) {
+            return NextResponse.json({
+              success: true,
+              role: resolvedRole,
+              mode,
+              gradeLevel: nctbGrade.gradeLabel,
+              tier: nctbGrade.tier,
+              language: effectiveLang,
+              title: stripEmojis(parsed.title),
+              description: stripEmojis(parsed.description),
+              maxPoints: Number(parsed.maxPoints) || 100,
+              reply: stripEmojis(parsed.description),
+              source: "gemini-live",
+            }, { status: 200 });
+          }
+        } catch {
+          // fallback to returning reply text if JSON parsing fails
+        }
+      }
+
+      if (mode === "announcement") {
+        const cleaned = rawText
+          .replace(/^```json\s*/i, "")
+          .replace(/```\s*$/, "")
+          .trim();
+        try {
+          const parsed = JSON.parse(cleaned);
+          if (parsed.title && parsed.content) {
+            return NextResponse.json({
+              success: true,
+              role: resolvedRole,
+              mode,
+              gradeLevel: nctbGrade.gradeLabel,
+              tier: nctbGrade.tier,
+              language: effectiveLang,
+              title: stripEmojis(parsed.title),
+              content: stripEmojis(parsed.content),
+              reply: stripEmojis(parsed.content),
+              source: "gemini-live",
+            }, { status: 200 });
+          }
+        } catch {
+          // fallback if JSON parsing fails
+        }
+      }
+
+      const cleanReply = stripEmojis(rawText);
       return NextResponse.json({
         success: true,
         role: resolvedRole,
@@ -440,35 +437,26 @@ Strictly output valid JSON only. Do NOT enclose in backticks or markdown fences.
         gradeLevel: nctbGrade.gradeLabel,
         tier: nctbGrade.tier,
         language: effectiveLang,
-        reply: greetingReply,
-        source: "greeting-fallback",
-      });
+        reply: cleanReply,
+        source: "gemini-live",
+      }, { status: 200 });
+    } catch (geminiError: any) {
+      console.error("GEMINI_ERROR:", geminiError);
+      const errorMessage = geminiError?.message || String(geminiError);
+      return NextResponse.json({
+        error: errorMessage,
+        reply: "Debug Error: " + errorMessage,
+      }, { status: 200 });
     }
-
-    // Clean offline message if API key is missing or failed - DO NOT fall back to any hardcoded CS template
-    return NextResponse.json(
-      {
-        success: false,
-        role: resolvedRole,
-        mode,
-        gradeLevel: nctbGrade.gradeLabel,
-        tier: nctbGrade.tier,
-        language: effectiveLang,
-        reply: "AI tutor is temporarily offline. Please verify API configuration.",
-        error: "AI tutor is temporarily offline. Please verify API configuration.",
-        source: "offline-notice",
-      },
-      {
-        headers: {
-          "X-AI-Notice": "API-Offline",
-        },
-      }
-    );
   } catch (error: any) {
-    console.error("Error in Unified AI Assistant endpoint:", error);
+    console.error("GEMINI_ERROR:", error);
+    const errorMessage = error?.message || String(error);
     return NextResponse.json(
-      { error: "Internal server error processing AI academic request." },
-      { status: 500 }
+      {
+        error: errorMessage,
+        reply: "Debug Error: " + errorMessage,
+      },
+      { status: 200 }
     );
   }
 }

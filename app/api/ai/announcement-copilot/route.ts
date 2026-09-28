@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import { generateAcademicContent } from "@/lib/gemini";
 
 function generateMockAnnouncement(notes: string, tone: string, className?: string) {
   const course = className || "Database Systems";
@@ -77,11 +77,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY;
 
     if (apiKey && apiKey.trim().length > 0) {
       try {
-        const ai = new GoogleGenAI({ apiKey });
         const prompt = `You are an expert academic assistant drafting an announcement for a university course.
 Course: "${className}"
 Selected Tone: "${tone}" (Urgent, Supportive, or Formal)
@@ -100,12 +99,7 @@ Requirements:
 }
 Do not include code fence backticks around the JSON.`;
 
-        const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: prompt,
-        });
-
-        const text = response.text?.trim() || "";
+        const { text } = await generateAcademicContent(prompt);
         // Clean JSON formatting if wrapped in markdown
         const cleaned = text.replace(/^```json/i, "").replace(/```$/, "").trim();
         try {

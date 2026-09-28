@@ -21,6 +21,8 @@ function getGreetingReply(text: string): string {
   return "Hello! How are your studies going? What topic would you like to explore today?";
 }
 
+import { generateAcademicContent } from "@/lib/gemini";
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -38,27 +40,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         reply: getGreetingReply(question),
         source: "greeting-handler",
-      });
+      }, { status: 200 });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY;
 
-    if (apiKey && apiKey.trim().length > 0) {
-      try {
-        const ai = new GoogleGenAI({ apiKey });
-        const systemInstruction = `You are a warm, encouraging Socratic tutor in the ClassPulse educational hub for "${classroomContext}".
+    if (!apiKey || !apiKey.trim()) {
+      const errorMsg = "Missing Gemini API key. Please configure GEMINI_API_KEY, GOOGLE_GENAI_API_KEY, or GOOGLE_API_KEY in your environment.";
+      console.error("GEMINI_ERROR:", errorMsg);
+      return NextResponse.json({
+        error: errorMsg,
+        reply: "Debug Error: " + errorMsg,
+      }, { status: 200 });
+    }
+
+    try {
+      const systemInstruction = `You are a warm, encouraging Socratic tutor in the ClassPulse educational hub for "${classroomContext}".
 CRITICAL RULE: When students ask questions about assignments, homework, or concepts, do NOT give direct solutions or complete answers.
 Always guide them by giving them exactly 1 thoughtful guiding question or 1 logical hint at a time.
 Keep your response concise (2-4 sentences max). Strictly avoid emojis.
 Acknowledge their effort, point them in the right conceptual direction, and ask a guiding question to test their understanding.`;
 
-        // Format conversation history
-        const formattedHistory = history
-          .slice(-6)
-          .map((m: { role: string; content: string }) => `${m.role === "user" ? "Student" : "Socratic Tutor"}: ${m.content}`)
-          .join("\n");
+      // Format conversation history
+      const formattedHistory = history
+        .slice(-6)
+        .map((m: { role: string; content: string }) => `${m.role === "user" ? "Student" : "Socratic Tutor"}: ${m.content}`)
+        .join("\n");
 
-        const prompt = `${systemInstruction}
+      const prompt = `${systemInstruction}
 
 Conversation History:
 ${formattedHistory}
@@ -68,29 +77,26 @@ Student's Latest Question:
 
 Socratic Tutor Response:`;
 
-        const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: prompt,
-        });
+      const { text: replyText } = await generateAcademicContent(prompt);
 
-        const reply = response.text?.trim();
-        if (reply) {
-          return NextResponse.json({
-            reply,
-            source: "gemini-live",
-          });
-        }
-      } catch (geminiError) {
-        console.warn("Live Gemini API call failed in Socratic tutor:", geminiError);
-      }
+      return NextResponse.json({
+        reply: replyText,
+        source: "gemini-live",
+      }, { status: 200 });
+    } catch (geminiError: any) {
+      console.error("GEMINI_ERROR:", geminiError);
+      const errorMessage = geminiError?.message || String(geminiError);
+      return NextResponse.json({
+        error: errorMessage,
+        reply: "Debug Error: " + errorMessage,
+      }, { status: 200 });
     }
-
+  } catch (error: any) {
+    console.error("GEMINI_ERROR:", error);
+    const errorMessage = error?.message || String(error);
     return NextResponse.json({
-      reply: "AI tutor is temporarily offline. Please verify API configuration.",
-      source: "offline-notice",
-    });
-  } catch (error) {
-    console.error("Error in Socratic tutor endpoint:", error);
-    return NextResponse.json({ error: "Failed to process question" }, { status: 500 });
+      error: errorMessage,
+      reply: "Debug Error: " + errorMessage,
+    }, { status: 200 });
   }
 }
