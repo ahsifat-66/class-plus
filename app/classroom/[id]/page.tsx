@@ -401,7 +401,7 @@ export default function ClassroomHub() {
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar />
 
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-8 space-y-6">
+      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom))] space-y-6">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between">
           <Link
@@ -523,7 +523,7 @@ export default function ClassroomHub() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto whitespace-nowrap scrollbar-none">
           <button
             onClick={() => setActiveTab("stream")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 whitespace-nowrap ${
@@ -594,7 +594,7 @@ export default function ClassroomHub() {
             }`}
           >
             <Users className="h-4 w-4 shrink-0" />
-            <span>People & Roster</span>
+            <span>People</span>
             <span className="ml-1 text-xs opacity-75 font-mono">
               ({classroom.enrollments.length + 1})
             </span>
@@ -1206,14 +1206,14 @@ export default function ClassroomHub() {
 
             {/* Students Section */}
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center justify-between flex-wrap gap-2 mb-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                     Enrolled Students ({classroom.enrollments.length})
                   </h3>
                 </div>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl w-fit">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl shrink-0">
                   Join Code: <strong className="text-indigo-600 dark:text-indigo-400">{classroom.code}</strong>
                 </span>
               </div>
@@ -1231,60 +1231,55 @@ export default function ClassroomHub() {
                   </p>
                 </div>
               ) : (
-                <div className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
                   {classroom.enrollments.map((enr) => (
                     <div
                       key={enr.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-3.5 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 px-3 rounded-2xl transition-colors"
+                      className="flex items-center justify-between p-3.5 gap-3 border-b border-slate-100 dark:border-slate-800 last:border-none hover:bg-slate-50/70 dark:hover:bg-slate-800/40 rounded-2xl transition-colors"
                     >
-                      {/* Left: Avatar + Name + Email */}
+                      {/* Left: Avatar + Details */}
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         {enr.user.avatar ? (
                           <img
                             src={enr.user.avatar}
                             alt={enr.user.name}
-                            className="h-10 w-10 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700 shrink-0"
+                            className="w-10 h-10 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700 shrink-0"
                           />
                         ) : (
-                          <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0 ring-1 ring-indigo-200 dark:ring-indigo-800">
+                          <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0 ring-1 ring-indigo-200 dark:ring-indigo-800">
                             {enr.user.name?.charAt(0)?.toUpperCase() || "S"}
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-semibold truncate text-slate-900 dark:text-slate-100">
                               {enr.user.name}
-                            </span>
+                            </h4>
                             {enr.user.id === currentUser?.id && (
                               <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 px-2 py-0.2 rounded-full shrink-0">
                                 You
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-400 dark:text-slate-400 truncate">
-                            {enr.user.email}
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{enr.user.email}</p>
+                          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                            Joined {formatDate(enr.createdAt)}
                           </p>
                         </div>
                       </div>
 
-                      {/* Right: Joined Date + Remove Action */}
-                      <div className="flex items-center justify-between sm:justify-end gap-3 pl-13 sm:pl-0 shrink-0">
-                        <span className="text-xs text-slate-400 dark:text-slate-400 whitespace-nowrap">
-                          Joined {formatDate(enr.createdAt)}
-                        </span>
-
-                        {isTeacher && enr.user.id !== currentUser?.id && (
-                          <button
-                            type="button"
-                            onClick={() => setStudentToRemove(enr.user)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-semibold transition-colors shrink-0 min-h-[36px]"
-                            title="Remove student from classroom"
-                          >
-                            <UserMinus className="h-3.5 w-3.5" strokeWidth={1.75} />
-                            <span>Remove</span>
-                          </button>
-                        )}
-                      </div>
+                      {/* Right: Remove Button */}
+                      {isTeacher && enr.user.id !== currentUser?.id && (
+                        <button
+                          type="button"
+                          onClick={() => setStudentToRemove(enr.user)}
+                          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-900/60 transition-colors"
+                          title="Remove student from classroom"
+                        >
+                          <UserMinus size={14} />
+                          <span>Remove</span>
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
