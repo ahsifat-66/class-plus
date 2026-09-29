@@ -441,14 +441,19 @@ export default function ClassroomHub() {
               <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight">
                 {classroom.name}
               </h1>
-              <div className="mt-3 flex items-center gap-3 text-xs text-indigo-200">
+              <div className="mt-3 flex items-center gap-3 text-xs text-indigo-200 flex-wrap">
                 <div className="flex items-center gap-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={classroom.teacher.avatar || ""}
-                    alt={classroom.teacher.name}
-                    className="h-6 w-6 rounded-full object-cover ring-1 ring-white/50"
-                  />
+                  {classroom.teacher.avatar ? (
+                    <img
+                      src={classroom.teacher.avatar}
+                      alt={classroom.teacher.name}
+                      className="h-6 w-6 rounded-full object-cover ring-1 ring-white/50 shrink-0"
+                    />
+                  ) : (
+                    <div className="h-6 w-6 rounded-full bg-white/20 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+                      {classroom.teacher.name?.charAt(0)?.toUpperCase() || "T"}
+                    </div>
+                  )}
                   <span>
                     Instructor: <strong>{classroom.teacher.name}</strong>
                   </span>
@@ -518,16 +523,16 @@ export default function ClassroomHub() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveTab("stream")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 whitespace-nowrap ${
               activeTab === "stream"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
-                : "text-slate-600 hover:bg-slate-100"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none"
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
-            <Megaphone className="h-4 w-4" />
+            <Megaphone className="h-4 w-4 shrink-0" />
             <span>Stream</span>
             <span className="ml-1 text-xs opacity-75 font-mono">
               ({classroom.announcements.length})
@@ -536,13 +541,13 @@ export default function ClassroomHub() {
 
           <button
             onClick={() => setActiveTab("classwork")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 whitespace-nowrap ${
               activeTab === "classwork"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
-                : "text-slate-600 hover:bg-slate-100"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none"
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
-            <BookOpen className="h-4 w-4" />
+            <BookOpen className="h-4 w-4 shrink-0" />
             <span>Classwork</span>
             <span className="ml-1 text-xs opacity-75 font-mono">
               ({classroom.assignments.length})
@@ -551,15 +556,15 @@ export default function ClassroomHub() {
 
           <button
             onClick={() => setActiveTab("channels")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 whitespace-nowrap ${
               activeTab === "channels"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
-                : "text-slate-600 hover:bg-slate-100"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none"
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
-            <Hash className="h-4 w-4" />
+            <Hash className="h-4 w-4 shrink-0" />
             <span>Discussion Channels</span>
-            <span className="relative flex h-2 w-2 ml-0.5">
+            <span className="relative flex h-2 w-2 ml-0.5 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
             </span>
@@ -567,13 +572,13 @@ export default function ClassroomHub() {
 
           <button
             onClick={() => setActiveTab("notebox")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 whitespace-nowrap ${
               activeTab === "notebox"
-                ? "bg-teal-600 text-white shadow-md shadow-teal-200"
-                : "text-slate-600 hover:bg-slate-100"
+                ? "bg-teal-600 text-white shadow-md shadow-teal-200 dark:shadow-none"
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
-            <BookOpen className="h-4 w-4" />
+            <BookOpen className="h-4 w-4 shrink-0" />
             <span>NoteBox</span>
             <span className="ml-1 text-xs opacity-75 font-mono">
               ({classroom.notes?.length || 0})
@@ -582,13 +587,13 @@ export default function ClassroomHub() {
 
           <button
             onClick={() => setActiveTab("people")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 whitespace-nowrap ${
               activeTab === "people"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
-                : "text-slate-600 hover:bg-slate-100"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none"
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
-            <Users className="h-4 w-4" />
+            <Users className="h-4 w-4 shrink-0" />
             <span>People & Roster</span>
             <span className="ml-1 text-xs opacity-75 font-mono">
               ({classroom.enrollments.length + 1})
@@ -851,19 +856,19 @@ export default function ClassroomHub() {
 
         {/* 3. CHANNELS TAB */}
         {activeTab === "channels" && (
-          <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col md:flex-row min-h-[560px]">
+          <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden flex flex-col md:flex-row min-h-[560px]">
             {/* Left Channel Sidebar */}
-            <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-slate-200 bg-slate-50/70 p-4 space-y-3 shrink-0">
+            <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40 p-4 space-y-3 shrink-0">
               <div className="flex items-center justify-between px-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                   Class Channels
                 </span>
-                <span className="text-[10px] text-teal-600 font-bold bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
+                <span className="text-[10px] text-teal-600 font-bold bg-teal-50 dark:bg-teal-950/60 dark:text-teal-400 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800 shrink-0">
                   Live Polling
                 </span>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1 max-h-48 md:max-h-none overflow-y-auto">
                 {classroom.channels.map((channel) => {
                   const isActive = channel.id === activeChannelId;
                   const isRestricted = channel.postPermission === "TEACHERS_ONLY";
@@ -875,13 +880,13 @@ export default function ClassroomHub() {
                         setActiveChannelId(channel.id);
                         setChannelSettingsOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold transition-all text-left ${
+                      className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all text-left ${
                         isActive
-                          ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
-                          : "text-slate-700 hover:bg-slate-100"
+                          ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none"
+                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                       }`}
                     >
-                      <div className="flex items-center gap-2.5 truncate">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <Hash
                           className={`h-4 w-4 shrink-0 ${
                             isActive ? "text-white" : "text-slate-400"
@@ -902,7 +907,7 @@ export default function ClassroomHub() {
                 })}
               </div>
 
-              <div className="pt-3 border-t border-slate-200/80 px-2">
+              <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800 px-2">
                 <p className="text-[11px] text-slate-400 leading-normal">
                   Real-time discussion stream. Automatically refreshes every 3 seconds.
                 </p>
@@ -910,24 +915,24 @@ export default function ClassroomHub() {
             </div>
 
             {/* Right Chat Stream */}
-            <div className="flex-1 flex flex-col justify-between bg-white">
+            <div className="flex-1 flex flex-col justify-between bg-white dark:bg-slate-900 min-w-0">
               {/* Channel Header */}
-              <div className="px-6 py-3.5 border-b border-slate-100 bg-slate-50/40 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Hash className="h-5 w-5 text-indigo-600" />
-                  <span className="font-bold text-slate-900 text-sm">
+              <div className="px-6 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Hash className="h-5 w-5 text-indigo-600 shrink-0" />
+                  <span className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
                     {activeChannel?.name || "channel"}
                   </span>
                   {activeChannel?.postPermission === "TEACHERS_ONLY" && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200/80 px-2 py-0.5 text-[10px] font-bold">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 px-2 py-0.5 text-[10px] font-bold shrink-0">
                       <Lock className="h-3 w-3" strokeWidth={1.75} />
                       <span>Teachers Only</span>
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-slate-400 font-medium">
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
                     {channelMessages.length} messages
                   </span>
 
@@ -936,14 +941,14 @@ export default function ClassroomHub() {
                       <button
                         type="button"
                         onClick={() => setChannelSettingsOpen(!channelSettingsOpen)}
-                        className="p-1.5 rounded-xl hover:bg-slate-200/60 text-slate-600 transition-colors flex items-center gap-1 text-xs font-semibold"
+                        className="p-1.5 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors flex items-center gap-1 text-xs font-semibold"
                         title="Channel Posting Permissions"
                       >
                         <Settings className="h-4 w-4" strokeWidth={1.75} />
                       </button>
 
                       {channelSettingsOpen && (
-                        <div className="absolute right-0 top-8 z-30 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in duration-150 space-y-1">
+                        <div className="absolute right-0 top-8 z-30 w-56 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 shadow-xl animate-in fade-in duration-150 space-y-1">
                           <p className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                             Posting Rights
                           </p>
@@ -954,8 +959,8 @@ export default function ClassroomHub() {
                             }
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
                               activeChannel.postPermission !== "TEACHERS_ONLY"
-                                ? "bg-indigo-50 text-indigo-700 font-bold"
-                                : "text-slate-700 hover:bg-slate-100"
+                                ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold"
+                                : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                             }`}
                           >
                             <span>Everyone can post</span>
@@ -970,8 +975,8 @@ export default function ClassroomHub() {
                             }
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
                               activeChannel.postPermission === "TEACHERS_ONLY"
-                                ? "bg-indigo-50 text-indigo-700 font-bold"
-                                : "text-slate-700 hover:bg-slate-100"
+                                ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold"
+                                : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                             }`}
                           >
                             <span>Teachers only</span>
@@ -987,10 +992,10 @@ export default function ClassroomHub() {
               </div>
 
               {/* Message List */}
-              <div className="flex-1 p-6 overflow-y-auto space-y-4 max-h-[460px]">
+              <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 max-h-[480px]">
                 {channelMessages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
-                    <Hash className="h-10 w-10 text-slate-300 mb-2" />
+                    <Hash className="h-10 w-10 text-slate-300 dark:text-slate-600 mb-2" />
                     <p className="text-xs font-medium">
                       This channel is quiet right now. Start the conversation!
                     </p>
@@ -1006,44 +1011,54 @@ export default function ClassroomHub() {
                         key={msg.id}
                         className={`group flex gap-3 ${isMe ? "flex-row-reverse" : "flex-row"}`}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={msg.sender?.avatar || ""}
-                          alt={msg.sender?.name || ""}
-                          className="h-8 w-8 rounded-full object-cover ring-1 ring-slate-200 shrink-0 mt-1"
-                        />
+                        {/* Sender Avatar with Initials Fallback */}
+                        {msg.sender?.avatar ? (
+                          <img
+                            src={msg.sender.avatar}
+                            alt={msg.sender.name || ""}
+                            className="h-8 w-8 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 mt-1"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-xs ring-1 ring-indigo-200 dark:ring-indigo-800 shrink-0 mt-1">
+                            {msg.sender?.name?.charAt(0)?.toUpperCase() || "U"}
+                          </div>
+                        )}
 
                         <div
-                          className={`flex flex-col max-w-[80%] ${
+                          className={`flex flex-col max-w-[85%] sm:max-w-[75%] min-w-0 ${
                             isMe ? "items-end" : "items-start"
                           }`}
                         >
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <span className="text-xs font-bold text-slate-900">
+                          <div
+                            className={`flex items-center gap-1.5 mb-1 flex-wrap ${
+                              isMe ? "justify-end" : "justify-start"
+                            }`}
+                          >
+                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate max-w-[140px] sm:max-w-[200px]">
                               {msg.sender?.name}
                             </span>
                             {isSenderTeacher && (
-                              <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.2 rounded-md">
+                              <span className="text-[10px] font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/60 px-1.5 py-0.2 rounded-md shrink-0">
                                 Instructor
                               </span>
                             )}
-                            <span className="text-[10px] text-slate-400">
+                            <span className="text-[10px] text-slate-400 shrink-0 whitespace-nowrap">
                               {formatDate(msg.createdAt)}
                             </span>
                             {msg.isEdited && (
-                              <span className="text-[10px] text-slate-400 italic">
+                              <span className="text-[10px] text-slate-400 italic shrink-0">
                                 (edited)
                               </span>
                             )}
 
                             {/* Message actions on hover */}
                             {!isEditingThis && (
-                              <div className="hidden group-hover:flex items-center gap-1 ml-2">
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 ml-1 shrink-0">
                                 {isMe && (
                                   <button
                                     type="button"
                                     onClick={() => handleStartEditMessage(msg)}
-                                    className="p-1 rounded text-slate-400 hover:text-indigo-600 hover:bg-slate-100"
+                                    className="p-1 rounded text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                                     title="Edit message"
                                   >
                                     <Edit3 className="h-3 w-3" strokeWidth={1.75} />
@@ -1053,7 +1068,7 @@ export default function ClassroomHub() {
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteMessage(msg.id)}
-                                    className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                                    className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                                     title="Delete message"
                                   >
                                     <Trash2 className="h-3 w-3" strokeWidth={1.75} />
@@ -1069,14 +1084,14 @@ export default function ClassroomHub() {
                                 type="text"
                                 value={editingMessageContent}
                                 onChange={(e) => setEditingMessageContent(e.target.value)}
-                                className="w-full rounded-xl border border-indigo-400 px-3 py-1.5 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                className="w-full rounded-xl border border-indigo-400 px-3 py-1.5 text-xs text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                                 autoFocus
                               />
                               <div className="flex items-center gap-1.5 justify-end">
                                 <button
                                   type="button"
                                   onClick={() => setEditingMessageId(null)}
-                                  className="px-2 py-0.5 rounded-lg text-[10px] font-medium text-slate-500 hover:bg-slate-100"
+                                  className="px-2 py-0.5 rounded-lg text-[10px] font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
                                 >
                                   Cancel
                                 </button>
@@ -1091,10 +1106,10 @@ export default function ClassroomHub() {
                             </div>
                           ) : (
                             <div
-                              className={`rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-sm ${
+                              className={`rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-sm break-words max-w-full overflow-hidden whitespace-pre-wrap ${
                                 isMe
                                   ? "bg-indigo-600 text-white rounded-tr-none"
-                                  : "bg-slate-100 border border-slate-200/80 text-slate-800 rounded-tl-none"
+                                  : "bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-tl-none"
                               }`}
                             >
                               {msg.content}
@@ -1110,19 +1125,19 @@ export default function ClassroomHub() {
 
               {/* Message Input Box or Locked Channel Banner */}
               {activeChannel?.postPermission === "TEACHERS_ONLY" && !isTeacher ? (
-                <div className="p-4 border-t border-slate-100 bg-amber-50/70 flex items-center justify-center gap-2 text-xs text-amber-800 font-medium">
-                  <Lock className="h-4 w-4 text-amber-600" strokeWidth={1.75} />
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-amber-50/70 dark:bg-amber-950/30 flex items-center justify-center gap-2 text-xs text-amber-800 dark:text-amber-300 font-medium">
+                  <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400" strokeWidth={1.75} />
                   <span>Only teachers can send messages in #{activeChannel?.name}.</span>
                 </div>
               ) : (
-                <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
                   <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                     <input
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder={`Message #${activeChannel?.name || "channel"}...`}
-                      className="flex-1 rounded-2xl border border-slate-300 px-4 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white"
+                      className="flex-1 rounded-2xl border border-slate-300 dark:border-slate-700 px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white dark:bg-slate-950"
                     />
                     <button
                       type="submit"
@@ -1152,31 +1167,38 @@ export default function ClassroomHub() {
 
         {/* 5. PEOPLE TAB */}
         {activeTab === "people" && (
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-8">
+          <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-8 shadow-sm space-y-8">
             {/* Teacher Section */}
             <div>
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-                <ShieldCheck className="h-5 w-5 text-purple-600" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+              <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <ShieldCheck className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   Course Instructor
                 </h3>
               </div>
-              <div className="mt-4 flex items-center justify-between p-3 rounded-2xl bg-slate-50/70 border border-slate-200/60">
-                <div className="flex items-center gap-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={classroom.teacher.avatar || ""}
-                    alt={classroom.teacher.name}
-                    className="h-11 w-11 rounded-full object-cover ring-2 ring-purple-500/20"
-                  />
-                  <div>
-                    <h4 className="font-bold text-slate-900 text-sm">
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {classroom.teacher.avatar ? (
+                    <img
+                      src={classroom.teacher.avatar}
+                      alt={classroom.teacher.name}
+                      className="h-11 w-11 rounded-full object-cover ring-2 ring-purple-500/20 shrink-0"
+                    />
+                  ) : (
+                    <div className="h-11 w-11 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold text-sm ring-2 ring-purple-500/20 shrink-0">
+                      {classroom.teacher.name?.charAt(0)?.toUpperCase() || "T"}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
                       {classroom.teacher.name}
                     </h4>
-                    <p className="text-xs text-slate-500">{classroom.teacher.email}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                      {classroom.teacher.email}
+                    </p>
                   </div>
                 </div>
-                <span className="rounded-full bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 border border-purple-200">
+                <span className="self-start sm:self-auto rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 text-xs font-bold px-3 py-1 border border-purple-200 dark:border-purple-800 shrink-0">
                   Lead Teacher
                 </span>
               </div>
@@ -1184,66 +1206,89 @@ export default function ClassroomHub() {
 
             {/* Students Section */}
             <div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-indigo-600" />
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+                  <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                     Enrolled Students ({classroom.enrollments.length})
                   </h3>
                 </div>
-                <span className="text-xs text-slate-400 font-mono">
-                  Join Code: {classroom.code}
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl w-fit">
+                  Join Code: <strong className="text-indigo-600 dark:text-indigo-400">{classroom.code}</strong>
                 </span>
               </div>
 
-              <div className="mt-4 divide-y divide-slate-100">
-                {classroom.enrollments.map((enr) => (
-                  <div
-                    key={enr.id}
-                    className="flex items-center justify-between py-3.5 hover:bg-slate-50/50 px-2 rounded-xl transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={enr.user.avatar || ""}
-                        alt={enr.user.name}
-                        className="h-9 w-9 rounded-full object-cover ring-1 ring-slate-200"
-                      />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900 text-xs sm:text-sm">
-                            {enr.user.name}
-                          </span>
-                          {enr.user.id === currentUser?.id && (
-                            <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">
-                              You
+              {classroom.enrollments.length === 0 ? (
+                <div className="text-center py-12 px-4 space-y-2">
+                  <div className="mx-auto h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                    <Users className="h-5 w-5" strokeWidth={1.5} />
+                  </div>
+                  <p className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    No students enrolled yet
+                  </p>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                    Share course join code <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{classroom.code}</span> with your students to have them join the roster.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
+                  {classroom.enrollments.map((enr) => (
+                    <div
+                      key={enr.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-3.5 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 px-3 rounded-2xl transition-colors"
+                    >
+                      {/* Left: Avatar + Name + Email */}
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {enr.user.avatar ? (
+                          <img
+                            src={enr.user.avatar}
+                            alt={enr.user.name}
+                            className="h-10 w-10 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700 shrink-0"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0 ring-1 ring-indigo-200 dark:ring-indigo-800">
+                            {enr.user.name?.charAt(0)?.toUpperCase() || "S"}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate">
+                              {enr.user.name}
                             </span>
-                          )}
+                            {enr.user.id === currentUser?.id && (
+                              <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 px-2 py-0.2 rounded-full shrink-0">
+                                You
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-400 dark:text-slate-400 truncate">
+                            {enr.user.email}
+                          </p>
                         </div>
-                        <p className="text-xs text-slate-400">{enr.user.email}</p>
+                      </div>
+
+                      {/* Right: Joined Date + Remove Action */}
+                      <div className="flex items-center justify-between sm:justify-end gap-3 pl-13 sm:pl-0 shrink-0">
+                        <span className="text-xs text-slate-400 dark:text-slate-400 whitespace-nowrap">
+                          Joined {formatDate(enr.createdAt)}
+                        </span>
+
+                        {isTeacher && enr.user.id !== currentUser?.id && (
+                          <button
+                            type="button"
+                            onClick={() => setStudentToRemove(enr.user)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-semibold transition-colors shrink-0 min-h-[36px]"
+                            title="Remove student from classroom"
+                          >
+                            <UserMinus className="h-3.5 w-3.5" strokeWidth={1.75} />
+                            <span>Remove</span>
+                          </button>
+                        )}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-slate-400">
-                        Joined {formatDate(enr.createdAt)}
-                      </span>
-
-                      {isTeacher && enr.user.id !== currentUser?.id && (
-                        <button
-                          type="button"
-                          onClick={() => setStudentToRemove(enr.user)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition-colors"
-                          title="Remove student from classroom"
-                        >
-                          <UserMinus className="h-3.5 w-3.5" strokeWidth={1.75} />
-                          <span>Remove</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
