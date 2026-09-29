@@ -1,15 +1,19 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 import Navbar from "@/components/Navbar";
 import AiAnnouncementModal from "@/components/AiAnnouncementModal";
 import SocraticTutorDrawer from "@/components/SocraticTutorDrawer";
 import CreateAssignmentModal from "@/components/CreateAssignmentModal";
+import EditAssignmentModal from "@/components/EditAssignmentModal";
 import AssignmentSubmitModal from "@/components/AssignmentSubmitModal";
 import TeacherGradingModal from "@/components/TeacherGradingModal";
+import DeleteClassroomModal from "@/components/DeleteClassroomModal";
+import RemoveStudentModal from "@/components/RemoveStudentModal";
+import ClassroomNoteBox, { NoteItem } from "@/components/ClassroomNoteBox";
 import MarkdownViewer from "@/components/MarkdownViewer";
 import {
   ArrowLeft,
@@ -35,6 +39,13 @@ import {
   UserCheck,
   Video,
   ExternalLink,
+  Trash2,
+  Edit3,
+  MoreVertical,
+  Lock,
+  Settings,
+  UserMinus,
+  FileText,
 } from "lucide-react";
 import { formatDate, formatRelativeDueDate } from "@/lib/utils";
 
@@ -64,6 +75,7 @@ interface ClassroomData {
   channels: Array<{
     id: string;
     name: string;
+    postPermission?: string;
   }>;
   announcements: Array<{
     id: string;
@@ -82,6 +94,8 @@ interface ClassroomData {
     description: string;
     dueDate: string;
     maxPoints: number;
+    assignToAll?: boolean;
+    assignedStudentIds?: string[];
     submissions: Array<{
       id: string;
       content: string;
@@ -97,6 +111,7 @@ interface ClassroomData {
       };
     }>;
   }>;
+  notes?: NoteItem[];
 }
 
 interface Message {
@@ -105,6 +120,7 @@ interface Message {
   senderId: string;
   channelId: string;
   createdAt: string;
+  isEdited?: boolean;
   sender: {
     id: string;
     name: string;
@@ -114,6 +130,7 @@ interface Message {
 }
 
 export default function ClassroomHub() {
+  const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const classroomId = params?.id as string;
@@ -122,9 +139,9 @@ export default function ClassroomHub() {
   const { currentUser } = useUser();
 
   const [classroom, setClassroom] = useState<ClassroomData | null>(null);
-  const [activeTab, setActiveTab] = useState<"stream" | "classwork" | "channels" | "people">(
-    (initialTab as any) || "stream"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "stream" | "classwork" | "channels" | "notebox" | "people"
+  >((initialTab as any) || "stream");
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [channelMessages, setChannelMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -132,11 +149,21 @@ export default function ClassroomHub() {
   const [copiedCode, setCopiedCode] = useState(false);
   const [submissionToast, setSubmissionToast] = useState<string | null>(null);
 
-  // Modals
+  // Modals & Menu State
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isCreateAssignmentOpen, setIsCreateAssignmentOpen] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<any | null>(null);
+  const [isDeleteClassModalOpen, setIsDeleteClassModalOpen] = useState(false);
+  const [studentToRemove, setStudentToRemove] = useState<{
+    id: string;
+    name: string;
+    email: string;
+  } | null>(null);
   const [selectedAssignmentForSubmit, setSelectedAssignmentForSubmit] = useState<any | null>(null);
   const [selectedAssignmentForGrading, setSelectedAssignmentForGrading] = useState<any | null>(null);
+  const [channelSettingsOpen, setChannelSettingsOpen] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingMessageContent, setEditingMessageContent] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -188,6 +215,17 @@ export default function ClassroomHub() {
     }
   }, [channelMessages, activeTab]);
 
+  const enrolledStudents = useMemo(() => {
+    return (classroom?.enrollments || []).map((e) => ({
+      id: e.user.id,
+      name: e.user.name,
+      email: e.user.email,
+      avatar: e.user.avatar,
+    }));
+  }, [classroom?.enrollments]);
+
+  const isTeacher = currentUser?.role === "TEACHER";
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !activeChannelId || !currentUser) return;
@@ -223,11 +261,110 @@ export default function ClassroomHub() {
 
       if (res.ok) {
         fetchMessages();
+      } else {
+        const data = await res.json();
+        setSubmissionToast(data.error || "Failed to send message");
+        setTimeout(() => setSubmissionToast(null), 3000);
+        fetchMessages();
       }
     } catch (err) {
       console.error("Failed to send message", err);
     } finally {
       setIsSendingMessage(false);
+    }
+  };
+
+  const handleUpdateChannelPermission = async (
+    channelId: string,
+    permission: "EVERYONE" | "TEACHERS_ONLY"
+  ) => {
+    try {
+      const res = await fetch(`/api/channels/${channelId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postPermission: permission }),
+      });
+      if (res.ok) {
+        setClassroom((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            channels: prev.channels.map((ch) =>
+              ch.id === channelId ? { ...ch, postPermission: permission } : ch
+            ),
+          };
+        });
+        setChannelSettingsOpen(false);
+        setSubmissionToast(
+          `Channel permission set to ${
+            permission === "TEACHERS_ONLY" ? "Teachers Only" : "Everyone"
+          }.`
+        );
+        setTimeout(() => setSubmissionToast(null), 3000);
+      }
+    } catch (err) {
+      console.error("Failed to update channel permission", err);
+    }
+  };
+
+  const handleStartEditMessage = (msg: Message) => {
+    setEditingMessageId(msg.id);
+    setEditingMessageContent(msg.content);
+  };
+
+  const handleSaveEditMessage = async (msgId: string) => {
+    if (!editingMessageContent.trim() || !activeChannelId) return;
+    try {
+      const res = await fetch(`/api/channels/${activeChannelId}/messages/${msgId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: editingMessageContent.trim() }),
+      });
+      if (res.ok) {
+        setChannelMessages((prev) =>
+          prev.map((m) =>
+            m.id === msgId
+              ? { ...m, content: editingMessageContent.trim(), isEdited: true }
+              : m
+          )
+        );
+        setEditingMessageId(null);
+        setEditingMessageContent("");
+      }
+    } catch (err) {
+      console.error("Failed to edit message", err);
+    }
+  };
+
+  const handleDeleteMessage = async (msgId: string) => {
+    if (!window.confirm("Are you sure you want to delete this message?")) return;
+    if (!activeChannelId) return;
+    try {
+      const res = await fetch(`/api/channels/${activeChannelId}/messages/${msgId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setChannelMessages((prev) => prev.filter((m) => m.id !== msgId));
+      }
+    } catch (err) {
+      console.error("Failed to delete message", err);
+    }
+  };
+
+  const handleDeleteAssignment = async (assignmentId: string) => {
+    if (!window.confirm("Are you sure you want to permanently delete this assignment?"))
+      return;
+    try {
+      const res = await fetch(`/api/assignments/${assignmentId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        fetchClassroom();
+        setSubmissionToast("Assignment deleted successfully.");
+        setTimeout(() => setSubmissionToast(null), 3000);
+      }
+    } catch (err) {
+      console.error("Failed to delete assignment", err);
     }
   };
 
@@ -243,8 +380,6 @@ export default function ClassroomHub() {
   const handleJoinLecture = () => {
     window.open("https://meet.google.com/new", "_blank", "noopener,noreferrer");
   };
-
-  const isTeacher = currentUser?.role === "TEACHER";
 
   if (!classroom) {
     return (
@@ -314,7 +449,9 @@ export default function ClassroomHub() {
                     alt={classroom.teacher.name}
                     className="h-6 w-6 rounded-full object-cover ring-1 ring-white/50"
                   />
-                  <span>Instructor: <strong>{classroom.teacher.name}</strong></span>
+                  <span>
+                    Instructor: <strong>{classroom.teacher.name}</strong>
+                  </span>
                 </div>
                 <span>•</span>
                 <span>{classroom.enrollments.length} Enrolled Students</span>
@@ -323,7 +460,7 @@ export default function ClassroomHub() {
               </div>
             </div>
 
-            {/* Actions: Join Lecture, Copy Code, and AI Copilot */}
+            {/* Actions: Join Lecture, Copy Code, AI Copilot, and Delete Class (Teacher) */}
             <div className="flex items-center gap-2.5 flex-wrap">
               <button
                 type="button"
@@ -356,13 +493,25 @@ export default function ClassroomHub() {
               </button>
 
               {isTeacher && (
-                <button
-                  onClick={() => setIsAiModalOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-indigo-500 hover:bg-indigo-400 border border-indigo-400/40 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md active:scale-95 transition-all min-h-[44px]"
-                >
-                  <Bot strokeWidth={1.75} size={18} />
-                  <span>Draft with AI</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => setIsAiModalOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-indigo-500 hover:bg-indigo-400 border border-indigo-400/40 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md active:scale-95 transition-all min-h-[44px]"
+                  >
+                    <Bot strokeWidth={1.75} size={18} />
+                    <span>Draft with AI</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleteClassModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-2xl bg-rose-600/30 hover:bg-rose-600/50 border border-rose-400/40 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-rose-100 transition-all backdrop-blur-md active:scale-95 min-h-[44px]"
+                    title="Delete Classroom"
+                  >
+                    <Trash2 strokeWidth={1.75} size={16} />
+                    <span>Delete Class</span>
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -417,6 +566,21 @@ export default function ClassroomHub() {
           </button>
 
           <button
+            onClick={() => setActiveTab("notebox")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === "notebox"
+                ? "bg-teal-600 text-white shadow-md shadow-teal-200"
+                : "text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>NoteBox</span>
+            <span className="ml-1 text-xs opacity-75 font-mono">
+              ({classroom.notes?.length || 0})
+            </span>
+          </button>
+
+          <button
             onClick={() => setActiveTab("people")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
               activeTab === "people"
@@ -449,51 +613,52 @@ export default function ClassroomHub() {
                       className="h-10 w-10 rounded-full object-cover ring-2 ring-indigo-500/20"
                     />
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">
-                        Share an update with your class
-                      </h3>
+                      <h4 className="text-sm font-bold text-slate-800">
+                        Announce something to your class
+                      </h4>
                       <p className="text-xs text-slate-500">
-                        Use the AI Copilot to generate structured FAQs, or draft a quick bulletin.
+                        Publish course updates or generate structured syllabus announcements with AI.
                       </p>
                     </div>
                   </div>
-
                   <button
                     onClick={() => setIsAiModalOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all shrink-0"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all"
                   >
-                    <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-                    <span>Draft with AI Copilot</span>
+                    <Bot strokeWidth={1.75} size={16} />
+                    <span>Create Announcement</span>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Announcements Stream */}
+            {/* Announcement Stream List */}
             <div className="space-y-4">
               {classroom.announcements.length === 0 ? (
-                <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center">
-                  <Megaphone className="mx-auto h-10 w-10 text-slate-300" />
-                  <h3 className="mt-3 text-sm font-bold text-slate-900">
-                    No announcements published yet
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Updates, lecture notes, and reminders will show up here.
+                <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center space-y-3 shadow-sm">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+                    <Megaphone strokeWidth={1.75} size={24} />
+                  </div>
+                  <h4 className="text-base font-bold text-slate-900">
+                    No announcements posted yet
+                  </h4>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    Instructor announcements and course updates will appear here on the stream timeline.
                   </p>
                 </div>
               ) : (
                 classroom.announcements.map((item) => (
                   <div
                     key={item.id}
-                    className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4 hover:border-slate-300 transition-colors"
+                    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:border-slate-300 transition-all space-y-4"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <div className="flex items-center gap-3">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={item.author.avatar || ""}
                           alt={item.author.name}
-                          className="h-9 w-9 rounded-full object-cover ring-1 ring-slate-200"
+                          className="h-10 w-10 rounded-full object-cover ring-2 ring-indigo-500/20"
                         />
                         <div>
                           <div className="flex items-center gap-2">
@@ -574,9 +739,9 @@ export default function ClassroomHub() {
                       key={assignment.id}
                       className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm hover:border-indigo-200 transition-all space-y-4"
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-1.5">
                             <span className="rounded-full bg-indigo-50 text-indigo-700 px-2.5 py-0.5 text-[11px] font-bold">
                               {assignment.maxPoints} Points
                             </span>
@@ -584,6 +749,16 @@ export default function ClassroomHub() {
                               <Clock className="h-3 w-3" />
                               {formatRelativeDueDate(assignment.dueDate)}
                             </span>
+                            {/* Targeted Audience Badge */}
+                            {assignment.assignToAll ? (
+                              <span className="rounded-full bg-slate-100 text-slate-700 px-2 py-0.5 text-[10px] font-semibold border border-slate-200">
+                                All Students
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-indigo-50 text-indigo-700 px-2 py-0.5 text-[10px] font-semibold border border-indigo-200">
+                                {assignment.assignedStudentIds?.length || 0} Targeted Students
+                              </span>
+                            )}
                           </div>
                           <h4 className="text-base font-extrabold text-slate-900">
                             {assignment.title}
@@ -593,18 +768,35 @@ export default function ClassroomHub() {
                           </span>
                         </div>
 
-                        {/* Status / Action Button */}
-                        <div className="flex items-center gap-3 shrink-0">
+                        {/* Status / Action Buttons */}
+                        <div className="flex items-center gap-2 shrink-0">
                           {isTeacher ? (
-                            <button
-                              onClick={() => setSelectedAssignmentForGrading(assignment)}
-                              className="inline-flex items-center gap-2 rounded-2xl bg-indigo-50 border border-indigo-200 px-4 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
-                            >
-                              <Award className="h-4 w-4" />
-                              <span>
-                                Grade Submissions ({assignment.submissions.length})
-                              </span>
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setSelectedAssignmentForGrading(assignment)}
+                                className="inline-flex items-center gap-1.5 rounded-2xl bg-indigo-50 border border-indigo-200 px-3.5 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
+                              >
+                                <Award className="h-4 w-4" />
+                                <span>Grade ({assignment.submissions.length})</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingAssignment(assignment)}
+                                className="inline-flex items-center gap-1 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 transition-colors"
+                                title="Edit Assignment"
+                              >
+                                <Edit3 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteAssignment(assignment.id)}
+                                className="inline-flex items-center justify-center rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 p-2 text-rose-600 transition-colors"
+                                title="Delete Assignment"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              </button>
+                            </div>
                           ) : (
                             <div className="flex items-center gap-3">
                               {isGraded ? (
@@ -674,23 +866,37 @@ export default function ClassroomHub() {
               <div className="space-y-1">
                 {classroom.channels.map((channel) => {
                   const isActive = channel.id === activeChannelId;
+                  const isRestricted = channel.postPermission === "TEACHERS_ONLY";
 
                   return (
                     <button
                       key={channel.id}
-                      onClick={() => setActiveChannelId(channel.id)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all text-left ${
+                      onClick={() => {
+                        setActiveChannelId(channel.id);
+                        setChannelSettingsOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold transition-all text-left ${
                         isActive
                           ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
                           : "text-slate-700 hover:bg-slate-100"
                       }`}
                     >
-                      <Hash
-                        className={`h-4 w-4 shrink-0 ${
-                          isActive ? "text-white" : "text-slate-400"
-                        }`}
-                      />
-                      <span className="truncate">{channel.name}</span>
+                      <div className="flex items-center gap-2.5 truncate">
+                        <Hash
+                          className={`h-4 w-4 shrink-0 ${
+                            isActive ? "text-white" : "text-slate-400"
+                          }`}
+                        />
+                        <span className="truncate">{channel.name}</span>
+                      </div>
+                      {isRestricted && (
+                        <Lock
+                          className={`h-3 w-3 shrink-0 ${
+                            isActive ? "text-indigo-200" : "text-slate-400"
+                          }`}
+                          strokeWidth={2}
+                        />
+                      )}
                     </button>
                   );
                 })}
@@ -712,10 +918,72 @@ export default function ClassroomHub() {
                   <span className="font-bold text-slate-900 text-sm">
                     {activeChannel?.name || "channel"}
                   </span>
+                  {activeChannel?.postPermission === "TEACHERS_ONLY" && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200/80 px-2 py-0.5 text-[10px] font-bold">
+                      <Lock className="h-3 w-3" strokeWidth={1.75} />
+                      <span>Teachers Only</span>
+                    </span>
+                  )}
                 </div>
-                <span className="text-xs text-slate-400 font-medium">
-                  {channelMessages.length} messages
-                </span>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-400 font-medium">
+                    {channelMessages.length} messages
+                  </span>
+
+                  {isTeacher && activeChannel && (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setChannelSettingsOpen(!channelSettingsOpen)}
+                        className="p-1.5 rounded-xl hover:bg-slate-200/60 text-slate-600 transition-colors flex items-center gap-1 text-xs font-semibold"
+                        title="Channel Posting Permissions"
+                      >
+                        <Settings className="h-4 w-4" strokeWidth={1.75} />
+                      </button>
+
+                      {channelSettingsOpen && (
+                        <div className="absolute right-0 top-8 z-30 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in duration-150 space-y-1">
+                          <p className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                            Posting Rights
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleUpdateChannelPermission(activeChannel.id, "EVERYONE")
+                            }
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
+                              activeChannel.postPermission !== "TEACHERS_ONLY"
+                                ? "bg-indigo-50 text-indigo-700 font-bold"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }`}
+                          >
+                            <span>Everyone can post</span>
+                            {activeChannel.postPermission !== "TEACHERS_ONLY" && (
+                              <Check className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleUpdateChannelPermission(activeChannel.id, "TEACHERS_ONLY")
+                            }
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
+                              activeChannel.postPermission === "TEACHERS_ONLY"
+                                ? "bg-indigo-50 text-indigo-700 font-bold"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }`}
+                          >
+                            <span>Teachers only</span>
+                            {activeChannel.postPermission === "TEACHERS_ONLY" && (
+                              <Check className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Message List */}
@@ -731,11 +999,12 @@ export default function ClassroomHub() {
                   channelMessages.map((msg) => {
                     const isMe = msg.senderId === currentUser?.id;
                     const isSenderTeacher = msg.sender?.role === "TEACHER";
+                    const isEditingThis = editingMessageId === msg.id;
 
                     return (
                       <div
                         key={msg.id}
-                        className={`flex gap-3 ${isMe ? "flex-row-reverse" : "flex-row"}`}
+                        className={`group flex gap-3 ${isMe ? "flex-row-reverse" : "flex-row"}`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -761,17 +1030,76 @@ export default function ClassroomHub() {
                             <span className="text-[10px] text-slate-400">
                               {formatDate(msg.createdAt)}
                             </span>
+                            {msg.isEdited && (
+                              <span className="text-[10px] text-slate-400 italic">
+                                (edited)
+                              </span>
+                            )}
+
+                            {/* Message actions on hover */}
+                            {!isEditingThis && (
+                              <div className="hidden group-hover:flex items-center gap-1 ml-2">
+                                {isMe && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStartEditMessage(msg)}
+                                    className="p-1 rounded text-slate-400 hover:text-indigo-600 hover:bg-slate-100"
+                                    title="Edit message"
+                                  >
+                                    <Edit3 className="h-3 w-3" strokeWidth={1.75} />
+                                  </button>
+                                )}
+                                {(isMe || isTeacher) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteMessage(msg.id)}
+                                    className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                                    title="Delete message"
+                                  >
+                                    <Trash2 className="h-3 w-3" strokeWidth={1.75} />
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
 
-                          <div
-                            className={`rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-sm ${
-                              isMe
-                                ? "bg-indigo-600 text-white rounded-tr-none"
-                                : "bg-slate-100 border border-slate-200/80 text-slate-800 rounded-tl-none"
-                            }`}
-                          >
-                            {msg.content}
-                          </div>
+                          {isEditingThis ? (
+                            <div className="w-full space-y-1.5">
+                              <input
+                                type="text"
+                                value={editingMessageContent}
+                                onChange={(e) => setEditingMessageContent(e.target.value)}
+                                className="w-full rounded-xl border border-indigo-400 px-3 py-1.5 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                autoFocus
+                              />
+                              <div className="flex items-center gap-1.5 justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingMessageId(null)}
+                                  className="px-2 py-0.5 rounded-lg text-[10px] font-medium text-slate-500 hover:bg-slate-100"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveEditMessage(msg.id)}
+                                  className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-600 text-white hover:bg-indigo-700"
+                                >
+                                  Save
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              className={`rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-sm ${
+                                isMe
+                                  ? "bg-indigo-600 text-white rounded-tr-none"
+                                  : "bg-slate-100 border border-slate-200/80 text-slate-800 rounded-tl-none"
+                              }`}
+                            >
+                              {msg.content}
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -780,31 +1108,49 @@ export default function ClassroomHub() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Message Input Box */}
-              <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-                <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder={`Message #${activeChannel?.name || "channel"}...`}
-                    className="flex-1 rounded-2xl border border-slate-300 px-4 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newMessage.trim() || isSendingMessage}
-                    className="inline-flex items-center gap-1.5 rounded-2xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition-all disabled:opacity-40"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                    <span>Send</span>
-                  </button>
-                </form>
-              </div>
+              {/* Message Input Box or Locked Channel Banner */}
+              {activeChannel?.postPermission === "TEACHERS_ONLY" && !isTeacher ? (
+                <div className="p-4 border-t border-slate-100 bg-amber-50/70 flex items-center justify-center gap-2 text-xs text-amber-800 font-medium">
+                  <Lock className="h-4 w-4 text-amber-600" strokeWidth={1.75} />
+                  <span>Only teachers can send messages in #{activeChannel?.name}.</span>
+                </div>
+              ) : (
+                <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+                  <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder={`Message #${activeChannel?.name || "channel"}...`}
+                      className="flex-1 rounded-2xl border border-slate-300 px-4 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newMessage.trim() || isSendingMessage}
+                      className="inline-flex items-center gap-1.5 rounded-2xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition-all disabled:opacity-40"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                      <span>Send</span>
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* 4. PEOPLE TAB */}
+        {/* 4. NOTEBOX TAB */}
+        {activeTab === "notebox" && (
+          <ClassroomNoteBox
+            classroomId={classroomId}
+            notes={classroom.notes || []}
+            currentUserId={currentUser?.id}
+            isTeacher={isTeacher}
+            onRefreshNotes={fetchClassroom}
+          />
+        )}
+
+        {/* 5. PEOPLE TAB */}
         {activeTab === "people" && (
           <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-8">
             {/* Teacher Section */}
@@ -878,9 +1224,23 @@ export default function ClassroomHub() {
                       </div>
                     </div>
 
-                    <span className="text-xs text-slate-400">
-                      Joined {formatDate(enr.createdAt)}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-slate-400">
+                        Joined {formatDate(enr.createdAt)}
+                      </span>
+
+                      {isTeacher && enr.user.id !== currentUser?.id && (
+                        <button
+                          type="button"
+                          onClick={() => setStudentToRemove(enr.user)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition-colors"
+                          title="Remove student from classroom"
+                        >
+                          <UserMinus className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          <span>Remove</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -910,6 +1270,20 @@ export default function ClassroomHub() {
         onClose={() => setIsCreateAssignmentOpen(false)}
         classroomId={classroom.id}
         onAssignmentCreated={fetchClassroom}
+        students={enrolledStudents}
+      />
+
+      {/* Edit Assignment Modal (Teacher) */}
+      <EditAssignmentModal
+        isOpen={!!editingAssignment}
+        onClose={() => setEditingAssignment(null)}
+        assignment={editingAssignment}
+        onAssignmentUpdated={() => {
+          fetchClassroom();
+          setSubmissionToast("Assignment updated successfully.");
+          setTimeout(() => setSubmissionToast(null), 3000);
+        }}
+        students={enrolledStudents}
       />
 
       {/* Submit Assignment Modal (Student) */}
@@ -934,6 +1308,27 @@ export default function ClassroomHub() {
           setSubmissionToast("Student grade and feedback recorded.");
           setTimeout(() => setSubmissionToast(null), 3500);
         }}
+      />
+
+      {/* Remove Student Confirmation Modal (Teacher) */}
+      <RemoveStudentModal
+        isOpen={!!studentToRemove}
+        onClose={() => setStudentToRemove(null)}
+        classroomId={classroom.id}
+        student={studentToRemove}
+        onStudentRemoved={() => {
+          fetchClassroom();
+          setSubmissionToast("Student removed from classroom.");
+          setTimeout(() => setSubmissionToast(null), 3000);
+        }}
+      />
+
+      {/* Delete Classroom Confirmation Modal (Teacher) */}
+      <DeleteClassroomModal
+        isOpen={isDeleteClassModalOpen}
+        onClose={() => setIsDeleteClassModalOpen(false)}
+        classroomId={classroom.id}
+        classroomName={classroom.name}
       />
 
       {/* Subtle Toast Feedback (No Confetti) */}

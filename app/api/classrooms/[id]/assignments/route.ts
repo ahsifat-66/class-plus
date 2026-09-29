@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSessionUser } from "@/lib/auth/session";
 
 export async function GET(
   req: NextRequest,
@@ -7,8 +8,23 @@ export async function GET(
 ) {
   try {
     const { id } = params;
+    const session = await getSessionUser(req);
+
+    // If user is a student, only show assignments where assignToAll is true OR student ID is targeted
+    const isStudent = session?.role === "STUDENT";
+
     const assignments = await prisma.assignment.findMany({
-      where: { classroomId: id },
+      where: {
+        classroomId: id,
+        ...(isStudent && session?.id
+          ? {
+              OR: [
+                { assignToAll: true },
+                { assignedStudentIds: { has: session.id } },
+              ],
+            }
+          : {}),
+      },
       include: {
         submissions: {
           include: {
@@ -32,7 +48,14 @@ export async function POST(
   try {
     const { id } = params;
     const body = await req.json();
-    const { title, description, dueDate, maxPoints } = body;
+    const {
+      title,
+      description,
+      dueDate,
+      maxPoints,
+      assignToAll = true,
+      assignedStudentIds = [],
+    } = body;
 
     if (!title || !description || !dueDate) {
       return NextResponse.json(
@@ -43,10 +66,12 @@ export async function POST(
 
     const assignment = await prisma.assignment.create({
       data: {
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         dueDate: new Date(dueDate),
         maxPoints: Number(maxPoints) || 100,
+        assignToAll: Boolean(assignToAll),
+        assignedStudentIds: Array.isArray(assignedStudentIds) ? assignedStudentIds : [],
         classroomId: id,
       },
       include: {

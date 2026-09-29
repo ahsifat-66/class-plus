@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSessionUser } from "@/lib/auth/session";
 
 export async function GET(
   req: NextRequest,
@@ -30,21 +31,43 @@ export async function POST(
 ) {
   try {
     const { id } = params;
+    const session = await getSessionUser(req);
     const body = await req.json();
     const { content, senderId } = body;
 
-    if (!content || !senderId) {
+    const actualSenderId = session?.id || senderId;
+
+    if (!content || !actualSenderId) {
       return NextResponse.json(
         { error: "Content and senderId are required" },
         { status: 400 }
       );
     }
 
+    const channel = await prisma.channel.findUnique({
+      where: { id },
+      include: { classroom: true },
+    });
+
+    if (!channel) {
+      return NextResponse.json({ error: "Channel not found" }, { status: 404 });
+    }
+
+    if (channel.postPermission === "TEACHERS_ONLY") {
+      const isTeacher = channel.classroom.teacherId === actualSenderId;
+      if (!isTeacher) {
+        return NextResponse.json(
+          { error: "Posting is restricted to teachers in this channel." },
+          { status: 403 }
+        );
+      }
+    }
+
     const message = await prisma.message.create({
       data: {
         content: content.trim(),
         channelId: id,
-        senderId,
+        senderId: actualSenderId,
       },
       include: {
         sender: true,

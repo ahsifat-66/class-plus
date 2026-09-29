@@ -32,6 +32,7 @@ model User {
   personalNotes  PersonalNote[]
   studyLogs      StudyLog[]
   personalGoals  PersonalGoal[]
+  notes          ClassroomNote[]
   isVerified     Boolean           @default(false)
   emailOtps      EmailOtp[]
   createdAt      DateTime          @default(now())
@@ -51,6 +52,7 @@ model Classroom {
   announcements Announcement[]
   assignments   Assignment[]
   channels      Channel[]
+  notes         ClassroomNote[]
   createdAt     DateTime          @default(now())
 }
 
@@ -78,17 +80,19 @@ model Enrollment {
 }
 
 model Channel {
-  id          String    @id @default(cuid())
-  name        String    // e.g. "general", "doubt-solving", "resources"
-  classroomId String
-  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
-  messages    Message[]
-  createdAt   DateTime  @default(now())
+  id             String    @id @default(cuid())
+  name           String    // e.g. "general", "doubt-solving", "resources"
+  postPermission String    @default("EVERYONE") // "EVERYONE" | "TEACHERS_ONLY"
+  classroomId    String
+  classroom      Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  messages       Message[]
+  createdAt      DateTime  @default(now())
 }
 
 model Message {
   id        String   @id @default(cuid())
   content   String
+  isEdited  Boolean  @default(false)
   senderId  String
   sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
   channelId String
@@ -108,15 +112,37 @@ model Announcement {
 }
 
 model Assignment {
-  id          String       @id @default(cuid())
-  title       String
-  description String
-  dueDate     DateTime
-  maxPoints   Int
+  id                 String       @id @default(cuid())
+  title              String
+  description        String
+  dueDate            DateTime
+  maxPoints          Int
+  assignToAll        Boolean      @default(true)
+  assignedStudentIds String[]     @default([])
+  classroomId        String
+  classroom          Classroom    @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  submissions        Submission[]
+  createdAt          DateTime     @default(now())
+}
+
+model ClassroomNote {
+  id          String    @id @default(cuid())
   classroomId String
-  classroom   Classroom    @relation(fields: [classroomId], references: [id], onDelete: Cascade)
-  submissions Submission[]
-  createdAt   DateTime     @default(now())
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  subject     String
+  content     String?   @db.Text
+  fileUrl     String?
+  fileName    String?
+  driveUrl    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([classroomId])
+  @@index([userId])
+  @@index([subject])
 }
 
 model Submission {

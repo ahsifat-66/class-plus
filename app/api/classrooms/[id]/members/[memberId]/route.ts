@@ -3,68 +3,12 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { getSessionUser } from "@/lib/auth/session";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { id } = params;
-
-    const classroom = await prisma.classroom.findUnique({
-      where: { id },
-      include: {
-        teacher: true,
-        enrollments: {
-          include: {
-            user: true,
-          },
-          orderBy: { createdAt: "asc" },
-        },
-        channels: {
-          orderBy: { createdAt: "asc" },
-        },
-        announcements: {
-          include: {
-            author: true,
-          },
-          orderBy: { createdAt: "desc" },
-        },
-        assignments: {
-          include: {
-            submissions: {
-              include: {
-                student: true,
-              },
-            },
-          },
-          orderBy: { dueDate: "asc" },
-        },
-        notes: {
-          include: {
-            user: true,
-          },
-          orderBy: { createdAt: "desc" },
-        },
-      },
-    });
-
-    if (!classroom) {
-      return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({ classroom });
-  } catch (error) {
-    console.error("Error fetching classroom:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
-}
-
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string; memberId: string } }
 ) {
   try {
-    const { id } = params;
+    const { id: classroomId, memberId } = params;
     const body = await req.json().catch(() => ({}));
     const { password } = body;
 
@@ -101,7 +45,7 @@ export async function DELETE(
     }
 
     const classroom = await prisma.classroom.findUnique({
-      where: { id },
+      where: { id: classroomId },
       select: { id: true, teacherId: true },
     });
 
@@ -111,18 +55,33 @@ export async function DELETE(
 
     if (classroom.teacherId !== teacher.id) {
       return NextResponse.json(
-        { error: "Forbidden. Only the course instructor can delete this class." },
+        { error: "Forbidden. Only the course instructor can remove students." },
         { status: 403 }
       );
     }
 
-    await prisma.classroom.delete({
-      where: { id },
-    });
+    // Remove from enrollments and members
+    await Promise.all([
+      prisma.enrollment.deleteMany({
+        where: {
+          classroomId,
+          userId: memberId,
+        },
+      }),
+      prisma.classroomMember.deleteMany({
+        where: {
+          classroomId,
+          userId: memberId,
+        },
+      }),
+    ]);
 
-    return NextResponse.json({ success: true, message: "Classroom successfully deleted." });
+    return NextResponse.json({
+      success: true,
+      message: "Student successfully removed from classroom roster.",
+    });
   } catch (error) {
-    console.error("Error deleting classroom:", error);
+    console.error("Error removing member from classroom:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

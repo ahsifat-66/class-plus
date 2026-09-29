@@ -183,9 +183,9 @@ export async function POST(req: NextRequest) {
         teacherId,
         channels: {
           create: [
-            { name: "announcements" },
-            { name: "lab-help" },
-            { name: "general" },
+            { name: "announcements", postPermission: "TEACHERS_ONLY" },
+            { name: "lab-help", postPermission: "EVERYONE" },
+            { name: "general", postPermission: "EVERYONE" },
           ],
         },
         members: {
