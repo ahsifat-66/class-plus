@@ -56,6 +56,8 @@ model Classroom {
   channels      Channel[]
   notes         ClassroomNote[]
   quizzes       Quiz[]
+  gradeLevel    String?
+  textbooks     NctbBook[]
   createdAt     DateTime          @default(now())
 }
 
@@ -276,5 +278,19 @@ model QuizSubmission {
   @@unique([quizId, userId])
   @@index([quizId])
   @@index([userId])
+}
+
+model NctbBook {
+  id         String      @id @default(cuid())
+  grade      String      // e.g. "Class 1", "Class 6", "Class 9-10", "Class 11-12"
+  subject    String      // e.g. "Bangla", "Mathematics", "Science"
+  title      String
+  driveUrl   String?
+  coverImage String?
+  classrooms Classroom[]
+  createdAt  DateTime    @default(now())
+
+  @@index([grade])
+  @@index([subject])
 }
 

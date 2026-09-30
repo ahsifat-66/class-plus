@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { UserProvider } from "@/context/UserContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { LanguageProvider } from "@/lib/i18n";
 import MobileBottomNav from "@/components/MobileBottomNav";
 
 export const metadata: Metadata = {
@@ -33,12 +34,14 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased min-h-screen selection:bg-indigo-500 selection:text-white">
         <ThemeProvider>
-          <UserProvider>
-            {children}
-            <Suspense fallback={null}>
-              <MobileBottomNav />
-            </Suspense>
-          </UserProvider>
+          <LanguageProvider>
+            <UserProvider>
+              {children}
+              <Suspense fallback={null}>
+                <MobileBottomNav />
+              </Suspense>
+            </UserProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

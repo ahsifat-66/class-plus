@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Plus,
@@ -11,7 +11,9 @@ import {
   HelpCircle,
   CheckCircle2,
   AlertCircle,
+  BookOpen,
 } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 
 interface QuestionItem {
   question: string;
@@ -24,6 +26,8 @@ interface CreateQuizModalProps {
   isOpen: boolean;
   onClose: () => void;
   classroomId: string;
+  gradeLevel?: string | null;
+  textbooks?: Array<{ id: string; title: string; subject: string }>;
   onQuizCreated: () => void;
 }
 
@@ -31,8 +35,11 @@ export default function CreateQuizModal({
   isOpen,
   onClose,
   classroomId,
+  gradeLevel,
+  textbooks = [],
   onQuizCreated,
 }: CreateQuizModalProps) {
+  const { t, language } = useLanguage();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(15);
@@ -50,13 +57,22 @@ export default function CreateQuizModal({
   // AI Generator states
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [aiTopic, setAiTopic] = useState("");
-  const [aiGrade, setAiGrade] = useState("Grade 9-10");
+  const [aiSubject, setAiSubject] = useState(textbooks[0]?.subject || "General");
+  const [aiGrade, setAiGrade] = useState(gradeLevel || "Class 9");
   const [aiCount, setAiCount] = useState(5);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [aiError, setAiError] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Update defaults when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      if (gradeLevel) setAiGrade(gradeLevel);
+      if (textbooks.length > 0) setAiSubject(textbooks[0].subject);
+    }
+  }, [isOpen, gradeLevel, textbooks]);
 
   if (!isOpen) return null;
 
@@ -108,7 +124,11 @@ export default function CreateQuizModal({
 
   const handleGenerateWithAi = async () => {
     if (!aiTopic.trim()) {
-      setAiError("Please enter an academic topic.");
+      setAiError(
+        language === "bn"
+          ? "অধ্যায় বা বিষয়বস্তুর নাম লিখুন।"
+          : "Please enter an academic chapter or topic."
+      );
       return;
     }
 
@@ -121,7 +141,9 @@ export default function CreateQuizModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic: aiTopic.trim(),
+          subject: aiSubject,
           gradeLevel: aiGrade,
+          language,
           numQuestions: aiCount,
         }),
       });
@@ -133,7 +155,11 @@ export default function CreateQuizModal({
 
       if (Array.isArray(data.questions) && data.questions.length > 0) {
         if (!title.trim()) {
-          setTitle(`Quiz: ${aiTopic.trim()}`);
+          setTitle(
+            language === "bn"
+              ? `কুইজ: ${aiTopic.trim()} (${aiSubject})`
+              : `Quiz: ${aiTopic.trim()} (${aiSubject})`
+          );
         }
         setQuestions(data.questions);
         setIsAiOpen(false);
@@ -148,7 +174,7 @@ export default function CreateQuizModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      setError("Quiz title is required.");
+      setError(language === "bn" ? "কুইজের শিরোনাম লিখুন।" : "Quiz title is required.");
       return;
     }
 
@@ -156,12 +182,20 @@ export default function CreateQuizModal({
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
       if (!q.question.trim()) {
-        setError(`Question ${i + 1} cannot be blank.`);
+        setError(
+          language === "bn"
+            ? `প্রশ্ন ${i + 1} খালি রাখা যাবে না।`
+            : `Question ${i + 1} cannot be blank.`
+        );
         return;
       }
       for (let j = 0; j < q.options.length; j++) {
         if (!q.options[j].trim()) {
-          setError(`Option ${String.fromCharCode(65 + j)} for Question ${i + 1} cannot be blank.`);
+          setError(
+            language === "bn"
+              ? `প্রশ্ন ${i + 1}-এর অপশন ${String.fromCharCode(65 + j)} খালি রাখা যাবে না।`
+              : `Option ${String.fromCharCode(65 + j)} for Question ${i + 1} cannot be blank.`
+          );
           return;
         }
       }
@@ -208,16 +242,18 @@ export default function CreateQuizModal({
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
-                Create Auto-Graded Quiz
+                {t("generateQuiz", "Create Auto-Graded Quiz")}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Craft structured MCQs manually or generate with Gemini AI
+                {language === "bn"
+                  ? "ম্যানুয়ালি প্রশ্ন লিখুন বা জেমিনি এআই দিয়ে স্বয়ংক্রিয়ভাবে তৈরি করুন"
+                  : "Craft structured MCQs manually or generate with Gemini AI"}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 transition-colors"
+            className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <X size={18} strokeWidth={1.75} />
           </button>
@@ -234,61 +270,94 @@ export default function CreateQuizModal({
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    Gemini AI Question Generator
+                    {language === "bn"
+                      ? "জেমিনি এআই প্রশ্ন জেনারেটর (Gemini 3.8 Flash)"
+                      : "Gemini AI Question Generator (Gemini 3.8 Flash)"}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Autofill 5–10 curriculum-aligned MCQs instantly using Gemini 3.8 Flash
+                    {language === "bn"
+                      ? "জাতীয় শিক্ষাক্রমের অধ্যায় ও বিষয়ভিত্তিক স্বয়ংক্রিয় MCQ প্রশ্নমালা"
+                      : "Instant curriculum-aligned chapter MCQs in standard Bengali or English"}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAiOpen(!isAiOpen)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition-all min-h-[36px]"
               >
                 <Sparkles size={14} />
-                <span>{isAiOpen ? "Hide Generator" : "Generate with Gemini AI"}</span>
+                <span>
+                  {isAiOpen
+                    ? language === "bn"
+                      ? "জেনারেটর বন্ধ করুন"
+                      : "Hide Generator"
+                    : t("generateWithAi", "Generate with Gemini AI")}
+                </span>
               </button>
             </div>
 
             {isAiOpen && (
               <div className="mt-4 pt-4 border-t border-indigo-100 dark:border-indigo-900/40 space-y-3 animate-in fade-in duration-150">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Subject selector from linked textbooks */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                      {t("selectSubject", "Subject")}
+                    </label>
+                    {textbooks.length > 0 ? (
+                      <select
+                        value={aiSubject}
+                        onChange={(e) => setAiSubject(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[40px]"
+                      >
+                        {Array.from(new Set(textbooks.map((b) => b.subject))).map((subj) => (
+                          <option key={subj} value={subj}>
+                            {subj}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={aiSubject}
+                        onChange={(e) => setAiSubject(e.target.value)}
+                        placeholder="e.g. Science, Physics, Bangla"
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[40px]"
+                      />
+                    )}
+                  </div>
+
+                  {/* Chapter / Topic */}
                   <div className="sm:col-span-2 space-y-1">
                     <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                      Academic Topic / Concept
+                      {t("chapterOrTopic", "Chapter / Topic")}
                     </label>
                     <input
                       type="text"
                       value={aiTopic}
                       onChange={(e) => setAiTopic(e.target.value)}
-                      placeholder="e.g. Newton's Laws of Motion, Photosynthesis, Organic Chemistry..."
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                      Grade Level
-                    </label>
-                    <input
-                      type="text"
-                      value={aiGrade}
-                      onChange={(e) => setAiGrade(e.target.value)}
-                      placeholder="e.g. Grade 9-10"
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      placeholder={
+                        language === "bn"
+                          ? "যেমন: অধ্যায় ৪: সালোকসংশ্লেষণ, বা নিউটনের গতিসূত্র"
+                          : "e.g. Chapter 4: Photosynthesis, Newton's Laws of Motion..."
+                      }
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[40px]"
                     />
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-600 dark:text-slate-400">Questions:</span>
+                    <span className="text-xs text-slate-600 dark:text-slate-400">
+                      {language === "bn" ? "প্রশ্নের সংখ্যা:" : "Questions:"}
+                    </span>
                     {[3, 5, 8, 10].map((num) => (
                       <button
                         key={num}
                         type="button"
                         onClick={() => setAiCount(num)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all min-h-[32px] ${
                           aiCount === num
                             ? "bg-indigo-600 text-white"
                             : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
@@ -303,17 +372,21 @@ export default function CreateQuizModal({
                     type="button"
                     onClick={handleGenerateWithAi}
                     disabled={isGeneratingAi || !aiTopic.trim()}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all disabled:opacity-50 min-h-[40px]"
                   >
                     {isGeneratingAi ? (
                       <>
                         <Loader2 size={14} className="animate-spin" />
-                        <span>Generating questions...</span>
+                        <span>
+                          {language === "bn" ? "তৈরি হচ্ছে..." : "Generating questions..."}
+                        </span>
                       </>
                     ) : (
                       <>
                         <Sparkles size={14} />
-                        <span>Autofill Questions</span>
+                        <span>
+                          {language === "bn" ? "প্রশ্ন জেনারেট করুন" : "Autofill Questions"}
+                        </span>
                       </>
                     )}
                   </button>
@@ -333,26 +406,35 @@ export default function CreateQuizModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2 space-y-1">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Quiz Title <span className="text-rose-500">*</span>
+                  {language === "bn" ? "কুইজের শিরোনাম" : "Quiz Title"}{" "}
+                  <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Chapter 4: Photosynthesis Mastery Test"
-                  className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  placeholder={
+                    language === "bn"
+                      ? "যেমন: অধ্যায় ৪: সালোকসংশ্লেষণ মূল্যায়ন পরীক্ষা"
+                      : "e.g. Chapter 4: Photosynthesis Mastery Test"
+                  }
+                  className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[44px]"
                   required
                 />
               </div>
 
               <div className="sm:col-span-2 space-y-1">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Instructions / Description
+                  {language === "bn" ? "নির্দেশনা / বিবরণ" : "Instructions / Description"}
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Instructions for students (e.g. select the most accurate option, no negative marking)..."
+                  placeholder={
+                    language === "bn"
+                      ? "শিক্ষার্থীদের জন্য নির্দেশনা (যেমন: প্রতিটি প্রশ্নের সঠিক উত্তর নির্বাচন করুন)..."
+                      : "Instructions for students (e.g. select the most accurate option, no negative marking)..."
+                  }
                   rows={2}
                   className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
                 />
@@ -361,7 +443,9 @@ export default function CreateQuizModal({
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <Clock size={14} className="text-indigo-600 dark:text-indigo-400" />
-                  <span>Time Limit (Minutes)</span>
+                  <span>
+                    {language === "bn" ? "সময়সীমা (মিনিট)" : "Time Limit (Minutes)"}
+                  </span>
                 </label>
                 <input
                   type="number"
@@ -369,19 +453,19 @@ export default function CreateQuizModal({
                   max={180}
                   value={timeLimitMinutes}
                   onChange={(e) => setTimeLimitMinutes(Number(e.target.value) || 1)}
-                  className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[44px]"
                 />
               </div>
 
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Due Date (Optional)
+                  {language === "bn" ? "জমা দেওয়ার শেষ সময় (ঐচ্ছিক)" : "Due Date (Optional)"}
                 </label>
                 <input
                   type="datetime-local"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[44px]"
                 />
               </div>
             </div>
@@ -390,19 +474,20 @@ export default function CreateQuizModal({
             <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                  Quiz Questions ({questions.length})
+                  {language === "bn" ? "কুইজের প্রশ্নসমূহ" : "Quiz Questions"} ({questions.length})
                 </h4>
                 <span className="text-[11px] text-slate-400">
-                  Total Points: {questions.reduce((sum, q) => sum + (q.points || 1), 0)}
+                  {language === "bn" ? "মোট নম্বর:" : "Total Points:"}{" "}
+                  {questions.reduce((sum, q) => sum + (q.points || 1), 0)}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={handleAddQuestion}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 text-xs font-bold transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 text-xs font-bold transition-colors min-h-[36px]"
               >
                 <Plus size={14} />
-                <span>Add Question</span>
+                <span>{language === "bn" ? "নতুন প্রশ্ন যোগ করুন" : "Add Question"}</span>
               </button>
             </div>
 
@@ -415,25 +500,25 @@ export default function CreateQuizModal({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-                      Question {qIdx + 1}
+                      {language === "bn" ? `প্রশ্ন ${qIdx + 1}` : `Question ${qIdx + 1}`}
                     </span>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1 text-xs text-slate-500">
-                        <span>Pts:</span>
+                        <span>{language === "bn" ? "নম্বর:" : "Pts:"}</span>
                         <input
                           type="number"
                           min={1}
                           max={50}
                           value={q.points}
                           onChange={(e) => handlePointsChange(qIdx, Number(e.target.value) || 1)}
-                          className="w-12 px-1.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-center font-bold text-xs"
+                          className="w-12 px-1.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-center font-bold text-xs min-h-[28px]"
                         />
                       </div>
                       {questions.length > 1 && (
                         <button
                           type="button"
                           onClick={() => handleRemoveQuestion(qIdx)}
-                          className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                          className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
                           title="Delete question"
                         >
                           <Trash2 size={14} />
@@ -446,15 +531,21 @@ export default function CreateQuizModal({
                     type="text"
                     value={q.question}
                     onChange={(e) => handleQuestionChange(qIdx, e.target.value)}
-                    placeholder="Enter question text..."
-                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    placeholder={
+                      language === "bn"
+                        ? "প্রশ্নের বিষয়বস্তু লিখুন..."
+                        : "Enter question text..."
+                    }
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[44px]"
                     required
                   />
 
                   {/* Options */}
                   <div className="space-y-2 pt-1">
                     <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                      Options (Click radio to select the correct answer):
+                      {language === "bn"
+                        ? "অপশনসমূহ (সঠিক উত্তর নির্বাচনে রেডিও বাটনে ক্লিক করুন):"
+                        : "Options (Click radio to select the correct answer):"}
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {q.options.map((opt, optIdx) => {
@@ -485,7 +576,7 @@ export default function CreateQuizModal({
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => handleOptionChange(qIdx, optIdx, e.target.value)}
                               placeholder={`Option ${String.fromCharCode(65 + optIdx)}`}
-                              className="w-full bg-transparent text-xs font-medium text-slate-900 dark:text-slate-100 focus:outline-none"
+                              className="w-full bg-transparent text-xs font-medium text-slate-900 dark:text-slate-100 focus:outline-none min-h-[32px]"
                               required
                             />
                             {isCorrect && (
@@ -517,26 +608,28 @@ export default function CreateQuizModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-2xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="rounded-2xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-h-[44px]"
             disabled={isSubmitting}
           >
-            Cancel
+            {t("cancel", "Cancel")}
           </button>
           <button
             type="submit"
             form="create-quiz-form"
             disabled={isSubmitting}
-            className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 text-xs font-bold shadow-md shadow-indigo-200 dark:shadow-none transition-all active:scale-95 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 text-xs font-bold shadow-md shadow-indigo-200 dark:shadow-none transition-all active:scale-95 disabled:opacity-50 min-h-[44px]"
           >
             {isSubmitting ? (
               <>
                 <Loader2 size={14} className="animate-spin" />
-                <span>Publishing Quiz...</span>
+                <span>{t("submitting", "Publishing Quiz...")}</span>
               </>
             ) : (
               <>
                 <HelpCircle size={14} />
-                <span>Publish Quiz</span>
+                <span>
+                  {language === "bn" ? "কুইজ প্রকাশ করুন" : "Publish Quiz"}
+                </span>
               </>
             )}
           </button>

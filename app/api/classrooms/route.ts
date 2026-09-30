@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, subject } = body;
+    const { name, subject, gradeLevel, textbookIds } = body;
     let { teacherId } = body;
 
     // 1. Automatically extract teacherId from authenticated session if not in body
@@ -175,31 +175,41 @@ export async function POST(req: NextRequest) {
       existing = await prisma.classroom.findUnique({ where: { code } });
     }
 
-    const classroom = await prisma.classroom.create({
-      data: {
-        name: name.trim(),
-        subject: finalSubject,
-        code,
-        teacherId,
-        channels: {
-          create: [
-            { name: "announcements", postPermission: "TEACHERS_ONLY" },
-            { name: "lab-help", postPermission: "EVERYONE" },
-            { name: "general", postPermission: "EVERYONE" },
-          ],
-        },
-        members: {
-          create: {
-            userId: teacherId,
-            role: "TEACHER",
-          },
+    const classroomData: any = {
+      name: name.trim(),
+      subject: finalSubject,
+      code,
+      teacherId,
+      gradeLevel: gradeLevel || null,
+      channels: {
+        create: [
+          { name: "announcements", postPermission: "TEACHERS_ONLY" },
+          { name: "lab-help", postPermission: "EVERYONE" },
+          { name: "general", postPermission: "EVERYONE" },
+        ],
+      },
+      members: {
+        create: {
+          userId: teacherId,
+          role: "TEACHER",
         },
       },
+    };
+
+    if (Array.isArray(textbookIds) && textbookIds.length > 0) {
+      classroomData.textbooks = {
+        connect: textbookIds.map((tid: string) => ({ id: tid })),
+      };
+    }
+
+    const classroom = await prisma.classroom.create({
+      data: classroomData,
       include: {
         teacher: true,
         channels: true,
         enrollments: true,
         members: true,
+        textbooks: true,
       },
     });
 

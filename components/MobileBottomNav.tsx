@@ -5,11 +5,13 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { LayoutGrid, CalendarClock, Archive, User } from "lucide-react";
 import { useUser } from "@/context/UserContext";
+import { useLanguage } from "@/lib/i18n";
 
 function MobileBottomNavContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { currentUser, isLoading } = useUser();
+  const { t } = useLanguage();
 
   // Do not render on auth pages or when unauthenticated
   const isAuthPage =
@@ -26,7 +28,7 @@ function MobileBottomNavContent() {
 
   const navItems = [
     {
-      label: "Classes",
+      label: t("navClasses", "Classes"),
       href: "/dashboard",
       icon: LayoutGrid,
       isActive:
@@ -34,19 +36,19 @@ function MobileBottomNavContent() {
         pathname.startsWith("/classroom"),
     },
     {
-      label: "Deadlines",
+      label: t("navDeadlines", "Deadlines"),
       href: "/dashboard?view=deadlines",
       icon: CalendarClock,
       isActive: pathname === "/dashboard" && viewParam === "deadlines",
     },
     {
-      label: "Locker",
+      label: t("navLocker", "Locker"),
       href: "/dashboard/student/locker",
       icon: Archive,
       isActive: pathname.startsWith("/dashboard/student/locker"),
     },
     {
-      label: "Profile",
+      label: t("navProfile", "Profile"),
       href: "/profile",
       icon: User,
       isActive: pathname.startsWith("/profile"),

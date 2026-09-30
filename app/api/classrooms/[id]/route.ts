@@ -45,6 +45,9 @@ export async function GET(
           },
           orderBy: { createdAt: "desc" },
         },
+        textbooks: {
+          orderBy: { title: "asc" },
+        },
       },
     });
 
@@ -55,6 +58,68 @@ export async function GET(
     return NextResponse.json({ classroom });
   } catch (error) {
     console.error("Error fetching classroom:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = params;
+    const session = await getSessionUser(req);
+    if (!session?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const classroom = await prisma.classroom.findUnique({
+      where: { id },
+      select: { id: true, teacherId: true },
+    });
+
+    if (!classroom) {
+      return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
+    }
+
+    if (classroom.teacherId !== session.id) {
+      return NextResponse.json(
+        { error: "Forbidden. Only the course instructor can modify this class." },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const { name, subject, gradeLevel, textbookIds } = body;
+
+    const updateData: any = {};
+    if (typeof name === "string" && name.trim()) {
+      updateData.name = name.trim();
+    }
+    if (typeof subject === "string") {
+      updateData.subject = subject.trim() || "All Subjects";
+    }
+    if (gradeLevel !== undefined) {
+      updateData.gradeLevel = gradeLevel || null;
+    }
+    if (Array.isArray(textbookIds)) {
+      updateData.textbooks = {
+        set: textbookIds.map((tid: string) => ({ id: tid })),
+      };
+    }
+
+    const updated = await prisma.classroom.update({
+      where: { id },
+      data: updateData,
+      include: {
+        teacher: true,
+        textbooks: true,
+      },
+    });
+
+    return NextResponse.json({ classroom: updated, success: true });
+  } catch (error) {
+    console.error("Error updating classroom:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

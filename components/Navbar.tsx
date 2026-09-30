@@ -20,6 +20,7 @@ import {
   Moon,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
+import { useLanguage, LanguageToggle } from "@/lib/i18n";
 
 interface NavbarProps {
   onCreateClassOpen?: () => void;
@@ -32,6 +33,7 @@ export default function Navbar({
 }: NavbarProps) {
   const { currentUser, userSummary, isLoading } = useUser();
   const { theme, toggleTheme } = useTheme();
+  const { t, language } = useLanguage();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Derive dynamic role badge: "Teacher & Student", "Teacher", or "Student"
@@ -80,7 +82,7 @@ export default function Navbar({
                 </span>
               </div>
               <span className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 hidden sm:inline">
-                Academic Collaboration Platform
+                {t("platformSubtitle")}
               </span>
             </div>
           </Link>
@@ -88,6 +90,9 @@ export default function Navbar({
 
         {/* Center/Right Section */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Language Switcher [ বাংলা | English ] */}
+          <LanguageToggle />
+
           {/* Notification Bell */}
           <NotificationBell />
 
@@ -119,8 +124,8 @@ export default function Navbar({
                     title="Create a new course as Teacher"
                   >
                     <Plus strokeWidth={1.75} size={16} />
-                    <span className="hidden sm:inline">Create Class</span>
-                    <span className="sm:hidden text-[11px]">Create</span>
+                    <span className="hidden sm:inline">{t("createClass")}</span>
+                    <span className="sm:hidden text-[11px]">{t("createClass")}</span>
                   </button>
                 )}
 
@@ -131,8 +136,8 @@ export default function Navbar({
                     title="Join an existing course via class code"
                   >
                     <LogIn strokeWidth={1.75} size={16} />
-                    <span className="hidden sm:inline">Join Class</span>
-                    <span className="sm:hidden text-[11px]">Join</span>
+                    <span className="hidden sm:inline">{t("joinClass")}</span>
+                    <span className="sm:hidden text-[11px]">{t("joinClass")}</span>
                   </button>
                 )}
 
@@ -142,7 +147,7 @@ export default function Navbar({
                   title="View Analytics & Performance Dashboard"
                 >
                   <BarChart3 strokeWidth={1.75} size={16} className="text-indigo-600 dark:text-indigo-400" />
-                  <span className="hidden md:inline">Analytics</span>
+                  <span className="hidden md:inline">{t("navAnalytics")}</span>
                 </Link>
               </div>
 

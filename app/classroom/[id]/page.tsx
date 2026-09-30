@@ -20,6 +20,9 @@ import QuizTakingModal from "@/components/QuizTakingModal";
 import QuizSubmissionsModal from "@/components/QuizSubmissionsModal";
 import EditAnnouncementModal from "@/components/EditAnnouncementModal";
 import LeaveClassroomModal from "@/components/LeaveClassroomModal";
+import EditClassModal from "@/components/EditClassModal";
+import PdfReaderModal from "@/components/PdfReaderModal";
+import { useLanguage } from "@/lib/i18n";
 import {
   ArrowLeft,
   Copy,
@@ -27,6 +30,7 @@ import {
   Sparkles,
   Megaphone,
   BookOpen,
+  BookMarked,
   Hash,
   Users,
   Send,
@@ -122,6 +126,15 @@ interface ClassroomData {
     }>;
   }>;
   notes?: NoteItem[];
+  gradeLevel?: string | null;
+  textbooks?: Array<{
+    id: string;
+    grade: string;
+    subject: string;
+    title: string;
+    driveUrl?: string | null;
+    coverImage?: string | null;
+  }>;
 }
 
 interface Message {
@@ -147,11 +160,19 @@ export default function ClassroomHub() {
   const initialTab = searchParams.get("tab") || "stream";
 
   const { currentUser } = useUser();
+  const { t, language } = useLanguage();
 
   const [classroom, setClassroom] = useState<ClassroomData | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "stream" | "classwork" | "quizzes" | "channels" | "notebox" | "people"
+    "stream" | "classwork" | "quizzes" | "channels" | "bookshelf" | "notebox" | "people"
   >((initialTab as any) || "stream");
+  const [isEditClassOpen, setIsEditClassOpen] = useState(false);
+  const [readingBook, setReadingBook] = useState<{
+    title: string;
+    driveUrl: string;
+    grade?: string;
+    subject?: string;
+  } | null>(null);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [channelMessages, setChannelMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -542,10 +563,17 @@ export default function ClassroomHub() {
           <div className="absolute top-0 right-0 -mt-16 -mr-16 w-80 h-80 bg-white/10 rounded-full blur-2xl pointer-events-none" />
           <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-                <BookOpen className="h-3 w-3" />
-                {classroom.subject}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-md">
+                  <BookOpen className="h-3 w-3" />
+                  {classroom.subject}
+                </span>
+                {classroom.gradeLevel && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/40 border border-indigo-300/30 px-3 py-1 text-xs font-semibold backdrop-blur-md text-white">
+                    {classroom.gradeLevel}
+                  </span>
+                )}
+              </div>
               <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight">
                 {classroom.name}
               </h1>
@@ -609,6 +637,16 @@ export default function ClassroomHub() {
                 <>
                   <button
                     type="button"
+                    onClick={() => setIsEditClassOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white transition-all backdrop-blur-md active:scale-95 min-h-[44px]"
+                    title="Edit Classroom Settings & NCTB Textbooks"
+                  >
+                    <Settings strokeWidth={1.75} size={16} />
+                    <span>{t("editClass", "Edit Class")}</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={handleExportGradebook}
                     disabled={isExportingGradebook}
                     className="inline-flex items-center gap-1.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white transition-all backdrop-blur-md active:scale-95 min-h-[44px] disabled:opacity-50"
@@ -664,7 +702,7 @@ export default function ClassroomHub() {
             }`}
           >
             <Megaphone className="h-4 w-4 shrink-0" />
-            <span>Stream</span>
+            <span>{t("tabStream", "Stream")}</span>
             <span className="ml-1 text-xs opacity-75 font-mono">
               ({classroom.announcements.length})
             </span>
@@ -679,7 +717,7 @@ export default function ClassroomHub() {
             }`}
           >
             <BookOpen className="h-4 w-4 shrink-0" />
-            <span>Classwork</span>
+            <span>{t("tabClasswork", "Classwork")}</span>
             <span className="ml-1 text-xs opacity-75 font-mono">
               ({classroom.assignments.length})
             </span>
@@ -694,9 +732,24 @@ export default function ClassroomHub() {
             }`}
           >
             <HelpCircle className="h-4 w-4 shrink-0" />
-            <span>Quizzes</span>
+            <span>{t("tabQuizzes", "Quizzes")}</span>
             <span className="ml-1 text-xs opacity-75 font-mono">
               ({quizzes.length})
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("bookshelf")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 whitespace-nowrap ${
+              activeTab === "bookshelf"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none"
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+          >
+            <BookMarked className="h-4 w-4 shrink-0" />
+            <span>{t("tabBookShelf", "BookShelf")}</span>
+            <span className="ml-1 text-xs opacity-75 font-mono">
+              ({classroom.textbooks?.length || 0})
             </span>
           </button>
 
@@ -709,7 +762,7 @@ export default function ClassroomHub() {
             }`}
           >
             <Hash className="h-4 w-4 shrink-0" />
-            <span>Discussion Channels</span>
+            <span>{t("tabChannels", "Discussion Channels")}</span>
             <span className="relative flex h-2 w-2 ml-0.5 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
@@ -725,7 +778,7 @@ export default function ClassroomHub() {
             }`}
           >
             <BookOpen className="h-4 w-4 shrink-0" />
-            <span>NoteBox</span>
+            <span>{t("tabNoteBox", "NoteBox")}</span>
             <span className="ml-1 text-xs opacity-75 font-mono">
               ({classroom.notes?.length || 0})
             </span>
@@ -740,7 +793,7 @@ export default function ClassroomHub() {
             }`}
           >
             <Users className="h-4 w-4 shrink-0" />
-            <span>People</span>
+            <span>{t("tabPeople", "People")}</span>
             <span className="ml-1 text-xs opacity-75 font-mono">
               ({classroom.enrollments.length + 1})
             </span>
@@ -1186,6 +1239,122 @@ export default function ClassroomHub() {
                 })
               )}
             </div>
+          </div>
+        )}
+
+        {/* BOOKSHELF TAB (NCTB Textbooks) */}
+        {activeTab === "bookshelf" && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shrink-0">
+                  <BookMarked strokeWidth={1.75} size={24} />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
+                    {t("bookshelfTitle", "NCTB Curriculum Textbooks")}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {t(
+                      "bookshelfSubtitle",
+                      "Read curriculum-approved textbooks online or download offline copies."
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {isTeacher && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditClassOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs sm:text-sm font-bold shadow-md shadow-indigo-200 dark:shadow-none transition-all active:scale-95 shrink-0 min-h-[44px]"
+                >
+                  <Plus strokeWidth={1.75} size={16} />
+                  <span>{t("addBooks", "Manage Textbooks")}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Textbooks Grid */}
+            {!classroom.textbooks || classroom.textbooks.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 p-12 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mb-3">
+                  <BookMarked strokeWidth={1.75} size={28} />
+                </div>
+                <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                  {t("noBooksAssigned", "No textbooks linked to this classroom yet")}
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
+                  {t(
+                    "noBooksHint",
+                    "Edit the classroom settings to assign NCTB curriculum textbooks."
+                  )}
+                </p>
+                {isTeacher && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditClassOpen(true)}
+                    className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs font-bold shadow-sm transition-all"
+                  >
+                    <Plus strokeWidth={1.75} size={16} />
+                    <span>{t("addBooks", "Add Books")}</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {classroom.textbooks.map((book) => (
+                  <div
+                    key={book.id}
+                    className="group rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40">
+                          {book.subject}
+                        </span>
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                          {book.grade}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
+                        {book.title}
+                      </h4>
+                    </div>
+
+                    <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setReadingBook({
+                            title: book.title,
+                            driveUrl: book.driveUrl || "",
+                            grade: book.grade,
+                            subject: book.subject,
+                          })
+                        }
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 text-xs font-bold shadow-sm transition-all min-h-[38px]"
+                      >
+                        <BookMarked strokeWidth={1.75} size={15} />
+                        <span>{t("readOnline", "Read Online")}</span>
+                      </button>
+
+                      {book.driveUrl && (
+                        <a
+                          href={book.driveUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors min-h-[38px] min-w-[38px]"
+                          title={t("download", "Download")}
+                        >
+                          <Download strokeWidth={1.75} size={15} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1711,12 +1880,46 @@ export default function ClassroomHub() {
         isOpen={isCreateQuizOpen}
         onClose={() => setIsCreateQuizOpen(false)}
         classroomId={classroom.id}
+        gradeLevel={classroom.gradeLevel}
+        textbooks={classroom.textbooks}
         onQuizCreated={() => {
           fetchQuizzes();
           setSubmissionToast("Quiz published successfully.");
           setTimeout(() => setSubmissionToast(null), 3000);
         }}
       />
+
+      {/* Edit Classroom Settings & Textbooks Modal (Teacher) */}
+      {isEditClassOpen && (
+        <EditClassModal
+          isOpen={isEditClassOpen}
+          onClose={() => setIsEditClassOpen(false)}
+          classroom={{
+            id: classroom.id,
+            name: classroom.name,
+            subject: classroom.subject,
+            gradeLevel: classroom.gradeLevel,
+            textbooks: classroom.textbooks,
+          }}
+          onClassUpdated={() => {
+            fetchClassroom();
+            setSubmissionToast(t("saveChanges", "Classroom updated successfully."));
+            setTimeout(() => setSubmissionToast(null), 3000);
+          }}
+        />
+      )}
+
+      {/* Embedded PDF Reader Modal for NCTB Textbooks */}
+      {readingBook && (
+        <PdfReaderModal
+          isOpen={!!readingBook}
+          onClose={() => setReadingBook(null)}
+          title={readingBook.title}
+          pdfUrl={readingBook.driveUrl}
+          grade={readingBook.grade}
+          subject={readingBook.subject}
+        />
+      )}
 
       {/* Quiz Taking / Review Modal (Student) */}
       <QuizTakingModal
