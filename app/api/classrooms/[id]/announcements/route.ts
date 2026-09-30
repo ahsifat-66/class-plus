@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { notifyClassroomStudents } from "@/lib/notifications";
 
 export async function GET(
   req: NextRequest,
@@ -45,6 +46,14 @@ export async function POST(
       include: {
         author: true,
       },
+    });
+
+    // Notify enrolled students
+    await notifyClassroomStudents({
+      classroomId: id,
+      title: `New Announcement: ${announcement.title}`,
+      message: announcement.content.slice(0, 100) + (announcement.content.length > 100 ? "..." : ""),
+      link: `/classroom/${id}?tab=stream`,
     });
 
     return NextResponse.json({ announcement }, { status: 201 });

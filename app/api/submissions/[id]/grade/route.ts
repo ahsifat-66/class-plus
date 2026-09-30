@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { notifySubmissionGraded } from "@/lib/notifications";
 
 export async function POST(
   req: NextRequest,
@@ -21,6 +22,17 @@ export async function POST(
         assignment: true,
       },
     });
+
+    if (submission.grade !== null && submission.studentId && submission.assignment) {
+      await notifySubmissionGraded({
+        studentId: submission.studentId,
+        classroomId: submission.assignment.classroomId,
+        assignmentTitle: submission.assignment.title,
+        grade: submission.grade,
+        maxPoints: submission.assignment.maxPoints,
+        feedback: submission.feedback,
+      });
+    }
 
     return NextResponse.json({ submission, message: "Submission graded successfully!" });
   } catch (error) {

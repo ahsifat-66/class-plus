@@ -7,6 +7,7 @@ import { useUser } from "@/context/UserContext";
 import Navbar from "@/components/Navbar";
 import CreateClassModal from "@/components/CreateClassModal";
 import JoinClassModal from "@/components/JoinClassModal";
+import LeaveClassroomModal from "@/components/LeaveClassroomModal";
 import {
   BookOpen,
   Users,
@@ -21,6 +22,8 @@ import {
   FileCheck,
   Clock,
   LogIn,
+  LogOut,
+  MoreVertical,
   GraduationCap,
   Award,
   AlertCircle,
@@ -115,6 +118,8 @@ function UnifiedDashboardContent() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
+  const [leavingClassroom, setLeavingClassroom] = useState<Classroom | null>(null);
+  const [enrolledCardMenuOpenId, setEnrolledCardMenuOpenId] = useState<string | null>(null);
 
   // Analytics states for embedded dashboard analytics
   const [analyticsData, setAnalyticsData] = useState<any | null>(null);
@@ -965,9 +970,54 @@ function UnifiedDashboardContent() {
                             {cls.subject}
                           </span>
 
-                          <span className="text-xs font-semibold text-slate-400">
-                            Instructor: {cls.teacher?.name?.split(" ")[0] || "Faculty"}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-semibold text-slate-400">
+                              Instructor: {cls.teacher?.name?.split(" ")[0] || "Faculty"}
+                            </span>
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setEnrolledCardMenuOpenId(
+                                    enrolledCardMenuOpenId === cls.id ? null : cls.id
+                                  );
+                                }}
+                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                title="Classroom options"
+                              >
+                                <MoreVertical size={15} />
+                              </button>
+                              {enrolledCardMenuOpenId === cls.id && (
+                                <>
+                                  <div
+                                    className="fixed inset-0 z-30"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setEnrolledCardMenuOpenId(null);
+                                    }}
+                                  />
+                                  <div className="absolute right-0 mt-1 w-36 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-xl z-40 animate-in fade-in zoom-in-95">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setEnrolledCardMenuOpenId(null);
+                                        setLeavingClassroom(cls);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors"
+                                    >
+                                      <LogOut size={14} />
+                                      <span>Leave Class</span>
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
 
                         <Link href={`/classroom/${cls.id}`}>
@@ -1248,6 +1298,16 @@ function UnifiedDashboardContent() {
         isOpen={isJoinOpen}
         onClose={() => setIsJoinOpen(false)}
         onClassJoined={fetchAllData}
+      />
+
+      <LeaveClassroomModal
+        isOpen={!!leavingClassroom}
+        onClose={() => setLeavingClassroom(null)}
+        classroomId={leavingClassroom?.id || ""}
+        classroomName={leavingClassroom?.name || "Class"}
+        onSuccess={() => {
+          fetchAllData();
+        }}
       />
     </div>
   );

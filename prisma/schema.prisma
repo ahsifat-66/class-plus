@@ -33,6 +33,8 @@ model User {
   studyLogs      StudyLog[]
   personalGoals  PersonalGoal[]
   notes          ClassroomNote[]
+  notifications  Notification[]
+  quizSubmissions QuizSubmission[]
   isVerified     Boolean           @default(false)
   emailOtps      EmailOtp[]
   createdAt      DateTime          @default(now())
@@ -53,6 +55,7 @@ model Classroom {
   assignments   Assignment[]
   channels      Channel[]
   notes         ClassroomNote[]
+  quizzes       Quiz[]
   createdAt     DateTime          @default(now())
 }
 
@@ -104,11 +107,13 @@ model Announcement {
   id          String    @id @default(cuid())
   title       String
   content     String
+  isEdited    Boolean   @default(false)
   classroomId String
   classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
   authorId    String
   author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
 }
 
 model Assignment {
@@ -214,3 +219,62 @@ model EmailOtp {
   @@index([userId])
   @@index([email])
 }
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model Quiz {
+  id               String           @id @default(cuid())
+  classroomId      String
+  classroom        Classroom        @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?
+  timeLimitMinutes Int              @default(15)
+  dueDate          DateTime?
+  createdAt        DateTime         @default(now())
+  questions        QuizQuestion[]
+  submissions      QuizSubmission[]
+
+  @@index([classroomId])
+}
+
+model QuizQuestion {
+  id                 String   @id @default(cuid())
+  quizId             String
+  quiz               Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question           String
+  options            String[]
+  correctOptionIndex Int
+  points             Int      @default(1)
+
+  @@index([quizId])
+}
+
+model QuizSubmission {
+  id              String   @id @default(cuid())
+  quizId          String
+  quiz            Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  selectedAnswers Int[]
+  score           Int
+  totalPoints     Int
+  completedAt     DateTime @default(now())
+
+  @@unique([quizId, userId])
+  @@index([quizId])
+  @@index([userId])
+}
+

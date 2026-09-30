@@ -19,6 +19,7 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
 
 interface NavbarProps {
   onCreateClassOpen?: () => void;
@@ -87,6 +88,9 @@ export default function Navbar({
 
         {/* Center/Right Section */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Notification Bell */}
+          <NotificationBell />
+
           {/* Desktop Theme Switcher */}
           <button
             type="button"

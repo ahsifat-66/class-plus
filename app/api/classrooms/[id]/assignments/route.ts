@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth/session";
+import { notifyClassroomStudents } from "@/lib/notifications";
 
 export async function GET(
   req: NextRequest,
@@ -77,6 +78,15 @@ export async function POST(
       include: {
         submissions: true,
       },
+    });
+
+    // Notify enrolled students
+    await notifyClassroomStudents({
+      classroomId: id,
+      title: `New Assignment: ${assignment.title}`,
+      message: `Due on ${new Date(dueDate).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} • ${assignment.maxPoints} pts`,
+      link: `/classroom/${id}?tab=classwork`,
+      targetStudentIds: assignment.assignToAll ? undefined : assignment.assignedStudentIds,
     });
 
     return NextResponse.json({ assignment }, { status: 201 });
