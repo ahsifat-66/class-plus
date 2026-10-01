@@ -217,6 +217,7 @@ export default function ClassroomHub() {
   const [editingMessageContent, setEditingMessageContent] = useState("");
   const [bookshelfFilter, setBookshelfFilter] = useState("All");
   const [bookshelfSearch, setBookshelfSearch] = useState("");
+  const [isDeletingBookId, setIsDeletingBookId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -1293,13 +1294,7 @@ export default function ClassroomHub() {
 
         {/* BOOKSHELF TAB (NCTB Textbooks) */}
         {activeTab === "bookshelf" && (() => {
-          const effectiveTextbooks =
-            classroom?.textbooks && classroom.textbooks.length > 0
-              ? classroom.textbooks
-              : classroom?.gradeLevel?.toLowerCase().includes("6") ||
-                classroom?.name?.toLowerCase().includes("6")
-              ? booksData
-              : classroom?.textbooks || [];
+          const effectiveTextbooks = classroom?.textbooks || [];
 
           const uniqueSubjects = [
             "All",
@@ -1478,6 +1473,22 @@ export default function ClassroomHub() {
                           >
                             <Download strokeWidth={1.75} size={15} />
                           </a>
+                        )}
+
+                        {isTeacher && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBook(book.id, book.title)}
+                            disabled={isDeletingBookId === book.id}
+                            className="inline-flex items-center justify-center p-2 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors min-h-[38px] min-w-[38px]"
+                            title={language === "bn" ? "বইটি বুকশেলফ থেকে মুছে ফেলুন" : "Remove book from bookshelf"}
+                          >
+                            {isDeletingBookId === book.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 strokeWidth={1.75} size={15} />
+                            )}
+                          </button>
                         )}
                       </div>
                     </div>
