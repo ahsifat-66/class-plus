@@ -21,7 +21,7 @@ export default function CreateClassModal({
   const { t, language } = useLanguage();
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
-  const [gradeLevel, setGradeLevel] = useState<string>("Class 9");
+  const [gradeLevel, setGradeLevel] = useState<string>("Class 6");
   const [availableBooks, setAvailableBooks] = useState<NctbBookItem[]>([]);
   const [selectedBookIds, setSelectedBookIds] = useState<string[]>([]);
   const [isLoadingBooks, setIsLoadingBooks] = useState(false);

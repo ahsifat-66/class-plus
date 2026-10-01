@@ -59,7 +59,10 @@ import {
   Download,
   LogOut,
   Pencil,
+  Search,
+  Filter,
 } from "lucide-react";
+import { booksData } from "@/data/booksData";
 import { formatDate, formatRelativeDueDate } from "@/lib/utils";
 
 interface ClassroomData {
@@ -211,6 +214,8 @@ export default function ClassroomHub() {
   const [channelSettingsOpen, setChannelSettingsOpen] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingMessageContent, setEditingMessageContent] = useState("");
+  const [bookshelfFilter, setBookshelfFilter] = useState("All");
+  const [bookshelfSearch, setBookshelfSearch] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -1243,120 +1248,201 @@ export default function ClassroomHub() {
         )}
 
         {/* BOOKSHELF TAB (NCTB Textbooks) */}
-        {activeTab === "bookshelf" && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shrink-0">
-                  <BookMarked strokeWidth={1.75} size={24} />
-                </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
-                    {t("bookshelfTitle", "NCTB Curriculum Textbooks")}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {t(
-                      "bookshelfSubtitle",
-                      "Read curriculum-approved textbooks online or download offline copies."
-                    )}
-                  </p>
-                </div>
-              </div>
+        {activeTab === "bookshelf" && (() => {
+          const effectiveTextbooks =
+            classroom?.textbooks && classroom.textbooks.length > 0
+              ? classroom.textbooks
+              : classroom?.gradeLevel?.toLowerCase().includes("6") ||
+                classroom?.name?.toLowerCase().includes("6")
+              ? booksData
+              : classroom?.textbooks || [];
 
-              {isTeacher && (
-                <button
-                  type="button"
-                  onClick={() => setIsEditClassOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs sm:text-sm font-bold shadow-md shadow-indigo-200 dark:shadow-none transition-all active:scale-95 shrink-0 min-h-[44px]"
-                >
-                  <Plus strokeWidth={1.75} size={16} />
-                  <span>{t("addBooks", "Manage Textbooks")}</span>
-                </button>
-              )}
-            </div>
+          const uniqueSubjects = [
+            "All",
+            ...Array.from(
+              new Set(
+                effectiveTextbooks
+                  .map((b: any) => b.subject)
+                  .filter(Boolean)
+              )
+            ),
+          ];
 
-            {/* Textbooks Grid */}
-            {!classroom.textbooks || classroom.textbooks.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 p-12 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mb-3">
-                  <BookMarked strokeWidth={1.75} size={28} />
+          const filteredBooks = effectiveTextbooks.filter((b: any) => {
+            const matchesSubj =
+              bookshelfFilter === "All" ||
+              b.subject?.toLowerCase() === bookshelfFilter.toLowerCase();
+            const q = bookshelfSearch.toLowerCase().trim();
+            const matchesSearch =
+              !q ||
+              b.title?.toLowerCase().includes(q) ||
+              b.subject?.toLowerCase().includes(q);
+            return matchesSubj && matchesSearch;
+          });
+
+          return (
+            <div className="space-y-6">
+              {/* Header Box */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shrink-0">
+                    <BookMarked strokeWidth={1.75} size={24} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
+                        {t("bookshelfTitle", "NCTB Curriculum Textbooks")}
+                      </h3>
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        {t("recommendedBooks", "Recommended NCTB Textbooks")} ({effectiveTextbooks.length})
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {t(
+                        "bookshelfSubtitle",
+                        "Read curriculum-approved textbooks online or download offline copies."
+                      )}
+                    </p>
+                  </div>
                 </div>
-                <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
-                  {t("noBooksAssigned", "No textbooks linked to this classroom yet")}
-                </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
-                  {t(
-                    "noBooksHint",
-                    "Edit the classroom settings to assign NCTB curriculum textbooks."
-                  )}
-                </p>
+
                 {isTeacher && (
                   <button
                     type="button"
                     onClick={() => setIsEditClassOpen(true)}
-                    className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs font-bold shadow-sm transition-all"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs sm:text-sm font-bold shadow-md shadow-indigo-200 dark:shadow-none transition-all active:scale-95 shrink-0 min-h-[44px]"
                   >
                     <Plus strokeWidth={1.75} size={16} />
-                    <span>{t("addBooks", "Add Books")}</span>
+                    <span>{t("addBooks", "Manage Textbooks")}</span>
                   </button>
                 )}
               </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {classroom.textbooks.map((book) => (
-                  <div
-                    key={book.id}
-                    className="group rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40">
-                          {book.subject}
-                        </span>
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                          {book.grade}
-                        </span>
-                      </div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
-                        {book.title}
-                      </h4>
-                    </div>
 
-                    <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setReadingBook({
-                            title: book.title,
-                            driveUrl: book.driveUrl || "",
-                            grade: book.grade,
-                            subject: book.subject,
-                          })
-                        }
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 text-xs font-bold shadow-sm transition-all min-h-[38px]"
-                      >
-                        <BookMarked strokeWidth={1.75} size={15} />
-                        <span>{t("readOnline", "Read Online")}</span>
-                      </button>
-
-                      {book.driveUrl && (
-                        <a
-                          href={book.driveUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors min-h-[38px] min-w-[38px]"
-                          title={t("download", "Download")}
-                        >
-                          <Download strokeWidth={1.75} size={15} />
-                        </a>
-                      )}
+              {/* Search & Subject Filter Bar */}
+              {effectiveTextbooks.length > 0 && (
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                  <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder={language === "bn" ? "বই খুঁজুন (শিরোনাম বা বিষয়)..." : "Search textbooks by title or subject..."}
+                        value={bookshelfSearch}
+                        onChange={(e) => setBookshelfSearch(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
                     </div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      {language === "bn"
+                        ? `মোট ${effectiveTextbooks.length}টি বইয়ের মধ্যে ${filteredBooks.length}টি প্রদর্শিত`
+                        : `Showing ${filteredBooks.length} of ${effectiveTextbooks.length} textbooks`}
+                    </span>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+
+                  {/* Subject filter pills */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                    <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    {uniqueSubjects.map((sub: string) => (
+                      <button
+                        key={sub}
+                        type="button"
+                        onClick={() => setBookshelfFilter(sub)}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                          bookshelfFilter.toLowerCase() === sub.toLowerCase()
+                            ? "bg-indigo-600 text-white shadow-sm"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        }`}
+                      >
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Textbooks Grid */}
+              {effectiveTextbooks.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 p-12 text-center">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mb-3">
+                    <BookMarked strokeWidth={1.75} size={28} />
+                  </div>
+                  <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                    {t("noBooksAssigned", "No textbooks linked to this classroom yet")}
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
+                    {t(
+                      "noBooksHint",
+                      "Edit the classroom settings to assign NCTB curriculum textbooks."
+                    )}
+                  </p>
+                  {isTeacher && (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditClassOpen(true)}
+                      className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs font-bold shadow-sm transition-all"
+                    >
+                      <Plus strokeWidth={1.75} size={16} />
+                      <span>{t("addBooks", "Add Books")}</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredBooks.map((book: any) => (
+                    <div
+                      key={book.id}
+                      className="group rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40">
+                            {book.subject}
+                          </span>
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                            {book.grade}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
+                          {book.title}
+                        </h4>
+                      </div>
+
+                      <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setReadingBook({
+                              title: book.title,
+                              driveUrl: book.driveUrl || "",
+                              grade: book.grade,
+                              subject: book.subject,
+                            })
+                          }
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 text-xs font-bold shadow-sm transition-all min-h-[38px]"
+                        >
+                          <BookMarked strokeWidth={1.75} size={15} />
+                          <span>{t("readOnline", "Read Online")}</span>
+                        </button>
+
+                        {book.driveUrl && (
+                          <a
+                            href={book.driveUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors min-h-[38px] min-w-[38px]"
+                            title={t("download", "Download")}
+                          >
+                            <Download strokeWidth={1.75} size={15} />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* 3. CHANNELS TAB */}
         {activeTab === "channels" && (

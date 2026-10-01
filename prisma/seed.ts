@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { booksData } from "../data/booksData";
 
 const prisma = new PrismaClient();
 
@@ -15,6 +16,7 @@ async function main() {
   await prisma.enrollment.deleteMany();
   await prisma.classroom.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.nctbBook.deleteMany();
 
   const defaultPasswordHash = await bcrypt.hash("Password123", 10);
 
@@ -50,13 +52,47 @@ async function main() {
     },
   });
 
-  // 3. Create Classroom
+  // 2.5 Seed 15 NCTB Class 6 Textbooks
+  console.log("Seeding 15 real NCTB Class 6 textbooks...");
+  for (const book of booksData) {
+    await prisma.nctbBook.create({
+      data: {
+        id: book.id,
+        title: book.title,
+        subject: book.subject,
+        grade: book.grade,
+        version: book.version,
+        driveUrl: book.driveUrl,
+      },
+    });
+  }
+
+  // 3. Create Classrooms
   const classroom = await prisma.classroom.create({
     data: {
       name: "Database Systems (45-I)",
       subject: "Computer Science & Engineering",
       code: "DBMS45",
       teacherId: teacher.id,
+      enrollments: {
+        create: [
+          { userId: student1.id },
+          { userId: student2.id },
+        ],
+      },
+    },
+  });
+
+  const class6Room = await prisma.classroom.create({
+    data: {
+      name: "Class 6 (Bangla Version)",
+      subject: "NCTB Curriculum",
+      gradeLevel: "Class 6",
+      code: "CLS6BV",
+      teacherId: teacher.id,
+      textbooks: {
+        connect: booksData.map((b) => ({ id: b.id })),
+      },
       enrollments: {
         create: [
           { userId: student1.id },
@@ -184,11 +220,30 @@ All test edge cases (customers with 0 orders, orders with null discounts) pass w
     },
   });
 
+  // 9. Class 6 Channels & Announcements
+  await prisma.channel.createMany({
+    data: [
+      { name: "general", classroomId: class6Room.id },
+      { name: "announcements", classroomId: class6Room.id, postPermission: "TEACHERS_ONLY" },
+      { name: "qa-discussion", classroomId: class6Room.id },
+    ],
+  });
+
+  await prisma.announcement.create({
+    data: {
+      title: "Welcome to Class 6 NCTB Curriculum",
+      content: `### Welcome to Class 6 NCTB Curriculum!\n\nAll 15 official Class 6 NCTB textbooks (Bangla Literature, Bangla Grammar, Charupath, Mathematics, Science, BGS, ICT, English For Today, English Grammar, Agriculture, Home Science, and Religions) are now available on the **BookShelf** tab.\n\nStudents can read them online or download offline PDF copies anytime.`,
+      classroomId: class6Room.id,
+      authorId: teacher.id,
+    },
+  });
+
   console.log("Database seeded successfully!");
   console.log(`Teacher: Dr. Kamal Hossain (${teacher.id})`);
   console.log(`Student 1: MD Abid Hasan (${student1.id})`);
   console.log(`Student 2: Sarah Ahmed (${student2.id})`);
-  console.log(`Classroom: Database Systems (45-I) Code: DBMS45 (${classroom.id})`);
+  console.log(`Classroom 1: Database Systems (45-I) Code: DBMS45 (${classroom.id})`);
+  console.log(`Classroom 2: Class 6 (Bangla Version) Code: CLS6BV (${class6Room.id})`);
 }
 
 main()

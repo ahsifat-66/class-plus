@@ -285,6 +285,7 @@ model NctbBook {
   grade      String      // e.g. "Class 1", "Class 6", "Class 9-10", "Class 11-12"
   subject    String      // e.g. "Bangla", "Mathematics", "Science"
   title      String
+  version    String      @default("bangla")
   driveUrl   String?
   coverImage String?
   classrooms Classroom[]

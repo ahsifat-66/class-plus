@@ -55,6 +55,41 @@ export async function GET(
       return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
     }
 
+    // If classroom indicates Class 6 and has no textbooks linked yet, automatically link and return the 15 Class 6 textbooks
+    if (
+      (!classroom.textbooks || classroom.textbooks.length === 0) &&
+      (classroom.gradeLevel?.toLowerCase().includes("6") ||
+        classroom.name.toLowerCase().includes("class 6") ||
+        classroom.name.toLowerCase().includes("class-6"))
+    ) {
+      try {
+        const class6Books = await prisma.nctbBook.findMany({
+          where: {
+            OR: [
+              { grade: { equals: "class-6", mode: "insensitive" } },
+              { grade: { equals: "Class 6", mode: "insensitive" } },
+              { grade: { contains: "6" } },
+            ],
+          },
+          orderBy: { title: "asc" },
+        });
+
+        if (class6Books.length > 0) {
+          await prisma.classroom.update({
+            where: { id },
+            data: {
+              textbooks: {
+                connect: class6Books.map((b) => ({ id: b.id })),
+              },
+            },
+          });
+          classroom.textbooks = class6Books;
+        }
+      } catch (autoErr) {
+        console.error("Error auto-linking Class 6 textbooks:", autoErr);
+      }
+    }
+
     return NextResponse.json({ classroom });
   } catch (error) {
     console.error("Error fetching classroom:", error);

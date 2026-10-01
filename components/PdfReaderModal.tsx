@@ -27,10 +27,15 @@ export default function PdfReaderModal({
 
   if (!isOpen) return null;
 
-  // Format viewer URL: if already google drive preview, use it, else docs viewer
-  let viewerUrl = pdfUrl;
-  if (!viewerUrl.includes("drive.google.com") && !viewerUrl.includes("docs.google.com")) {
-    viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true`;
+  // Format viewer URL: sanitize and if google drive, convert /view to /preview for embedded iframe
+  const rawUrl = pdfUrl || "";
+  const match = rawUrl.match(/https?:\/\/[^\s)\]]+/);
+  const cleanUrl = match ? match[0] : rawUrl;
+  let viewerUrl = cleanUrl;
+  if (viewerUrl.includes("drive.google.com/file/d/")) {
+    viewerUrl = viewerUrl.replace(/\/view(\?.*)?$/, "/preview");
+  } else if (!viewerUrl.includes("drive.google.com") && !viewerUrl.includes("docs.google.com")) {
+    viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(cleanUrl)}&embedded=true`;
   }
 
   return (
@@ -72,7 +77,7 @@ export default function PdfReaderModal({
           {/* Action buttons */}
           <div className="flex items-center gap-1.5 shrink-0">
             <a
-              href={pdfUrl}
+              href={cleanUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors min-h-[36px]"

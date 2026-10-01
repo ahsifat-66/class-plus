@@ -12,9 +12,15 @@ import {
   RefreshCw,
   Info,
   GraduationCap,
+  BookMarked,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 import MarkdownViewer from "@/components/MarkdownViewer";
+import PdfReaderModal from "@/components/PdfReaderModal";
+import { getCatalogBooksByGrade } from "@/lib/nctb-catalog";
 
 interface StudentAiAssistantDrawerProps {
   initialContext?: string;
@@ -166,6 +172,18 @@ export default function StudentAiAssistantDrawer({
   const [selectedGrade, setSelectedGrade] = useState<string>(() =>
     deduceInitialGrade(classroomContext, currentUser?.grade)
   );
+
+  const [showBooksList, setShowBooksList] = useState(false);
+  const [readingBook, setReadingBook] = useState<{
+    title: string;
+    driveUrl: string;
+    grade?: string;
+    subject?: string;
+  } | null>(null);
+
+  const gradeBooks = React.useMemo(() => {
+    return getCatalogBooksByGrade(selectedGrade);
+  }, [selectedGrade]);
 
   // Dual-Language Support (Bangla & English) with localStorage persistence
   const [language, setLanguage] = useState<LanguageChoice>("bn");
@@ -497,6 +515,17 @@ export default function StudentAiAssistantDrawer({
                     </option>
                   ))}
                 </select>
+
+                <button
+                  type="button"
+                  onClick={() => setShowBooksList(!showBooksList)}
+                  className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-2 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors ml-1"
+                  title="View Recommended Textbooks"
+                >
+                  <BookMarked className="w-3.5 h-3.5" />
+                  <span>{language === "bn" ? "বইসমূহ" : "Books"} ({gradeBooks.length})</span>
+                  {showBooksList ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </button>
               </div>
 
               {/* Minimalist Language Switcher */}
@@ -541,6 +570,70 @@ export default function StudentAiAssistantDrawer({
                 )}
               </span>
             </div>
+
+            {/* Collapsible Recommended Textbooks Panel */}
+            {showBooksList && (
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 shrink-0 max-h-60 overflow-y-auto space-y-2 animate-in fade-in duration-150">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                    <BookMarked className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>
+                      {selectedGrade}{" "}
+                      {language === "bn" ? "সুপারিশকৃত পাঠ্যবইসমূহ" : "Recommended Textbooks"} ({gradeBooks.length})
+                    </span>
+                  </span>
+                  <button
+                    onClick={() => setShowBooksList(false)}
+                    className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-semibold"
+                  >
+                    {language === "bn" ? "বন্ধ করুন" : "Close"}
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {gradeBooks.map((b) => (
+                    <div
+                      key={b.id}
+                      className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between text-xs shadow-2xs"
+                    >
+                      <div className="min-w-0 flex-1 mr-2">
+                        <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 block truncate">
+                          {b.subject}
+                        </span>
+                        <span className="font-bold text-slate-800 dark:text-slate-100 truncate block text-[11px]">
+                          {b.title}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setReadingBook({
+                              title: b.title,
+                              driveUrl: b.driveUrl,
+                              grade: b.grade,
+                              subject: b.subject,
+                            })
+                          }
+                          className="px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold text-[10px] hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-colors"
+                          title="Read Online"
+                        >
+                          {language === "bn" ? "পড়ুন" : "Read"}
+                        </button>
+                        <a
+                          href={b.driveUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                          title="Download"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Collapsible Reference Context Box */}
             {showContextEditor && (
@@ -717,6 +810,15 @@ export default function StudentAiAssistantDrawer({
           </div>
         </div>
       )}
+
+      <PdfReaderModal
+        isOpen={!!readingBook}
+        onClose={() => setReadingBook(null)}
+        title={readingBook?.title || ""}
+        pdfUrl={readingBook?.driveUrl || ""}
+        grade={readingBook?.grade}
+        subject={readingBook?.subject}
+      />
     </>
   );
 }

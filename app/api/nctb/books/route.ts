@@ -9,17 +9,33 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const grade = searchParams.get("grade");
 
-    // Ensure database catalog is initialized
+    // Ensure database catalog is synchronized and dummy books are removed
     try {
-      const bookCount = await prisma.nctbBook.count();
-      if (bookCount === 0) {
-        // Seed catalog into database
+      const existingBooks = await prisma.nctbBook.findMany();
+      const validCatalogIds = new Set(NCTB_CATALOG.map((b) => b.id));
+
+      // Remove any dummy/placeholder books not in official catalog
+      const dummyIds = existingBooks
+        .filter((b) => !validCatalogIds.has(b.id))
+        .map((b) => b.id);
+
+      if (dummyIds.length > 0) {
+        await prisma.nctbBook.deleteMany({
+          where: { id: { in: dummyIds } },
+        });
+      }
+
+      // Insert any missing books from the official catalog
+      const existingIds = new Set(existingBooks.map((b) => b.id));
+      const missingBooks = NCTB_CATALOG.filter((b) => !existingIds.has(b.id));
+      if (missingBooks.length > 0) {
         await prisma.nctbBook.createMany({
-          data: NCTB_CATALOG.map((b) => ({
+          data: missingBooks.map((b) => ({
             id: b.id,
             grade: b.grade,
             subject: b.subject,
             title: b.title,
+            version: b.version || "bangla",
             driveUrl: b.driveUrl,
             coverImage: b.coverImage || null,
           })),
@@ -27,20 +43,30 @@ export async function GET(req: NextRequest) {
         });
       }
     } catch (dbErr) {
-      console.error("Auto-seeding NCTB catalog error:", dbErr);
+      console.error("Synchronizing NCTB catalog error:", dbErr);
     }
 
     // Query books
     let dbBooks: any[] = [];
     try {
       if (grade && grade.trim().length > 0) {
+        const trimmed = grade.trim();
+        const isClass6 = trimmed.toLowerCase().includes("6");
         dbBooks = await prisma.nctbBook.findMany({
-          where: {
-            grade: {
-              equals: grade.trim(),
-              mode: "insensitive",
-            },
-          },
+          where: isClass6
+            ? {
+                OR: [
+                  { grade: { equals: "class-6", mode: "insensitive" } },
+                  { grade: { equals: "Class 6", mode: "insensitive" } },
+                  { grade: { contains: "6" } },
+                ],
+              }
+            : {
+                grade: {
+                  equals: trimmed,
+                  mode: "insensitive",
+                },
+              },
           orderBy: { title: "asc" },
         });
       } else {

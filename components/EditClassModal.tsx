@@ -27,7 +27,7 @@ export default function EditClassModal({
   const { t, language } = useLanguage();
   const [name, setName] = useState(classroom.name);
   const [subject, setSubject] = useState(classroom.subject);
-  const [gradeLevel, setGradeLevel] = useState<string>(classroom.gradeLevel || "Class 9");
+  const [gradeLevel, setGradeLevel] = useState<string>(classroom.gradeLevel || "Class 6");
   const [availableBooks, setAvailableBooks] = useState<NctbBookItem[]>([]);
   const [selectedBookIds, setSelectedBookIds] = useState<string[]>([]);
   const [isLoadingBooks, setIsLoadingBooks] = useState(false);
@@ -39,7 +39,7 @@ export default function EditClassModal({
     if (isOpen) {
       setName(classroom.name);
       setSubject(classroom.subject);
-      const initialGrade = classroom.gradeLevel || "Class 9";
+      const initialGrade = classroom.gradeLevel || "Class 6";
       setGradeLevel(initialGrade);
       const existingIds = (classroom.textbooks || []).map((b) => b.id);
       setSelectedBookIds(existingIds);
