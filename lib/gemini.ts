@@ -63,3 +63,50 @@ export async function generateAcademicContent(
 
   throw lastError || new Error("Failed to generate response from Gemini API.");
 }
+
+export async function generateMultimodalGeminiContent(
+  parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }>,
+  modelsToTry: string[] = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
+): Promise<{ text: string; model: string }> {
+  const apiKey = getGeminiApiKey();
+  if (!apiKey) {
+    throw new Error("Missing GEMINI_API_KEY in environment variables.");
+  }
+
+  const cleanKey = apiKey.replace(/['"]+/g, "").trim();
+  let lastError: any = null;
+
+  for (const model of modelsToTry) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": cleanKey,
+        },
+        body: JSON.stringify({
+          contents: [{ parts }],
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error?.message || `HTTP ${response.status}: Failed to generate`);
+      }
+
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text && typeof text === "string" && text.trim().length > 0) {
+        return { text: text.trim(), model };
+      }
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[Gemini Multimodal] Model ${model} failed:`, err?.message || err);
+      continue;
+    }
+  }
+
+  throw lastError || new Error("Failed to generate multimodal response from Gemini API.");
+}
+

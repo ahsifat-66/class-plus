@@ -2039,6 +2039,7 @@ export default function ClassroomHub() {
         classroomId={classroom.id}
         gradeLevel={classroom.gradeLevel}
         textbooks={classroom.textbooks}
+        bookIds={classroom.bookIds}
         onQuizCreated={() => {
           fetchQuizzes();
           setSubmissionToast("Quiz published successfully.");
