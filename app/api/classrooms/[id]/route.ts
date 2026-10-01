@@ -55,7 +55,12 @@ export async function GET(
       return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ classroom });
+    const enrichedClassroom = {
+      ...classroom,
+      bookIds: (classroom.textbooks || []).map((b) => b.id),
+    };
+
+    return NextResponse.json({ classroom: enrichedClassroom });
   } catch (error) {
     console.error("Error fetching classroom:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -90,7 +95,7 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { name, subject, gradeLevel, textbookIds, removeTextbookId } = body;
+    const { name, subject, gradeLevel, textbookIds, bookIds, removeTextbookId } = body;
 
     const updateData: any = {};
     if (typeof name === "string" && name.trim()) {
@@ -102,13 +107,20 @@ export async function PATCH(
     if (gradeLevel !== undefined) {
       updateData.gradeLevel = gradeLevel || null;
     }
+
+    const effectiveBookIds = Array.isArray(bookIds)
+      ? bookIds
+      : Array.isArray(textbookIds)
+      ? textbookIds
+      : null;
+
     if (removeTextbookId) {
       updateData.textbooks = {
         disconnect: [{ id: removeTextbookId }],
       };
-    } else if (Array.isArray(textbookIds)) {
+    } else if (effectiveBookIds !== null) {
       updateData.textbooks = {
-        set: textbookIds.map((tid: string) => ({ id: tid })),
+        set: effectiveBookIds.map((tid: string) => ({ id: tid })),
       };
     }
 
@@ -117,11 +129,18 @@ export async function PATCH(
       data: updateData,
       include: {
         teacher: true,
-        textbooks: true,
+        textbooks: {
+          orderBy: { title: "asc" },
+        },
       },
     });
 
-    return NextResponse.json({ classroom: updated, success: true });
+    const enriched = {
+      ...updated,
+      bookIds: (updated.textbooks || []).map((b) => b.id),
+    };
+
+    return NextResponse.json({ classroom: enriched, success: true });
   } catch (error) {
     console.error("Error updating classroom:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

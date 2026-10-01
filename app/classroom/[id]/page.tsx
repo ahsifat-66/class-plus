@@ -21,6 +21,7 @@ import QuizSubmissionsModal from "@/components/QuizSubmissionsModal";
 import EditAnnouncementModal from "@/components/EditAnnouncementModal";
 import LeaveClassroomModal from "@/components/LeaveClassroomModal";
 import EditClassModal from "@/components/EditClassModal";
+import AssignBooksModal from "@/components/AssignBooksModal";
 import PdfReaderModal from "@/components/PdfReaderModal";
 import { useLanguage } from "@/lib/i18n";
 import {
@@ -139,6 +140,7 @@ interface ClassroomData {
     driveUrl?: string | null;
     coverImage?: string | null;
   }>;
+  bookIds?: string[];
 }
 
 interface Message {
@@ -218,6 +220,7 @@ export default function ClassroomHub() {
   const [bookshelfFilter, setBookshelfFilter] = useState("All");
   const [bookshelfSearch, setBookshelfSearch] = useState("");
   const [isDeletingBookId, setIsDeletingBookId] = useState<string | null>(null);
+  const [isAssignBooksOpen, setIsAssignBooksOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -292,6 +295,7 @@ export default function ClassroomHub() {
           prev
             ? {
                 ...prev,
+                bookIds: (prev.bookIds || []).filter((id) => id !== bookId),
                 textbooks: (prev.textbooks || []).filter((b) => b.id !== bookId),
               }
             : prev
@@ -403,7 +407,9 @@ export default function ClassroomHub() {
     }));
   }, [classroom?.enrollments]);
 
-  const isTeacher = currentUser?.role === "TEACHER";
+  const isTeacher =
+    currentUser?.role === "TEACHER" ||
+    (!!classroom && !!currentUser && classroom.teacherId === currentUser.id);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -799,7 +805,7 @@ export default function ClassroomHub() {
             <BookMarked className="h-4 w-4 shrink-0" />
             <span>{t("tabBookShelf", "BookShelf")}</span>
             <span className="ml-1 text-xs opacity-75 font-mono">
-              ({classroom.textbooks?.length || 0})
+              ({classroom.textbooks?.length || classroom.bookIds?.length || 0})
             </span>
           </button>
 
@@ -1294,7 +1300,12 @@ export default function ClassroomHub() {
 
         {/* BOOKSHELF TAB (NCTB Textbooks) */}
         {activeTab === "bookshelf" && (() => {
-          const effectiveTextbooks = classroom?.textbooks || [];
+          const effectiveTextbooks =
+            classroom?.textbooks && classroom.textbooks.length > 0
+              ? classroom.textbooks
+              : classroom?.bookIds && classroom.bookIds.length > 0
+              ? booksData.filter((b) => classroom.bookIds!.includes(b.id))
+              : [];
 
           const uniqueSubjects = [
             "All",
@@ -1333,7 +1344,7 @@ export default function ClassroomHub() {
                         {t("bookshelfTitle", "NCTB Curriculum Textbooks")}
                       </h3>
                       <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                        {t("recommendedBooks", "Recommended NCTB Textbooks")} ({effectiveTextbooks.length})
+                        {language === "bn" ? "পাঠ্যবই তালিকা" : "Assigned Textbooks"} ({effectiveTextbooks.length})
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1348,11 +1359,11 @@ export default function ClassroomHub() {
                 {isTeacher && (
                   <button
                     type="button"
-                    onClick={() => setIsEditClassOpen(true)}
+                    onClick={() => setIsAssignBooksOpen(true)}
                     className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs sm:text-sm font-bold shadow-md shadow-indigo-200 dark:shadow-none transition-all active:scale-95 shrink-0 min-h-[44px]"
                   >
                     <Plus strokeWidth={1.75} size={16} />
-                    <span>{t("addBooks", "Manage Textbooks")}</span>
+                    <span>{language === "bn" ? "পাঠ্যবই যোগ / পরিবর্তন" : "Manage Textbooks"}</span>
                   </button>
                 )}
               </div>
@@ -1406,22 +1417,27 @@ export default function ClassroomHub() {
                     <BookMarked strokeWidth={1.75} size={28} />
                   </div>
                   <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
-                    {t("noBooksAssigned", "No textbooks linked to this classroom yet")}
+                    {language === "bn"
+                      ? "আপনার শিক্ষক এখনও এই ক্লাসে কোনো পাঠ্যবই যুক্ত করেননি।"
+                      : "Your teacher hasn't added any textbooks to this classroom yet."}
                   </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
-                    {t(
-                      "noBooksHint",
-                      "Edit the classroom settings to assign NCTB curriculum textbooks."
-                    )}
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1.5">
+                    {isTeacher
+                      ? (language === "bn"
+                          ? "শিক্ষার্থীদের পড়ার জন্য ৬ষ্ঠ শ্রেণির বোর্ড বই বুকশেলফে যুক্ত করুন।"
+                          : "Assign NCTB textbooks so students can read and download them.")
+                      : (language === "bn"
+                          ? "শিক্ষক বই যুক্ত করলে এখানে স্বয়ংক্রিয়ভাবে দেখতে পাবেন।"
+                          : "Textbooks will appear here once your instructor assigns them.")}
                   </p>
                   {isTeacher && (
                     <button
                       type="button"
-                      onClick={() => setIsEditClassOpen(true)}
-                      className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs font-bold shadow-sm transition-all"
+                      onClick={() => setIsAssignBooksOpen(true)}
+                      className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 text-xs sm:text-sm font-bold shadow-md shadow-indigo-200 dark:shadow-none transition-all active:scale-95"
                     >
                       <Plus strokeWidth={1.75} size={16} />
-                      <span>{t("addBooks", "Add Books")}</span>
+                      <span>{language === "bn" ? "পাঠ্যবই যুক্ত করুন" : "Add Textbooks"}</span>
                     </button>
                   )}
                 </div>
@@ -2046,6 +2062,41 @@ export default function ClassroomHub() {
             fetchClassroom();
             setSubmissionToast(t("saveChanges", "Classroom updated successfully."));
             setTimeout(() => setSubmissionToast(null), 3000);
+          }}
+        />
+      )}
+
+      {/* Assign / Manage Textbooks Modal (Teacher Only) */}
+      {isAssignBooksOpen && classroom && isTeacher && (
+        <AssignBooksModal
+          isOpen={isAssignBooksOpen}
+          onClose={() => setIsAssignBooksOpen(false)}
+          classroomId={classroom.id}
+          classroomName={classroom.name}
+          currentBookIds={
+            classroom.bookIds && classroom.bookIds.length > 0
+              ? classroom.bookIds
+              : (classroom.textbooks || []).map((b) => b.id)
+          }
+          onSuccess={(updatedBookIds) => {
+            const updatedBooks = booksData.filter((b) =>
+              updatedBookIds.includes(b.id)
+            );
+            setClassroom((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                bookIds: updatedBookIds,
+                textbooks: updatedBooks,
+              };
+            });
+            fetchClassroom();
+            const msg =
+              language === "bn"
+                ? "বুকশেলফের পাঠ্যবই সফলভাবে আপডেট করা হয়েছে।"
+                : "Classroom textbooks updated successfully.";
+            setSubmissionToast(msg);
+            setTimeout(() => setSubmissionToast(null), 3500);
           }}
         />
       )}
