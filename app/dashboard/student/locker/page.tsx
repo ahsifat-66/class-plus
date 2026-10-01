@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import StudentAiAssistantDrawer from "@/components/StudentAiAssistantDrawer";
+import { useLanguage } from "@/lib/i18n";
 
 interface PersonalNote {
   id: string;
@@ -68,6 +69,7 @@ interface SummaryData {
 }
 
 export default function AcademicLockerPage() {
+  const { t, language } = useLanguage();
   const [notes, setNotes] = useState<PersonalNote[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>("All");
@@ -460,14 +462,16 @@ export default function AcademicLockerPage() {
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold text-emerald-100">
                 <BookOpen className="w-3.5 h-3.5" />
-                <span>Private Self-Study Hub</span>
+                <span>{t("locker.title", "Academic Locker")}</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                Academic Locker & Study Hub
+                {t("locker.title", "Academic Locker")}
               </h1>
               <p className="text-sm sm:text-base text-emerald-100 max-w-2xl">
-                Organize personal notes, track study milestones, run focus sessions, and use Gemini AI
-                to generate custom practice quizzes and smart flashcards.
+                {t(
+                  "locker.subtitleLong",
+                  "Personal notes, self-study goals, revision flashcards, and AI learning support in one place."
+                )}
               </p>
             </div>
 
@@ -477,14 +481,14 @@ export default function AcademicLockerPage() {
                 className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-semibold border border-white/20 backdrop-blur-md transition-all active:scale-95 shadow-sm min-h-[42px]"
               >
                 <BarChart2 className="w-4 h-4 text-emerald-300 shrink-0" />
-                <span>My Analytics</span>
+                <span>{t("dashboard.myAnalytics", "My Analytics")}</span>
               </Link>
               <button
                 onClick={handleOpenCreateNote}
                 className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-2xl bg-white text-emerald-700 hover:bg-emerald-50 text-xs sm:text-sm font-bold shadow-lg transition-all active:scale-95 min-h-[42px]"
               >
                 <Plus className="w-4 h-4 shrink-0" />
-                <span>New Study Note</span>
+                <span>{t("locker.newNote", "New Study Note")}</span>
               </button>
             </div>
           </div>
@@ -513,7 +517,7 @@ export default function AcademicLockerPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-bold text-slate-800 text-base">Focus & Pomodoro Timer</h3>
+                <h3 className="font-bold text-slate-800 text-base">{t("pomodoro.title", "Focus Study & Pomodoro Timer")}</h3>
               </div>
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
                 Self-Paced
@@ -528,7 +532,7 @@ export default function AcademicLockerPage() {
 
               {/* Subject Selector for Session */}
               <div className="flex items-center gap-2 text-xs text-slate-500">
-                <span>Studying:</span>
+                <span>{t("pomodoro.selectSubject", "Subject")}:</span>
                 <select
                   value={timerSubject}
                   onChange={(e) => setTimerSubject(e.target.value)}
@@ -567,7 +571,7 @@ export default function AcademicLockerPage() {
               <button
                 onClick={() => handleResetTimer(timerMinutes)}
                 className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
-                title="Reset Timer"
+                title={t("pomodoro.reset", "Reset Timer")}
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -579,7 +583,7 @@ export default function AcademicLockerPage() {
                     className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-sm transition-all"
                   >
                     <Pause className="w-4 h-4" />
-                    <span>Pause</span>
+                    <span>{t("pomodoro.pause", "Pause")}</span>
                   </button>
                 ) : (
                   <button
@@ -587,7 +591,7 @@ export default function AcademicLockerPage() {
                     className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition-all"
                   >
                     <Play className="w-4 h-4 fill-white" />
-                    <span>Start Focus</span>
+                    <span>{t("pomodoro.start", "Start Focus")}</span>
                   </button>
                 )}
               </div>
@@ -597,7 +601,7 @@ export default function AcademicLockerPage() {
                 className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold underline"
                 title="Manually log this session to your analytics"
               >
-                Log Now
+                {t("pomodoro.logSession", "Log Session")}
               </button>
             </div>
           </div>
@@ -608,11 +612,11 @@ export default function AcademicLockerPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Target className="w-5 h-5 text-indigo-600" />
-                  <h3 className="font-bold text-slate-800 text-base">Personal Study Milestones</h3>
+                  <h3 className="font-bold text-slate-800 text-base">{t("locker.studyGoals", "Personal Goals & Targets")}</h3>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700">
-                    {completedGoalsCount}/{goals.length} Completed ({goalProgressRate}%)
+                    {completedGoalsCount}/{goals.length} ({goalProgressRate}%)
                   </span>
                   <button
                     onClick={() => setIsAddingGoal(!isAddingGoal)}
@@ -637,7 +641,7 @@ export default function AcademicLockerPage() {
                   <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
-                      placeholder="e.g. Finish Calculus Chapter 4 review"
+                      placeholder={t("locker.newGoalPlaceholder", "e.g., Complete Physics Chapter 3 practice set")}
                       value={newGoalTitle}
                       onChange={(e) => setNewGoalTitle(e.target.value)}
                       className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
@@ -652,7 +656,7 @@ export default function AcademicLockerPage() {
                       type="submit"
                       className="px-4 py-1.5 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 transition-all"
                     >
-                      Add Goal
+                      {t("locker.addGoal", "Add Target")}
                     </button>
                   </div>
                 </form>
@@ -662,7 +666,7 @@ export default function AcademicLockerPage() {
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {goals.length === 0 ? (
                   <p className="text-xs text-slate-400 py-4 text-center">
-                    No personal goals set yet. Click "+" to set your first target!
+                    {t("locker.noGoals", "No study goals defined yet.")}
                   </p>
                 ) : (
                   goals.map((g) => (
@@ -690,7 +694,7 @@ export default function AcademicLockerPage() {
 
                       <div className="flex items-center gap-2 ml-2">
                         <span className="text-[10px] text-slate-400">
-                          {new Date(g.targetDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          {new Date(g.targetDate).toLocaleDateString(language === "bn" ? "bn-BD" : "en-US", { month: "short", day: "numeric" })}
                         </span>
                         <button
                           onClick={() => handleDeleteGoal(g.id)}
@@ -723,7 +727,7 @@ export default function AcademicLockerPage() {
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search notes, keywords, tags..."
+                placeholder={t("locker.searchNotes", "Search notes...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
@@ -757,7 +761,7 @@ export default function AcademicLockerPage() {
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
-                {subj}
+                {subj.toLowerCase() === "all" ? t("locker.allSubjects", "All Subjects") : subj}
               </button>
             ))}
           </div>
@@ -775,7 +779,7 @@ export default function AcademicLockerPage() {
             <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
               <BookOpen className="w-7 h-7" />
             </div>
-            <h3 className="font-bold text-slate-800 text-lg">No Study Notes Found</h3>
+            <h3 className="font-bold text-slate-800 text-lg">{t("locker.noNotes", "No notes found in your locker.")}</h3>
             <p className="text-xs sm:text-sm text-slate-500">
               {searchQuery || selectedSubject !== "All"
                 ? "No notes matched your search or subject filter. Try clearing filters."
@@ -786,7 +790,7 @@ export default function AcademicLockerPage() {
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs sm:text-sm font-bold shadow hover:bg-emerald-700 transition-all"
             >
               <Plus className="w-4 h-4" />
-              <span>Create Your First Note</span>
+              <span>{t("locker.createNote", "Create Note")}</span>
             </button>
           </div>
         ) : (
@@ -803,7 +807,7 @@ export default function AcademicLockerPage() {
                       {note.subject}
                     </span>
                     <span className="text-[10px] text-slate-400">
-                      {new Date(note.updatedAt).toLocaleDateString(undefined, {
+                      {new Date(note.updatedAt).toLocaleDateString(language === "bn" ? "bn-BD" : "en-US", {
                         month: "short",
                         day: "numeric",
                       })}
@@ -931,7 +935,7 @@ export default function AcademicLockerPage() {
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-emerald-600" />
                   <h3 className="font-bold text-slate-900 text-base sm:text-lg">
-                    {editingNote ? "Edit Study Note" : "Create Personal Study Note"}
+                    {editingNote ? t("locker.editNote", "Edit Study Note") : t("locker.newNote", "Create Personal Study Note")}
                   </h3>
                 </div>
                 <button
@@ -945,7 +949,7 @@ export default function AcademicLockerPage() {
               <form onSubmit={handleSaveNote} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Note Title
+                    {t("locker.noteTitle", "Note Title")}
                   </label>
                   <input
                     type="text"
@@ -960,7 +964,7 @@ export default function AcademicLockerPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Subject
+                      {t("pomodoro.selectSubject", "Subject")}
                     </label>
                     <input
                       type="text"
@@ -1055,7 +1059,7 @@ export default function AcademicLockerPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Content / Notes
+                    {t("locker.noteContent", "Content / Notes")}
                   </label>
                   <textarea
                     required
@@ -1073,14 +1077,14 @@ export default function AcademicLockerPage() {
                     onClick={() => setIsEditorOpen(false)}
                     className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 min-h-[42px]"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={isSavingNote}
                     className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs sm:text-sm font-bold shadow hover:bg-emerald-700 transition-all disabled:opacity-50 min-h-[42px]"
                   >
-                    {isSavingNote ? "Saving..." : editingNote ? "Update Note" : "Save to Locker"}
+                    {isSavingNote ? t("common.submitting", "Saving...") : editingNote ? t("common.save", "Update Note") : t("locker.saveNote", "Save to Locker")}
                   </button>
                 </div>
               </form>

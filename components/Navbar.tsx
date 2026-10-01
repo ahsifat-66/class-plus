@@ -18,9 +18,10 @@ import {
   BookOpen,
   Sun,
   Moon,
+  Globe,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
-import { useLanguage, LanguageToggle } from "@/lib/i18n";
+import { useLanguage } from "@/lib/i18n";
 
 interface NavbarProps {
   onCreateClassOpen?: () => void;
@@ -33,7 +34,7 @@ export default function Navbar({
 }: NavbarProps) {
   const { currentUser, userSummary, isLoading } = useUser();
   const { theme, toggleTheme } = useTheme();
-  const { t, language } = useLanguage();
+  const { t, language, toggleLanguage } = useLanguage();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Derive dynamic role badge: "Teacher & Student", "Teacher", or "Student"
@@ -64,25 +65,25 @@ export default function Navbar({
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md transition-colors">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
         {/* Brand */}
-        <div className="flex items-center gap-2 sm:gap-6 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-6 shrink-0 min-w-0">
           <Link href={homeLink} className="flex items-center gap-2 sm:gap-2.5 group">
             <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-teal-400 text-white shadow-md shadow-indigo-200 dark:shadow-none group-hover:scale-105 transition-transform shrink-0">
               <Activity strokeWidth={1.75} size={20} className="animate-pulse" />
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-1 sm:gap-1.5">
-                <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                <span className="text-base sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white truncate">
                   Class<span className="text-indigo-600 dark:text-indigo-400">Pulse</span>
                 </span>
-                <span className="relative flex h-2 w-2">
+                <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
               </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 hidden sm:inline">
-                {t("platformSubtitle")}
+              <span className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 hidden sm:inline truncate">
+                {t("platform.subtitle")}
               </span>
             </div>
           </Link>
@@ -90,9 +91,6 @@ export default function Navbar({
 
         {/* Center/Right Section */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* Language Switcher [ বাংলা | English ] */}
-          <LanguageToggle />
-
           {/* Notification Bell */}
           <NotificationBell />
 
@@ -112,42 +110,40 @@ export default function Navbar({
           </button>
 
           {isLoading ? (
-            <div className="h-8 sm:h-9 w-20 sm:w-28 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" />
+            <div className="h-8 sm:h-9 w-16 sm:w-28 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" />
           ) : currentUser ? (
             <>
-              {/* Dual Action Buttons: Both Create Class and Join Class */}
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Dual Action Buttons: Create Class and Join Class */}
+              <div className="flex items-center gap-1 sm:gap-2">
                 {onCreateClassOpen && (
                   <button
                     onClick={onCreateClassOpen}
-                    className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl bg-purple-600 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-purple-700 transition-all active:scale-95 shrink-0 min-h-[36px]"
+                    className="inline-flex items-center justify-center gap-1 sm:gap-1.5 rounded-xl bg-purple-600 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-purple-700 transition-all active:scale-95 shrink-0 min-h-[36px]"
                     title="Create a new course as Teacher"
                   >
-                    <Plus strokeWidth={1.75} size={16} />
-                    <span className="hidden sm:inline">{t("createClass")}</span>
-                    <span className="sm:hidden text-[11px]">{t("createClass")}</span>
+                    <Plus strokeWidth={2} size={16} />
+                    <span className="hidden sm:inline">{t("navbar.createClass")}</span>
                   </button>
                 )}
 
                 {onJoinClassOpen && (
                   <button
                     onClick={onJoinClassOpen}
-                    className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl bg-emerald-600 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 shrink-0 min-h-[36px]"
+                    className="inline-flex items-center justify-center gap-1 sm:gap-1.5 rounded-xl bg-emerald-600 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 shrink-0 min-h-[36px]"
                     title="Join an existing course via class code"
                   >
-                    <LogIn strokeWidth={1.75} size={16} />
-                    <span className="hidden sm:inline">{t("joinClass")}</span>
-                    <span className="sm:hidden text-[11px]">{t("joinClass")}</span>
+                    <LogIn strokeWidth={2} size={16} />
+                    <span className="hidden sm:inline">{t("navbar.joinClass")}</span>
                   </button>
                 )}
 
                 <Link
                   href="/analytics"
-                  className="inline-flex items-center justify-center gap-1 sm:gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shrink-0 min-h-[36px]"
+                  className="hidden sm:inline-flex items-center justify-center gap-1 sm:gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shrink-0 min-h-[36px]"
                   title="View Analytics & Performance Dashboard"
                 >
                   <BarChart3 strokeWidth={1.75} size={16} className="text-indigo-600 dark:text-indigo-400" />
-                  <span className="hidden md:inline">{t("navAnalytics")}</span>
+                  <span className="hidden md:inline">{t("navbar.analytics")}</span>
                 </Link>
               </div>
 
@@ -233,7 +229,7 @@ export default function Navbar({
                       {/* Quick Dashboard Toggles */}
                       <div className="py-1 border-b border-slate-100 dark:border-slate-800 space-y-0.5">
                         <div className="px-3 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          Workspace Navigation
+                          {t("profile.workspaceNav", "Workspace Navigation")}
                         </div>
 
                         <Link
@@ -243,7 +239,7 @@ export default function Navbar({
                         >
                           <div className="flex items-center gap-2">
                             <ShieldCheck strokeWidth={1.75} size={16} className="text-purple-600 dark:text-purple-400" />
-                            <span>Teaching Dashboard</span>
+                            <span>{t("profile.teachingDashboard", "Teaching Dashboard")}</span>
                           </div>
                           <span className="text-[10px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
                             {userSummary?.teachingCount || 0}
@@ -257,7 +253,7 @@ export default function Navbar({
                         >
                           <div className="flex items-center gap-2">
                             <GraduationCap strokeWidth={1.75} size={16} className="text-emerald-600 dark:text-emerald-400" />
-                            <span>Student Dashboard</span>
+                            <span>{t("profile.studentDashboard", "Student Dashboard")}</span>
                           </div>
                           <span className="text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">
                             {userSummary?.enrolledCount || 0}
@@ -271,10 +267,10 @@ export default function Navbar({
                         >
                           <div className="flex items-center gap-2">
                             <BookOpen strokeWidth={1.75} size={16} className="text-teal-600 dark:text-teal-400" />
-                            <span>Academic Locker</span>
+                            <span>{t("profile.academicLocker", "Academic Locker")}</span>
                           </div>
                           <span className="text-[10px] font-bold bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 px-2 py-0.5 rounded-full">
-                            Notes & AI
+                            {t("profile.notesAndAi", "Notes & AI")}
                           </span>
                         </Link>
 
@@ -285,12 +281,30 @@ export default function Navbar({
                         >
                           <div className="flex items-center gap-2">
                             <BarChart3 strokeWidth={1.75} size={16} className="text-indigo-600 dark:text-indigo-400" />
-                            <span>Analytics & Graphs</span>
+                            <span>{t("profile.analyticsGraphs", "Analytics & Graphs")}</span>
                           </div>
                           <span className="text-[10px] font-bold bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full">
-                            Charts
+                            {t("profile.charts", "Charts")}
                           </span>
                         </Link>
+                      </div>
+
+                      {/* Language Switcher Row */}
+                      <div className="py-1 border-b border-slate-100 dark:border-slate-800">
+                        <button
+                          type="button"
+                          onClick={() => toggleLanguage()}
+                          className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                          title="Switch Language / ভাষা পরিবর্তন করুন"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Globe strokeWidth={1.75} size={16} className="text-indigo-600 dark:text-indigo-400" />
+                            <span>{t("navbar.language", "Language")}</span>
+                          </div>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800">
+                            {language === "bn" ? "বাংলা 🇧🇩" : "English 🇺🇸"}
+                          </span>
+                        </button>
                       </div>
 
                       {/* Theme Toggle (Visible on mobile/dropdown) */}
@@ -306,10 +320,10 @@ export default function Navbar({
                             ) : (
                               <Moon strokeWidth={1.75} size={16} className="text-slate-500" />
                             )}
-                            <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+                            <span>{theme === "dark" ? t("navbar.themeLight", "Light Mode") : t("navbar.themeDark", "Dark Mode")}</span>
                           </div>
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Toggle
+                            {t("navbar.themeToggle", "Toggle")}
                           </span>
                         </button>
                       </div>
@@ -322,7 +336,7 @@ export default function Navbar({
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-colors"
                         >
                           <UserIcon strokeWidth={1.75} size={16} className="text-slate-400" />
-                          <span>Profile & Academic Details</span>
+                          <span>{t("profile.accountDetails", "Profile & Academic Details")}</span>
                         </Link>
                       </div>
 
@@ -334,7 +348,7 @@ export default function Navbar({
                           className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl transition-colors"
                         >
                           <LogOut strokeWidth={1.75} size={16} />
-                          <span>Sign Out</span>
+                          <span>{t("profile.signOut", "Sign Out")}</span>
                         </button>
                       </div>
                     </div>
@@ -344,7 +358,15 @@ export default function Navbar({
             </>
           ) : (
             /* Unauthenticated visitors */
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleLanguage}
+                className="flex items-center justify-center h-8 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                title="Switch Language"
+              >
+                {language === "bn" ? "বাংলা 🇧🇩" : "EN 🇺🇸"}
+              </button>
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -359,15 +381,15 @@ export default function Navbar({
               </button>
               <Link
                 href="/login"
-                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-1.5 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm min-h-[36px] flex items-center"
+                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm min-h-[36px] flex items-center"
               >
-                Sign In
+                {t("navbar.signIn", "Sign In")}
               </Link>
               <Link
                 href="/signup"
-                className="rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition-colors min-h-[36px] flex items-center"
+                className="rounded-xl bg-indigo-600 px-3 py-1.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition-colors min-h-[36px] flex items-center"
               >
-                Sign Up
+                {t("navbar.signUp", "Sign Up")}
               </Link>
             </div>
           )}

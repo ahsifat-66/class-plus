@@ -28,6 +28,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { formatRelativeDueDate } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n";
 
 interface StudentAnalyticsViewProps {
   data: {
@@ -72,6 +73,7 @@ interface StudentAnalyticsViewProps {
 }
 
 export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps) {
+  const { t } = useLanguage();
   const [selectedCourseFilter, setSelectedCourseFilter] = useState<string>("ALL");
 
   const filteredSubmissions =
@@ -89,7 +91,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
         <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Enrolled Classes
+              {t("analytics.enrolledClasses", "Enrolled Classes")}
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
               <BookOpen className="h-4 w-4" />
@@ -99,7 +101,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
             {data.enrolledCount}
           </div>
           <span className="text-[11px] text-slate-400 block">
-            {data.totalAssignments} active deliverables
+            {data.totalAssignments} {t("analytics.activeDeliverables", "active deliverables")}
           </span>
         </div>
 
@@ -107,7 +109,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
         <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Average Grade
+              {t("analytics.averageGrade", "Average Grade")}
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
               <Award className="h-4 w-4" />
@@ -118,7 +120,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
               {data.overallGradeAvg}%
             </span>
             <span className="text-xs font-semibold text-slate-400">
-              ({data.gradedCount} graded)
+              ({data.gradedCount} {t("analytics.graded", "graded")})
             </span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
@@ -133,7 +135,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
         <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Completion Rate
+              {t("analytics.completionRate", "Completion Rate")}
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
               <CheckCircle2 className="h-4 w-4" />
@@ -159,7 +161,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
         <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Pending Tasks
+              {t("analytics.pendingTasks", "Pending Tasks")}
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
               <Clock className="h-4 w-4" />
@@ -169,7 +171,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
             {data.pendingSubmissionCount}
           </div>
           <span className="text-[11px] text-amber-600 font-medium block">
-            {data.pendingGradingCount} submitted awaiting review
+            {data.pendingGradingCount} {t("analytics.awaitingReview", "submitted awaiting review")}
           </span>
         </div>
       </div>
@@ -179,9 +181,9 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
         {/* Graph 1: Completion Distribution (Donut Chart) */}
         <div className="lg:col-span-5 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between">
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-slate-900">Task Completion Status</h3>
+            <h3 className="text-base font-bold text-slate-900">{t("analytics.taskCompletionStatus", "Task Completion Status")}</h3>
             <p className="text-xs text-slate-500">
-              Proportion of completed, graded, and pending assignments
+              {t("analytics.taskCompletionSubtitle", "Proportion of completed, graded, and pending assignments")}
             </p>
           </div>
 
@@ -189,7 +191,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
             {data.totalAssignments === 0 ? (
               <div className="text-center text-xs text-slate-400 space-y-2">
                 <CheckCircle2 className="h-10 w-10 text-slate-200 mx-auto" />
-                <span>No assignments assigned yet</span>
+                <span>{t("analytics.noAssignmentsYet", "No assignments assigned yet")}</span>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -213,7 +215,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
                           <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-lg text-xs space-y-1">
                             <span className="font-bold text-slate-800">{d.name}</span>
                             <div className="text-slate-600">
-                              Tasks: <span className="font-bold">{d.value}</span>
+                              {t("analytics.tasksLabel", "Tasks:")} <span className="font-bold">{d.value}</span>
                             </div>
                           </div>
                         );
@@ -234,7 +236,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Overall Turn-In Rate</span>
+            <span>{t("analytics.overallTurnInRate", "Overall Turn-In Rate")}</span>
             <span className="font-bold text-slate-900">{data.completionRate}%</span>
           </div>
         </div>
@@ -245,14 +247,14 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-indigo-600" />
-                <h3 className="text-base font-bold text-slate-900">Score Progression Over Time</h3>
+                <h3 className="text-base font-bold text-slate-900">{t("analytics.scoreProgression", "Score Progression Over Time")}</h3>
               </div>
               <p className="text-xs text-slate-500">
-                Grade percentages achieved across submitted assignments
+                {t("analytics.scoreProgressionSubtitle", "Grade percentages achieved across submitted assignments")}
               </p>
             </div>
             <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
-              Avg: {data.overallGradeAvg}%
+              {t("analytics.avgLabel", "Avg:")} {data.overallGradeAvg}%
             </span>
           </div>
 
@@ -260,7 +262,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
             {data.scoreHistory.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-xs text-slate-400 space-y-2">
                 <Award className="h-10 w-10 text-slate-200" />
-                <span>No graded submissions recorded yet</span>
+                <span>{t("analytics.noGradedSubmissions", "No graded submissions recorded yet")}</span>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -299,7 +301,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
                               {item.subject} • {item.date}
                             </span>
                             <div className="text-indigo-600 font-bold pt-1">
-                              Score: {item.earned}/{item.max} ({item.scorePercentage}%)
+                              {t("analytics.scoreLabel", "Score:")} {item.earned}/{item.max} ({item.scorePercentage}%)
                             </div>
                           </div>
                         );
@@ -322,8 +324,8 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Chronological performance trend</span>
-            <span>{data.scoreHistory.length} Graded Deliverables</span>
+            <span>{t("analytics.chronologicalTrend", "Chronological performance trend")}</span>
+            <span>{data.scoreHistory.length} {t("analytics.gradedDeliverables", "Graded Deliverables")}</span>
           </div>
         </div>
       </div>
@@ -333,13 +335,13 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
         <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Subject & Course Comparison</h3>
+              <h3 className="text-base font-bold text-slate-900">{t("analytics.subjectComparison", "Subject & Course Comparison")}</h3>
               <p className="text-xs text-slate-500">
-                Comparing completion rate and average grade across each enrolled class
+                {t("analytics.subjectComparisonSubtitle", "Comparing completion rate and average grade across each enrolled class")}
               </p>
             </div>
             <span className="text-xs font-semibold text-slate-400">
-              {data.courseBreakdown.length} Courses
+              {data.courseBreakdown.length} {t("analytics.coursesCount", "Courses")}
             </span>
           </div>
 
@@ -372,15 +374,15 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
                             {item.classroomName}
                           </span>
                           <span className="text-[11px] text-slate-500 block">
-                            Subject: {item.subject}
+                            {item.subject}
                           </span>
                           <div className="pt-1 space-y-0.5 text-xs">
                             <div className="text-teal-600 font-medium">
-                              Completion: <span className="font-bold">{item.completionRate}%</span>{" "}
+                              {t("analytics.completionLabel", "Completion:")} <span className="font-bold">{item.completionRate}%</span>{" "}
                               ({item.submittedCount}/{item.assignmentsCount})
                             </div>
                             <div className="text-indigo-600 font-medium">
-                              Average Score: <span className="font-bold">{item.averageScore}%</span>
+                              {t("analytics.avgScoreLabel", "Average Score:")} <span className="font-bold">{item.averageScore}%</span>
                             </div>
                           </div>
                         </div>
@@ -391,13 +393,13 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
                 />
                 <Legend verticalAlign="top" align="right" height={36} />
                 <Bar
-                  name="Completion Rate %"
+                  name={t("analytics.completionRatePercent", "Completion Rate %")}
                   dataKey="completionRate"
                   fill="#14b8a6"
                   radius={[6, 6, 0, 0]}
                 />
                 <Bar
-                  name="Average Score %"
+                  name={t("analytics.avgScorePercent", "Average Score %")}
                   dataKey="averageScore"
                   fill="#6366f1"
                   radius={[6, 6, 0, 0]}
@@ -412,9 +414,9 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
       <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="text-base font-bold text-slate-900">Deliverable Performance History</h3>
+            <h3 className="text-base font-bold text-slate-900">{t("analytics.deliverableHistory", "Deliverable Performance History")}</h3>
             <p className="text-xs text-slate-500">
-              Review submission details, grades, and teacher feedback
+              {t("analytics.deliverableHistorySubtitle", "Review submission details, grades, and teacher feedback")}
             </p>
           </div>
 
@@ -429,7 +431,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
-                All Courses
+                {t("analytics.allCourses", "All Courses")}
               </button>
               {courseNames.map((name) => (
                 <button
@@ -450,18 +452,18 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
 
         {filteredSubmissions.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-400">
-            No submissions recorded under this filter.
+            {t("analytics.noSubmissionsFilter", "No submissions recorded under this filter.")}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-100 text-slate-400 uppercase font-bold text-[10px]">
-                  <th className="pb-3 pl-2">Assignment</th>
-                  <th className="pb-3">Classroom</th>
-                  <th className="pb-3">Due Date</th>
-                  <th className="pb-3">Status</th>
-                  <th className="pb-3 text-right pr-2">Grade</th>
+                  <th className="pb-3 pl-2">{t("analytics.assignmentHeader", "Assignment")}</th>
+                  <th className="pb-3">{t("analytics.classroomHeader", "Classroom")}</th>
+                  <th className="pb-3">{t("analytics.dueDateHeader", "Due Date")}</th>
+                  <th className="pb-3">{t("analytics.statusHeader", "Status")}</th>
+                  <th className="pb-3 text-right pr-2">{t("analytics.gradeHeader", "Grade")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -473,7 +475,7 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
                         {sub.title}
                         {sub.feedback && (
                           <span className="block text-[11px] text-slate-400 font-normal italic truncate">
-                            Teacher Feedback: &quot;{sub.feedback}&quot;
+                            {t("analytics.teacherFeedback", "Teacher Feedback:")} &quot;{sub.feedback}&quot;
                           </span>
                         )}
                       </td>
@@ -492,17 +494,17 @@ export default function StudentAnalyticsView({ data }: StudentAnalyticsViewProps
                         {isGraded ? (
                           <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full text-[10px]">
                             <Award className="h-3 w-3" />
-                            Graded
+                            {t("analytics.gradedStatus", "Graded")}
                           </span>
                         ) : sub.isSubmitted ? (
                           <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full text-[10px]">
                             <FileCheck className="h-3 w-3" />
-                            Turned In
+                            {t("analytics.turnedInStatus", "Turned In")}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full text-[10px]">
                             <AlertCircle className="h-3 w-3" />
-                            Pending
+                            {t("analytics.pendingStatus", "Pending")}
                           </span>
                         )}
                       </td>

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@/context/UserContext";
+import { useLanguage } from "@/lib/i18n";
 import Navbar from "@/components/Navbar";
 import CreateClassModal from "@/components/CreateClassModal";
 import JoinClassModal from "@/components/JoinClassModal";
@@ -71,7 +72,10 @@ interface Classroom {
   announcements: Array<{ id: string; title: string }>;
 }
 
-function getDeadlineStatus(dueDateStr: string): { label: string; isOverdue: boolean; isDueSoon: boolean } {
+function getLocalizedDeadlineStatus(
+  dueDateStr: string,
+  t: (key: string, fallback?: string) => string
+): { label: string; isOverdue: boolean; isDueSoon: boolean } {
   const now = new Date().getTime();
   const due = new Date(dueDateStr).getTime();
   const diffMs = due - now;
@@ -79,25 +83,46 @@ function getDeadlineStatus(dueDateStr: string): { label: string; isOverdue: bool
   if (diffMs < 0) {
     const diffHoursAgo = Math.floor(Math.abs(diffMs) / (1000 * 60 * 60));
     if (diffHoursAgo < 24) {
-      return { label: `Overdue by ${diffHoursAgo || 1}h`, isOverdue: true, isDueSoon: false };
+      const h = diffHoursAgo || 1;
+      return {
+        label: t("deadlines.overdueByHours", `Overdue by ${h}h`).replace("{n}", String(h)),
+        isOverdue: true,
+        isDueSoon: false,
+      };
     }
     const diffDaysAgo = Math.floor(diffHoursAgo / 24);
-    return { label: `Overdue by ${diffDaysAgo}d`, isOverdue: true, isDueSoon: false };
+    return {
+      label: t("deadlines.overdueByDays", `Overdue by ${diffDaysAgo}d`).replace("{n}", String(diffDaysAgo)),
+      isOverdue: true,
+      isDueSoon: false,
+    };
   }
 
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   if (diffHours < 1) {
     const diffMinutes = Math.max(1, Math.floor(diffMs / (1000 * 60)));
-    return { label: `Due in ${diffMinutes}m`, isOverdue: false, isDueSoon: true };
+    return {
+      label: t("deadlines.dueInMinutes", `Due in ${diffMinutes}m`).replace("{n}", String(diffMinutes)),
+      isOverdue: false,
+      isDueSoon: true,
+    };
   }
   if (diffHours < 24) {
-    return { label: `Due in ${diffHours}h`, isOverdue: false, isDueSoon: true };
+    return {
+      label: t("deadlines.dueInHours", `Due in ${diffHours}h`).replace("{n}", String(diffHours)),
+      isOverdue: false,
+      isDueSoon: true,
+    };
   }
   const diffDays = Math.ceil(diffHours / 24);
   if (diffDays === 1) {
-    return { label: "Due tomorrow", isOverdue: false, isDueSoon: true };
+    return { label: t("deadlines.dueTomorrow", "Due tomorrow"), isOverdue: false, isDueSoon: true };
   }
-  return { label: `Due in ${diffDays} days`, isOverdue: false, isDueSoon: diffDays <= 3 };
+  return {
+    label: t("deadlines.dueInDays", `Due in ${diffDays} days`).replace("{n}", String(diffDays)),
+    isOverdue: false,
+    isDueSoon: diffDays <= 3,
+  };
 }
 
 function UnifiedDashboardContent() {
@@ -107,6 +132,7 @@ function UnifiedDashboardContent() {
   const errorParam = searchParams.get("error");
 
   const { currentUser, userSummary, refreshUser } = useUser();
+  const { t, language } = useLanguage();
 
   // Mode state: "teaching", "enrolled", "deadlines", or "analytics"
   const [activeTab, setActiveTab] = useState<"teaching" | "enrolled" | "deadlines" | "analytics">("teaching");
@@ -332,7 +358,7 @@ function UnifiedDashboardContent() {
           <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 flex items-center gap-3 text-xs sm:text-sm text-amber-900 shadow-sm animate-in fade-in">
             <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
             <div>
-              <span className="font-bold">Notice: </span>
+              <span className="font-bold">{t("common.notice", "Notice:")} </span>
               {errorParam}
             </div>
           </div>
@@ -351,7 +377,7 @@ function UnifiedDashboardContent() {
               }`}
             >
               <ShieldCheck className="h-4 w-4 text-purple-600 shrink-0" />
-              <span>Teaching</span>
+              <span>{t("dashboard.tabTeaching", "Teaching")}</span>
               <span
                 className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${
                   activeTab === "teaching"
@@ -372,7 +398,7 @@ function UnifiedDashboardContent() {
               }`}
             >
               <GraduationCap className="h-4 w-4 text-emerald-600 shrink-0" />
-              <span>Enrolled</span>
+              <span>{t("dashboard.tabEnrolled", "Enrolled")}</span>
               <span
                 className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${
                   activeTab === "enrolled"
@@ -393,7 +419,7 @@ function UnifiedDashboardContent() {
               }`}
             >
               <CalendarClock className="h-4 w-4 text-amber-600 shrink-0" strokeWidth={1.75} />
-              <span>Deadlines</span>
+              <span>{t("dashboard.tabDeadlines", "Deadlines")}</span>
               <span
                 className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${
                   activeTab === "deadlines"
@@ -414,7 +440,7 @@ function UnifiedDashboardContent() {
               }`}
             >
               <BarChart3 className="h-4 w-4 text-indigo-600 shrink-0" />
-              <span>Analytics</span>
+              <span>{t("dashboard.tabAnalytics", "Analytics")}</span>
               <span
                 className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${
                   activeTab === "analytics"
@@ -422,7 +448,7 @@ function UnifiedDashboardContent() {
                     : "bg-slate-200 text-slate-600"
                 }`}
               >
-                Live
+                {t("analytics.livePill", "Live")}
               </span>
             </button>
           </div>
@@ -434,14 +460,14 @@ function UnifiedDashboardContent() {
               className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-purple-700 transition-all active:scale-95 min-h-[38px]"
             >
               <Plus className="h-4 w-4 shrink-0" />
-              <span>Create Class</span>
+              <span>{t("navbar.createClass", "Create Class")}</span>
             </button>
             <button
               onClick={() => setIsJoinOpen(true)}
               className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 min-h-[38px]"
             >
               <LogIn className="h-4 w-4 shrink-0" />
-              <span>Join Class</span>
+              <span>{t("navbar.joinClass", "Join Class")}</span>
             </button>
           </div>
         </div>
@@ -456,13 +482,16 @@ function UnifiedDashboardContent() {
                 <div className="space-y-2">
                   <div className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 px-3 py-1 text-xs font-semibold text-purple-200 backdrop-blur-md border border-purple-400/20">
                     <ShieldCheck className="h-3.5 w-3.5 text-purple-300" />
-                    <span>Faculty & Teaching Workspace</span>
+                    <span>{t("dashboard.teacherWorkspace", "Faculty & Teaching Workspace")}</span>
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                    Welcome, {currentUser?.name || "Professor"}
+                    {t("dashboard.welcome", "Welcome back")}, {currentUser?.name || (language === "bn" ? "শিক্ষক" : "Professor")}
                   </h1>
                   <p className="text-sm text-purple-200 max-w-2xl leading-relaxed">
-                    Manage your active courses, draft AI announcements, post assignments, and grade student submissions.
+                    {t(
+                      "dashboard.teacherWorkspaceSubtitle",
+                      "Manage your active courses, draft AI announcements, post assignments, and grade student submissions."
+                    )}
                   </p>
                 </div>
 
@@ -472,14 +501,14 @@ function UnifiedDashboardContent() {
                     className="inline-flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-3 text-sm font-bold text-white transition-all"
                   >
                     <BarChart3 className="h-4 w-4" />
-                    <span>Teacher Analytics</span>
+                    <span>{t("dashboard.teacherAnalytics", "Teacher Analytics")}</span>
                   </Link>
                   <button
                     onClick={() => setIsCreateOpen(true)}
                     className="inline-flex items-center gap-2 rounded-2xl bg-purple-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-purple-600/30 hover:bg-purple-500 active:scale-95 transition-all"
                   >
                     <Plus className="h-4 w-4" />
-                    <span>Create Classroom</span>
+                    <span>{t("dashboard.createClassroom", "Create Classroom")}</span>
                   </button>
                 </div>
               </div>
@@ -487,17 +516,17 @@ function UnifiedDashboardContent() {
               {/* Quick Metrics */}
               <div className="mt-6 pt-5 border-t border-white/10 grid grid-cols-3 gap-4 max-w-md">
                 <div>
-                  <span className="text-xs text-purple-300 block">Classrooms</span>
+                  <span className="text-xs text-purple-300 block">{t("dashboard.classrooms", "Classrooms")}</span>
                   <span className="text-xl font-bold text-white">{teachingClasses.length}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-purple-300 block">Total Students</span>
+                  <span className="text-xs text-purple-300 block">{t("dashboard.totalStudents", "Total Students")}</span>
                   <span className="text-xl font-bold text-white">{totalTeachingStudents}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-purple-300 block">Status</span>
+                  <span className="text-xs text-purple-300 block">{t("dashboard.status", "Status")}</span>
                   <span className="text-xs font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full inline-block mt-1">
-                    Instructor
+                    {t("dashboard.instructor", "Instructor")}
                   </span>
                 </div>
               </div>
@@ -508,10 +537,10 @@ function UnifiedDashboardContent() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-purple-600" />
-                  <h2 className="text-lg font-bold text-slate-900">Courses You Teach</h2>
+                  <h2 className="text-lg font-bold text-slate-900">{t("dashboard.coursesYouTeach", "Courses You Teach")}</h2>
                 </div>
                 <span className="text-xs font-semibold text-slate-500">
-                  {teachingClasses.length} Class{teachingClasses.length === 1 ? "" : "es"}
+                  {teachingClasses.length} {t("dashboard.classesCount", "Classes")}
                 </span>
               </div>
 
@@ -528,10 +557,13 @@ function UnifiedDashboardContent() {
                   </div>
                   <div className="space-y-1">
                     <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                      Create or Join a Classroom
+                      {t("dashboard.createOrJoin", "Create or Join a Classroom")}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                      Create your first course to start sharing assignments, announcements, and managing discussion channels.
+                      {t(
+                        "dashboard.createFirstCourseDesc",
+                        "Create your first course to start sharing assignments, announcements, and managing discussion channels."
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center justify-center gap-3 pt-1">
@@ -540,14 +572,14 @@ function UnifiedDashboardContent() {
                       className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-purple-700 transition-all min-h-[44px]"
                     >
                       <Plus className="h-4 w-4" strokeWidth={1.75} />
-                      <span>Create Classroom</span>
+                      <span>{t("dashboard.createClassroom", "Create Classroom")}</span>
                     </button>
                     <button
                       onClick={() => setIsJoinOpen(true)}
                       className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all min-h-[44px]"
                     >
                       <LogIn className="h-4 w-4" strokeWidth={1.75} />
-                      <span>Join Classroom</span>
+                      <span>{t("dashboard.joinClassroom", "Join Classroom")}</span>
                     </button>
                   </div>
                 </div>
@@ -587,29 +619,28 @@ function UnifiedDashboardContent() {
                         <div className="mt-4 flex items-center gap-3 text-xs text-slate-500">
                           <div className="flex items-center gap-1">
                             <Users className="h-3.5 w-3.5 text-slate-400" />
-                            <span>{cls.enrollments?.length || 0} students</span>
+                            <span>{cls.enrollments?.length || 0} {t("dashboard.studentsUnit", "students")}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Hash className="h-3.5 w-3.5 text-slate-400" />
-                            <span>{cls.channels?.length || 0} channels</span>
+                            <span>{cls.channels?.length || 0} {t("dashboard.channelsUnit", "channels")}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <FileCheck className="h-3.5 w-3.5 text-slate-400" />
-                            <span>{cls.assignments?.length || 0} tasks</span>
+                            <span>{cls.assignments?.length || 0} {t("dashboard.tasksUnit", "tasks")}</span>
                           </div>
                         </div>
                       </div>
 
                       <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
                         <span className="text-[11px] text-slate-400">
-                          {cls.announcements?.length || 0} announcement
-                          {(cls.announcements?.length || 0) === 1 ? "" : "s"}
+                          {cls.announcements?.length || 0} {t("dashboard.announcementsUnit", "announcements")}
                         </span>
                         <Link
                           href={`/classroom/${cls.id}`}
                           className="inline-flex items-center gap-1.5 rounded-xl bg-purple-50 text-purple-800 px-3.5 py-1.5 text-xs font-bold hover:bg-purple-600 hover:text-white transition-all"
                         >
-                          <span>Manage Class</span>
+                          <span>{t("dashboard.manageClass", "Manage Class")}</span>
                           <ArrowRight className="h-3.5 w-3.5" />
                         </Link>
                       </div>
@@ -631,13 +662,16 @@ function UnifiedDashboardContent() {
                 <div className="space-y-2">
                   <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-200 backdrop-blur-md border border-emerald-400/20">
                     <GraduationCap className="h-3.5 w-3.5 text-emerald-300" />
-                    <span>Student Learning Center</span>
+                    <span>{t("dashboard.studentCenter", "Student Learning Center")}</span>
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                    Welcome back, {currentUser?.name || "Student"}
+                    {t("dashboard.welcome", "Welcome back")}, {currentUser?.name || (language === "bn" ? "শিক্ষার্থী" : "Student")}
                   </h1>
                   <p className="text-sm text-emerald-200 max-w-2xl leading-relaxed">
-                    Check upcoming deliverables, collaborate in discussion channels, and ask the Socratic AI Tutor for guided assistance.
+                    {t(
+                      "dashboard.studentCenterSubtitle",
+                      "Check upcoming deliverables, collaborate in discussion channels, and ask the Socratic AI Tutor for guided assistance."
+                    )}
                   </p>
                 </div>
 
@@ -647,21 +681,21 @@ function UnifiedDashboardContent() {
                     className="inline-flex items-center gap-2 rounded-2xl bg-emerald-800/60 hover:bg-emerald-800 border border-emerald-500/30 px-4 py-3 text-sm font-bold text-white transition-all shadow-sm active:scale-95"
                   >
                     <BookOpen className="h-4 w-4 text-emerald-300" />
-                    <span>Academic Locker</span>
+                    <span>{t("dashboard.academicLocker", "Academic Locker")}</span>
                   </Link>
                   <Link
                     href="/dashboard/student/analytics"
                     className="inline-flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-3 text-sm font-bold text-white transition-all active:scale-95"
                   >
                     <BarChart3 className="h-4 w-4" />
-                    <span>My Analytics</span>
+                    <span>{t("dashboard.myAnalytics", "My Analytics")}</span>
                   </Link>
                   <button
                     onClick={() => setIsJoinOpen(true)}
                     className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/30 hover:bg-emerald-500 active:scale-95 transition-all"
                   >
                     <LogIn className="h-4 w-4" />
-                    <span>Join with Code</span>
+                    <span>{t("dashboard.joinWithCode", "Join with Code")}</span>
                   </button>
                 </div>
               </div>
@@ -669,17 +703,17 @@ function UnifiedDashboardContent() {
               {/* Quick Metrics */}
               <div className="mt-6 pt-5 border-t border-white/10 grid grid-cols-3 gap-4 max-w-md">
                 <div>
-                  <span className="text-xs text-emerald-300 block">Enrolled Courses</span>
+                  <span className="text-xs text-emerald-300 block">{t("dashboard.enrolledCourses", "Enrolled Courses")}</span>
                   <span className="text-xl font-bold text-white">{enrolledClasses.length}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-emerald-300 block">Upcoming Tasks</span>
+                  <span className="text-xs text-emerald-300 block">{t("dashboard.upcomingTasks", "Upcoming Tasks")}</span>
                   <span className="text-xl font-bold text-white">{dueSoonTasks.length}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-emerald-300 block">Status</span>
+                  <span className="text-xs text-emerald-300 block">{t("dashboard.status", "Status")}</span>
                   <span className="text-xs font-bold text-teal-300 bg-teal-500/20 px-2 py-0.5 rounded-full inline-block mt-1">
-                    Student
+                    {t("dashboard.student", "Student")}
                   </span>
                 </div>
               </div>
@@ -710,10 +744,13 @@ function UnifiedDashboardContent() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-slate-900">
-                      Focus Study & Pomodoro Timer
+                      {t("pomodoro.title", "Focus Study & Pomodoro Timer")}
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Log your deep work sessions to feed directly into your personal analytics and study streaks.
+                      {t(
+                        "pomodoro.subtitle",
+                        "Structured productivity intervals to maximize retention and track study progress."
+                      )}
                     </p>
                   </div>
                 </div>
@@ -724,14 +761,14 @@ function UnifiedDashboardContent() {
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors"
                   >
                     <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Open Locker</span>
+                    <span>{t("dashboard.openLocker", "Open Locker")}</span>
                   </Link>
                   <Link
                     href="/dashboard/student/analytics"
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold transition-colors"
                   >
                     <BarChart3 className="w-3.5 h-3.5" />
-                    <span>View Analytics</span>
+                    <span>{t("dashboard.viewAnalytics", "View Analytics")}</span>
                   </Link>
                 </div>
               </div>
@@ -747,10 +784,10 @@ function UnifiedDashboardContent() {
                     {isTimerRunning ? (
                       <>
                         <Clock strokeWidth={1.75} size={12} className="text-emerald-500 animate-spin" />
-                        <span>Focus Timer Active</span>
+                        <span>{t("pomodoro.active", "Focus Timer Active")}</span>
                       </>
                     ) : (
-                      <span>Timer Ready</span>
+                      <span>{t("pomodoro.ready", "Timer Ready")}</span>
                     )}
                   </span>
                 </div>
@@ -758,7 +795,7 @@ function UnifiedDashboardContent() {
                 {/* Subject and Duration Selector */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-700 uppercase tracking-wider">Subject:</span>
+                    <span className="font-bold text-slate-700 uppercase tracking-wider">{t("pomodoro.selectSubject", "Subject")}:</span>
                     <select
                       value={timerSubject}
                       onChange={(e) => setTimerSubject(e.target.value)}
@@ -775,7 +812,7 @@ function UnifiedDashboardContent() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Duration:</span>
+                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{t("pomodoro.duration", "Duration")}:</span>
                     {[15, 25, 45].map((m) => (
                       <button
                         key={m}
@@ -799,7 +836,7 @@ function UnifiedDashboardContent() {
                     type="button"
                     onClick={() => handleResetTimer(timerMinutes)}
                     className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-100 transition-colors"
-                    title="Reset Timer"
+                    title={t("pomodoro.reset", "Reset Timer")}
                   >
                     <RotateCcw className="w-4 h-4" />
                   </button>
@@ -811,7 +848,7 @@ function UnifiedDashboardContent() {
                       className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm transition-all"
                     >
                       <Pause className="w-4 h-4" />
-                      <span>Pause</span>
+                      <span>{t("pomodoro.pause", "Pause")}</span>
                     </button>
                   ) : (
                     <button
@@ -820,7 +857,7 @@ function UnifiedDashboardContent() {
                       className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-200 transition-all active:scale-95"
                     >
                       <Play className="w-4 h-4 fill-white" />
-                      <span>Start Focus</span>
+                      <span>{t("pomodoro.start", "Start Focus")}</span>
                     </button>
                   )}
 
@@ -830,7 +867,7 @@ function UnifiedDashboardContent() {
                     className="text-xs font-bold text-emerald-700 hover:text-emerald-900 underline px-2 py-1"
                     title="Instantly log this session without running the timer"
                   >
-                    Log Session
+                    {t("pomodoro.logSession", "Log Session")}
                   </button>
                 </div>
               </div>
@@ -842,11 +879,11 @@ function UnifiedDashboardContent() {
                 <div className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-amber-500" strokeWidth={1.75} />
                   <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                    Action Center: Due Soon
+                    {t("dashboard.actionCenterDueSoon", "Action Center: Due Soon")}
                   </h3>
                 </div>
                 <span className="text-xs font-semibold text-slate-400">
-                  Priority Queue across all enrolled courses
+                  {t("dashboard.priorityQueue", "Priority Queue across all enrolled courses")}
                 </span>
               </div>
 
@@ -876,18 +913,18 @@ function UnifiedDashboardContent() {
                           task.grade !== null && task.grade !== undefined ? (
                             <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-2 py-0.5 rounded-full text-[10px]">
                               <Award className="h-3 w-3" strokeWidth={1.75} />
-                              {task.grade}/{task.maxPoints} pts
+                              {task.grade}/{task.maxPoints} {t("dashboard.pts", "pts")}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300 px-2 py-0.5 rounded-full text-[10px]">
                               <FileCheck className="h-3 w-3" strokeWidth={1.75} />
-                              Turned In
+                              {t("dashboard.turnedIn", "Turned In")}
                             </span>
                           )
                         ) : (
                           <span className="inline-flex items-center gap-1 font-bold text-amber-700 bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-2 py-0.5 rounded-full text-[10px]">
                             <AlertCircle className="h-3 w-3" strokeWidth={1.75} />
-                            Pending
+                            {t("dashboard.pending", "Pending")}
                           </span>
                         )}
                       </div>
@@ -900,10 +937,10 @@ function UnifiedDashboardContent() {
                     <CheckCircle2 className="h-6 w-6" strokeWidth={1.75} />
                   </div>
                   <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    All coursework completed. No pending assignments.
+                    {t("dashboard.allCompleted", "All coursework completed. No pending assignments.")}
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    You are caught up across all your enrolled courses.
+                    {t("dashboard.allCaughtUp", "You are caught up across all your enrolled courses.")}
                   </p>
                 </div>
               )}
@@ -914,10 +951,10 @@ function UnifiedDashboardContent() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-emerald-600" strokeWidth={1.75} />
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Your Enrolled Courses</h2>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t("dashboard.yourEnrolledCourses", "Your Enrolled Courses")}</h2>
                 </div>
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {enrolledClasses.length} Course{enrolledClasses.length === 1 ? "" : "s"}
+                  {enrolledClasses.length} {t("dashboard.classesCount", "Courses")}
                 </span>
               </div>
 
@@ -934,10 +971,13 @@ function UnifiedDashboardContent() {
                   </div>
                   <div className="space-y-1">
                     <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                      Create or Join a Classroom
+                      {t("dashboard.createOrJoin", "Create or Join a Classroom")}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                      Ask your teacher for a 6-character class code, or click below to enroll in a course.
+                      {t(
+                        "dashboard.askTeacherCode",
+                        "Ask your teacher for a 6-character class code, or click below to enroll in a course."
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center justify-center gap-3 pt-1">
@@ -946,14 +986,14 @@ function UnifiedDashboardContent() {
                       className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-all min-h-[44px]"
                     >
                       <LogIn className="h-4 w-4" strokeWidth={1.75} />
-                      <span>Join Classroom</span>
+                      <span>{t("dashboard.joinClassroom", "Join Classroom")}</span>
                     </button>
                     <button
                       onClick={() => setIsCreateOpen(true)}
                       className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all min-h-[44px]"
                     >
                       <Plus className="h-4 w-4" strokeWidth={1.75} />
-                      <span>Create Classroom</span>
+                      <span>{t("dashboard.createClassroom", "Create Classroom")}</span>
                     </button>
                   </div>
                 </div>
@@ -972,7 +1012,7 @@ function UnifiedDashboardContent() {
 
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs font-semibold text-slate-400">
-                              Instructor: {cls.teacher?.name?.split(" ")[0] || "Faculty"}
+                              {t("dashboard.instructorPrefix", "Instructor")}: {cls.teacher?.name?.split(" ")[0] || (language === "bn" ? "শিক্ষক" : "Faculty")}
                             </span>
                             <div className="relative">
                               <button
@@ -1011,7 +1051,7 @@ function UnifiedDashboardContent() {
                                       className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors"
                                     >
                                       <LogOut size={14} />
-                                      <span>Leave Class</span>
+                                      <span>{t("dashboard.leaveClass", "Leave Class")}</span>
                                     </button>
                                   </div>
                                 </>
@@ -1029,29 +1069,28 @@ function UnifiedDashboardContent() {
                         <div className="mt-4 flex items-center gap-3 text-xs text-slate-500">
                           <div className="flex items-center gap-1">
                             <Users className="h-3.5 w-3.5 text-slate-400" />
-                            <span>{cls.enrollments?.length || 0} peers</span>
+                            <span>{cls.enrollments?.length || 0} {t("dashboard.peersUnit", "peers")}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Hash className="h-3.5 w-3.5 text-slate-400" />
-                            <span>{cls.channels?.length || 0} channels</span>
+                            <span>{cls.channels?.length || 0} {t("dashboard.channelsUnit", "channels")}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <FileCheck className="h-3.5 w-3.5 text-slate-400" />
-                            <span>{cls.assignments?.length || 0} tasks</span>
+                            <span>{cls.assignments?.length || 0} {t("dashboard.tasksUnit", "tasks")}</span>
                           </div>
                         </div>
                       </div>
 
                       <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
                         <span className="text-[11px] text-slate-400">
-                          {cls.announcements?.length || 0} announcement
-                          {(cls.announcements?.length || 0) === 1 ? "" : "s"}
+                          {cls.announcements?.length || 0} {t("dashboard.announcementsUnit", "announcements")}
                         </span>
                         <Link
                           href={`/classroom/${cls.id}`}
                           className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 text-emerald-800 px-3.5 py-1.5 text-xs font-bold hover:bg-emerald-600 hover:text-white transition-all"
                         >
-                          <span>Enter Class</span>
+                          <span>{t("dashboard.enterClass", "Enter Class")}</span>
                           <ArrowRight className="h-3.5 w-3.5" />
                         </Link>
                       </div>
@@ -1073,13 +1112,16 @@ function UnifiedDashboardContent() {
                 <div className="space-y-2">
                   <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-200 backdrop-blur-md border border-amber-400/20">
                     <CalendarClock className="h-3.5 w-3.5 text-amber-300" strokeWidth={1.75} />
-                    <span>Academic Deadlines & Schedule</span>
+                    <span>{t("deadlines.headerBadge", "Academic Deadlines & Schedule")}</span>
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                    Upcoming Deliverables
+                    {t("deadlines.upcomingDeliverables", "Upcoming Deliverables")}
                   </h1>
                   <p className="text-sm text-amber-200/90 max-w-2xl leading-relaxed">
-                    All active coursework deadlines across your enrolled classes, sorted chronologically to help you plan your study sessions.
+                    {t(
+                      "deadlines.deadlinesSubtitle",
+                      "All active coursework deadlines across your enrolled classes, sorted chronologically to help you plan your study sessions."
+                    )}
                   </p>
                 </div>
 
@@ -1089,7 +1131,7 @@ function UnifiedDashboardContent() {
                     className="inline-flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-3 text-sm font-bold text-white transition-all active:scale-95"
                   >
                     <BookOpen className="h-4 w-4" strokeWidth={1.75} />
-                    <span>Academic Locker</span>
+                    <span>{t("dashboard.academicLocker", "Academic Locker")}</span>
                   </Link>
                 </div>
               </div>
@@ -1102,10 +1144,10 @@ function UnifiedDashboardContent() {
                   <CheckCircle2 className="h-8 w-8" strokeWidth={1.75} />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                  No upcoming deadlines
+                  {t("deadlines.noUpcoming", "No upcoming deadlines")}
                 </h3>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                  No upcoming deadlines. You are all caught up with your coursework.
+                  {t("deadlines.allCaughtUp", "You are all caught up with your coursework.")}
                 </p>
                 <div className="mt-6 flex justify-center gap-3">
                   <button
@@ -1113,14 +1155,14 @@ function UnifiedDashboardContent() {
                     className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 text-white px-4 py-2.5 text-xs font-bold shadow-sm hover:bg-indigo-700 transition-all min-h-[44px]"
                   >
                     <GraduationCap className="h-4 w-4" strokeWidth={1.75} />
-                    <span>View Enrolled Classes</span>
+                    <span>{t("deadlines.viewEnrolledClasses", "View Enrolled Classes")}</span>
                   </button>
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {upcomingDeadlines.map((task) => {
-                  const status = getDeadlineStatus(task.dueDate);
+                  const status = getLocalizedDeadlineStatus(task.dueDate, t);
                   return (
                     <div
                       key={task.id}
@@ -1160,8 +1202,8 @@ function UnifiedDashboardContent() {
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3.5 w-3.5 text-slate-400" strokeWidth={1.75} />
                             <span>
-                              Due:{" "}
-                              {new Date(task.dueDate).toLocaleDateString(undefined, {
+                              {t("dashboard.due", "Due")}:{" "}
+                              {new Date(task.dueDate).toLocaleDateString(language === "bn" ? "bn-BD" : "en-US", {
                                 month: "short",
                                 day: "numeric",
                                 hour: "2-digit",
@@ -1171,7 +1213,7 @@ function UnifiedDashboardContent() {
                           </div>
                           <div className="flex items-center gap-1 font-semibold text-slate-600 dark:text-slate-300">
                             <Award className="h-3.5 w-3.5 text-amber-500" strokeWidth={1.75} />
-                            <span>{task.maxPoints} pts</span>
+                            <span>{task.maxPoints} {t("dashboard.pts", "pts")}</span>
                           </div>
                         </div>
                       </div>
@@ -1181,11 +1223,11 @@ function UnifiedDashboardContent() {
                           {task.isSubmitted ? (
                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
                               <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-                              <span>Submitted</span>
+                              <span>{t("deadlines.submitted", "Submitted")}</span>
                             </span>
                           ) : (
                             <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
-                              Pending Submission
+                              {t("deadlines.pendingSubmission", "Pending Submission")}
                             </span>
                           )}
                         </div>
@@ -1194,7 +1236,7 @@ function UnifiedDashboardContent() {
                           href={`/classroom/${task.classroomId}?tab=assignments`}
                           className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-500 px-3.5 py-1.5 text-xs font-bold transition-all min-h-[36px]"
                         >
-                          <span>Open Assignment</span>
+                          <span>{t("deadlines.openAssignment", "Open Assignment")}</span>
                           <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
                         </Link>
                       </div>
@@ -1216,13 +1258,18 @@ function UnifiedDashboardContent() {
                 <div className="space-y-1.5">
                   <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-indigo-200 backdrop-blur-md border border-white/10">
                     <BarChart3 className="h-3.5 w-3.5 text-indigo-300" />
-                    <span>Live Interactive Graphs</span>
+                    <span>{t("analytics.interactiveGraphs", "Live Interactive Graphs")}</span>
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-                    {analyticsRoleView === "student" ? "Your Academic Performance" : "Faculty Analytics & Student Directory"}
+                    {analyticsRoleView === "student"
+                      ? t("analytics.studentPerformance", "Your Academic Performance")
+                      : t("analytics.facultyAnalytics", "Faculty Analytics & Student Directory")}
                   </h1>
                   <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
-                    Interactive charts for completion rates, chronological score trends, and individual student drill-down.
+                    {t(
+                      "analytics.chartsSubtitle",
+                      "Interactive charts for completion rates, chronological score trends, and individual student drill-down."
+                    )}
                   </p>
                 </div>
 
@@ -1238,7 +1285,7 @@ function UnifiedDashboardContent() {
                             : "text-slate-300 hover:text-white"
                         }`}
                       >
-                        Student View
+                        {t("analytics.studentView", "Student View")}
                       </button>
                       <button
                         onClick={() => setAnalyticsRoleView("teacher")}
@@ -1248,7 +1295,7 @@ function UnifiedDashboardContent() {
                             : "text-slate-300 hover:text-white"
                         }`}
                       >
-                        Teacher View
+                        {t("analytics.teacherView", "Teacher View")}
                       </button>
                     </div>
                   )}
@@ -1257,7 +1304,7 @@ function UnifiedDashboardContent() {
                     href="/analytics"
                     className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow hover:bg-indigo-700 transition-all"
                   >
-                    <span>Full Analytics Hub</span>
+                    <span>{t("analytics.fullHub", "Full Analytics Hub")}</span>
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                 </div>
@@ -1267,7 +1314,7 @@ function UnifiedDashboardContent() {
             {isLoadingAnalytics && !analyticsData ? (
               <div className="py-16 text-center text-xs text-slate-400 space-y-2">
                 <div className="h-8 w-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
-                <span>Loading interactive charts...</span>
+                <span>{t("analytics.loadingCharts", "Loading interactive charts...")}</span>
               </div>
             ) : (
               <>

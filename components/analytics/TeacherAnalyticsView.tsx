@@ -33,6 +33,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { formatRelativeDueDate } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n";
 
 interface StudentItem {
   id: string;
@@ -81,6 +82,7 @@ export default function TeacherAnalyticsView({
   classesList,
   studentsList,
 }: TeacherAnalyticsViewProps) {
+  const { t, language } = useLanguage();
   const [selectedClassId, setSelectedClassId] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -138,7 +140,7 @@ export default function TeacherAnalyticsView({
         <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Enrolled Students
+              {t("analytics.enrolledStudents", "Enrolled Students")}
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
               <Users className="h-4 w-4" />
@@ -148,7 +150,7 @@ export default function TeacherAnalyticsView({
             {overviewData.totalStudentsCount}
           </div>
           <span className="text-[11px] text-slate-400 block">
-            Across {overviewData.createdCoursesCount} active courses
+            {t("analytics.acrossCourses", `Across ${overviewData.createdCoursesCount} active courses`).replace("{n}", overviewData.createdCoursesCount.toString())}
           </span>
         </div>
 
@@ -156,7 +158,7 @@ export default function TeacherAnalyticsView({
         <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Submissions Received
+              {t("analytics.submissionsReceived", "Submissions Received")}
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
               <FileCheck className="h-4 w-4" />
@@ -166,7 +168,7 @@ export default function TeacherAnalyticsView({
             {overviewData.submissionsReceivedCount}
           </div>
           <span className="text-[11px] text-slate-400 block">
-            {overviewData.assignmentsPostedCount} assignments posted
+            {overviewData.assignmentsPostedCount} {t("analytics.assignmentsPosted", "assignments posted")}
           </span>
         </div>
 
@@ -174,7 +176,7 @@ export default function TeacherAnalyticsView({
         <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Grading Rate
+              {t("analytics.gradingRate", "Grading Rate")}
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
               <Award className="h-4 w-4" />
@@ -184,7 +186,7 @@ export default function TeacherAnalyticsView({
             <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">
               {overviewData.gradingRate}%
             </span>
-            <span className="text-xs font-semibold text-slate-400">graded</span>
+            <span className="text-xs font-semibold text-slate-400">{t("analytics.gradedCoursework", "graded")}</span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
             <div
@@ -198,7 +200,7 @@ export default function TeacherAnalyticsView({
         <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Ungraded Submissions
+              {t("analytics.ungradedSubmissions", "Ungraded Submissions")}
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
               <Clock className="h-4 w-4" />
@@ -209,8 +211,8 @@ export default function TeacherAnalyticsView({
           </div>
           <span className="text-[11px] text-amber-600 font-medium block">
             {overviewData.ungradedCount === 0
-              ? "All submissions graded"
-              : "Awaiting teacher review"}
+              ? t("analytics.allSubmissionsGraded", "All submissions graded")
+              : t("analytics.awaitingTeacherReview", "Awaiting teacher review")}
           </span>
         </div>
       </div>
@@ -220,13 +222,13 @@ export default function TeacherAnalyticsView({
         <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Class Activity & Student Volume</h3>
+              <h3 className="text-base font-bold text-slate-900">{t("analytics.classActivityVolume", "Class Activity & Student Volume")}</h3>
               <p className="text-xs text-slate-500">
-                Breakdown of enrollment, assignments, and deliverables per course
+                {t("analytics.classActivitySubtitle", "Breakdown of enrollment, assignments, and deliverables per course")}
               </p>
             </div>
             <span className="text-xs font-semibold text-slate-400">
-              {overviewData.classEnrollmentData.length} Courses
+              {overviewData.classEnrollmentData.length} {t("analytics.coursesCount", "Courses")}
             </span>
           </div>
 
@@ -255,13 +257,13 @@ export default function TeacherAnalyticsView({
                           <span className="text-[11px] text-slate-400 block">{item.subject}</span>
                           <div className="pt-1 text-xs space-y-0.5">
                             <div className="text-purple-600 font-medium">
-                              Enrolled Students: <span className="font-bold">{item.studentsCount}</span>
+                              {t("analytics.enrolledStudents", "Enrolled Students")}: <span className="font-bold">{item.studentsCount}</span>
                             </div>
                             <div className="text-indigo-600 font-medium">
-                              Assignments Posted: <span className="font-bold">{item.assignmentsCount}</span>
+                              {t("analytics.assignmentsPostedLabel", "Assignments Posted")}: <span className="font-bold">{item.assignmentsCount}</span>
                             </div>
                             <div className="text-emerald-600 font-medium">
-                              Deliverables Received: <span className="font-bold">{item.submissionsCount}</span>
+                              {t("analytics.deliverablesReceivedLabel", "Deliverables Received")}: <span className="font-bold">{item.submissionsCount}</span>
                             </div>
                           </div>
                         </div>
@@ -271,9 +273,9 @@ export default function TeacherAnalyticsView({
                   }}
                 />
                 <Legend verticalAlign="top" align="right" height={36} />
-                <Bar name="Students" dataKey="studentsCount" fill="#9333ea" radius={[6, 6, 0, 0]} />
-                <Bar name="Assignments" dataKey="assignmentsCount" fill="#6366f1" radius={[6, 6, 0, 0]} />
-                <Bar name="Submissions" dataKey="submissionsCount" fill="#10b981" radius={[6, 6, 0, 0]} />
+                <Bar name={t("analytics.students", "Students")} dataKey="studentsCount" fill="#9333ea" radius={[6, 6, 0, 0]} />
+                <Bar name={t("analytics.assignmentsPostedLabel", "Assignments")} dataKey="assignmentsCount" fill="#6366f1" radius={[6, 6, 0, 0]} />
+                <Bar name={t("analytics.submissions", "Submissions")} dataKey="submissionsCount" fill="#10b981" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -287,11 +289,11 @@ export default function TeacherAnalyticsView({
             <div className="flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-purple-600" />
               <h3 className="text-base font-bold text-slate-900">
-                Student Performance Directory
+                {t("analytics.studentRoster", "Student Performance Directory")}
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Select any student to drill down into their personal metrics and charts
+              {t("analytics.studentDirectorySubtitle", "Select any student to drill down into their personal metrics and charts")}
             </p>
           </div>
 
@@ -303,10 +305,10 @@ export default function TeacherAnalyticsView({
               onChange={(e) => setSelectedClassId(e.target.value)}
               className="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-purple-500 focus:outline-none"
             >
-              <option value="ALL">All Classrooms ({studentsList.length} students)</option>
+              <option value="ALL">{t("analytics.allClassrooms", "All Classrooms")} ({studentsList.length} {t("analytics.students", "students")})</option>
               {classesList.map((cls) => (
                 <option key={cls.id} value={cls.id}>
-                  {cls.name} ({cls.studentCount} students)
+                  {cls.name} ({cls.studentCount} {t("analytics.students", "students")})
                 </option>
               ))}
             </select>
@@ -318,7 +320,7 @@ export default function TeacherAnalyticsView({
               </div>
               <input
                 type="text"
-                placeholder="Search students..."
+                placeholder={t("analytics.searchStudents", "Search students...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="rounded-xl border border-slate-200 pl-8 pr-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-purple-500 focus:outline-none w-full sm:w-52"
@@ -331,7 +333,7 @@ export default function TeacherAnalyticsView({
         {filteredStudents.length === 0 ? (
           <div className="rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center text-xs text-slate-400 space-y-2">
             <Users className="h-8 w-8 text-slate-300 mx-auto" />
-            <span>No students found matching your selected filter.</span>
+            <span>{t("analytics.noStudentsFound", "No students found matching your selected filter.")}</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -372,19 +374,19 @@ export default function TeacherAnalyticsView({
 
                 <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200/60 text-center">
                   <div>
-                    <span className="text-[10px] text-slate-400 block">Submissions</span>
+                    <span className="text-[10px] text-slate-400 block">{t("analytics.submissions", "Submissions")}</span>
                     <span className="text-xs font-bold text-slate-800">
                       {s.submittedCount}/{s.totalAssignments}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block">Turn-In Rate</span>
+                    <span className="text-[10px] text-slate-400 block">{t("analytics.turnInRate", "Turn-In Rate")}</span>
                     <span className="text-xs font-bold text-teal-600">
                       {s.completionRate}%
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block">Avg Grade</span>
+                    <span className="text-[10px] text-slate-400 block">{t("analytics.avgGrade", "Avg Grade")}</span>
                     <span className="text-xs font-bold text-indigo-600">
                       {s.averageGrade !== null ? `${s.averageGrade}%` : "—"}
                     </span>
@@ -407,9 +409,9 @@ export default function TeacherAnalyticsView({
                   <GraduationCap className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Student Analytics Drill-Down</h2>
+                  <h2 className="text-lg font-bold text-slate-900">{t("analytics.studentDrillDown", "Student Analytics Drill-Down")}</h2>
                   <p className="text-xs text-slate-500">
-                    Individual performance profile, charts, and deliverable history
+                    {t("analytics.studentDrillDownSubtitle", "Individual performance profile, charts, and deliverable history")}
                   </p>
                 </div>
               </div>
@@ -424,7 +426,7 @@ export default function TeacherAnalyticsView({
             {isLoadingDrillDown ? (
               <div className="py-16 text-center text-xs text-slate-400 space-y-3">
                 <div className="h-8 w-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto" />
-                <span>Loading student analytics...</span>
+                <span>{t("analytics.loadingStudentAnalytics", "Loading student analytics...")}</span>
               </div>
             ) : drillDownData ? (
               <div className="space-y-6">
@@ -453,7 +455,7 @@ export default function TeacherAnalyticsView({
                           {drillDownData.student.email}
                         </span>
                         {drillDownData.student.grade && (
-                          <span>• Grade: {drillDownData.student.grade}</span>
+                          <span>• {t("analytics.gradePrefix", "Grade:")} {drillDownData.student.grade}</span>
                         )}
                         {drillDownData.student.institution && (
                           <span className="flex items-center gap-1">
@@ -468,12 +470,12 @@ export default function TeacherAnalyticsView({
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       <span className="text-[10px] text-slate-400 block uppercase font-bold">
-                        Average Score
+                        {t("analytics.averageScore", "Average Score")}
                       </span>
                       <span className="text-xl font-extrabold text-indigo-600">
                         {drillDownData.metrics.averageGrade !== null
                           ? `${drillDownData.metrics.averageGrade}%`
-                          : "No Grades"}
+                          : t("analytics.noGrades", "No Grades")}
                       </span>
                     </div>
                   </div>
@@ -484,7 +486,7 @@ export default function TeacherAnalyticsView({
                   {/* Task Completion Donut */}
                   <div className="rounded-2xl border border-slate-200 p-4 space-y-2">
                     <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                      Assignment Status
+                      {t("analytics.assignmentStatus", "Assignment Status")}
                     </h4>
                     <div className="h-52 w-full">
                       <ResponsiveContainer width="100%" height="100%">
@@ -512,12 +514,12 @@ export default function TeacherAnalyticsView({
                   {/* Score Progression Area */}
                   <div className="rounded-2xl border border-slate-200 p-4 space-y-2">
                     <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                      Grade Progression
+                      {t("analytics.gradeProgression", "Grade Progression")}
                     </h4>
                     <div className="h-52 w-full">
                       {drillDownData.scoreProgression.length === 0 ? (
                         <div className="h-full flex items-center justify-center text-xs text-slate-400">
-                          No graded submissions yet
+                          {t("analytics.noGradedSubmissions", "No graded submissions yet")}
                         </div>
                       ) : (
                         <ResponsiveContainer width="100%" height="100%">
@@ -552,17 +554,17 @@ export default function TeacherAnalyticsView({
                 {/* Submissions & Deliverables Table */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                    Deliverables & Grades in Your Classes
+                    {t("analytics.deliverablesInYourClasses", "Deliverables & Grades in Your Classes")}
                   </h4>
                   <div className="overflow-x-auto rounded-2xl border border-slate-200">
                     <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-[11px]">
-                          <th className="p-3">Assignment</th>
-                          <th className="p-3">Course</th>
-                          <th className="p-3">Due Date</th>
-                          <th className="p-3">Status</th>
-                          <th className="p-3 text-right">Grade</th>
+                          <th className="p-3">{t("analytics.assignmentHeader", "Assignment")}</th>
+                          <th className="p-3">{t("analytics.courseHeader", "Course")}</th>
+                          <th className="p-3">{t("analytics.dueDateHeader", "Due Date")}</th>
+                          <th className="p-3">{t("analytics.statusHeader", "Status")}</th>
+                          <th className="p-3 text-right">{t("analytics.gradeHeader", "Grade")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -580,15 +582,15 @@ export default function TeacherAnalyticsView({
                               <td className="p-3">
                                 {isGraded ? (
                                   <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full text-[10px]">
-                                    Graded
+                                    {t("analytics.gradedStatus", "Graded")}
                                   </span>
                                 ) : a.isSubmitted ? (
                                   <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full text-[10px]">
-                                    Turned In
+                                    {t("analytics.turnedInStatus", "Turned In")}
                                   </span>
                                 ) : (
                                   <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full text-[10px]">
-                                    Pending
+                                    {t("analytics.pendingStatus", "Pending")}
                                   </span>
                                 )}
                               </td>
@@ -605,7 +607,7 @@ export default function TeacherAnalyticsView({
               </div>
             ) : (
               <div className="py-12 text-center text-xs text-slate-400">
-                Failed to load student analytics.
+                {t("analytics.failedToLoadStudentAnalytics", "Failed to load student analytics.")}
               </div>
             )}
           </div>
