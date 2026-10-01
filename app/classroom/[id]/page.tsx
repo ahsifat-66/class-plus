@@ -61,6 +61,7 @@ import {
   Pencil,
   Search,
   Filter,
+  Loader2,
 } from "lucide-react";
 import { booksData } from "@/data/booksData";
 import { formatDate, formatRelativeDueDate } from "@/lib/utils";
@@ -266,6 +267,49 @@ export default function ClassroomHub() {
       }
     } catch (e) {
       console.error("Failed to delete announcement", e);
+    }
+  };
+
+  const handleDeleteBook = async (bookId: string, bookTitle: string) => {
+    if (!classroomId || !isTeacher) return;
+    const confirmMsg =
+      language === "bn"
+        ? `আপনি কি নিশ্চিত যে "${bookTitle}" বইটি এই ক্লাসের বুকশেলফ থেকে মুছে ফেলতে চান?`
+        : `Are you sure you want to remove "${bookTitle}" from this classroom's bookshelf?`;
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      setIsDeletingBookId(bookId);
+      const res = await fetch(`/api/classrooms/${classroomId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ removeTextbookId: bookId }),
+      });
+
+      if (res.ok) {
+        setClassroom((prev) =>
+          prev
+            ? {
+                ...prev,
+                textbooks: (prev.textbooks || []).filter((b) => b.id !== bookId),
+              }
+            : prev
+        );
+        const successMsg =
+          language === "bn"
+            ? `"${bookTitle}" বইটি বুকশেলফ থেকে মুছে ফেলা হয়েছে।`
+            : `"${bookTitle}" was removed from the bookshelf.`;
+        setSubmissionToast(successMsg);
+        setTimeout(() => setSubmissionToast(null), 3500);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to remove textbook.");
+      }
+    } catch (err) {
+      console.error("Error removing textbook:", err);
+      alert("Network error while removing textbook.");
+    } finally {
+      setIsDeletingBookId(null);
     }
   };
 
