@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { booksData } from "../data/booksData";
+import { flatBooksData } from "../data/booksData";
 
 const prisma = new PrismaClient();
 
@@ -52,15 +52,15 @@ async function main() {
     },
   });
 
-  // 2.5 Seed 15 NCTB Class 6 Textbooks
-  console.log("Seeding 15 real NCTB Class 6 textbooks...");
-  for (const book of booksData) {
+  // 2.5 Seed NCTB Class 6 Textbooks (Bangla & English versions)
+  console.log("Seeding NCTB Class 6 textbooks (Bangla & English versions)...");
+  for (const book of flatBooksData) {
     await prisma.nctbBook.create({
       data: {
         id: book.id,
         title: book.title,
         subject: book.subject,
-        grade: book.grade,
+        grade: book.grade || "class-6",
         version: book.version,
         driveUrl: book.driveUrl,
       },
@@ -91,7 +91,9 @@ async function main() {
       code: "CLS6BV",
       teacherId: teacher.id,
       textbooks: {
-        connect: booksData.map((b) => ({ id: b.id })),
+        connect: flatBooksData
+          .filter((b) => b.version === "bangla")
+          .map((b) => ({ id: b.id })),
       },
       enrollments: {
         create: [

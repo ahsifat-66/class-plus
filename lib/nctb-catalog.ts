@@ -1,4 +1,4 @@
-import { booksData, BookItem } from "@/data/booksData";
+import { flatBooksData, Book, booksData } from "@/data/booksData";
 
 export interface NctbBookItem {
   id: string;
@@ -30,9 +30,9 @@ export type NctbGrade = typeof NCTB_GRADES[number];
 /**
  * Real NCTB Textbooks Catalog (sourced directly from data/booksData.ts)
  */
-export const NCTB_CATALOG: NctbBookItem[] = booksData.map((b) => ({
+export const NCTB_CATALOG: NctbBookItem[] = flatBooksData.map((b) => ({
   id: b.id,
-  grade: b.grade,
+  grade: b.grade || "class-6",
   subject: b.subject,
   title: b.title,
   version: b.version,
@@ -41,18 +41,26 @@ export const NCTB_CATALOG: NctbBookItem[] = booksData.map((b) => ({
 }));
 
 /**
- * Filter books by grade (supports "Class 6", "class-6", "class 6", etc.)
+ * Filter books by grade and optional version
  */
-export function getCatalogBooksByGrade(grade?: string | null): NctbBookItem[] {
-  if (!grade) return NCTB_CATALOG;
+export function getCatalogBooksByGrade(
+  grade?: string | null,
+  version?: "bangla" | "english"
+): NctbBookItem[] {
+  let catalog = NCTB_CATALOG;
+  if (version) {
+    catalog = catalog.filter((b) => b.version === version);
+  }
+  if (!grade) return catalog;
+
   const normalized = grade.trim().toLowerCase().replace(/[\s_]+/g, "-");
-  const filtered = NCTB_CATALOG.filter((b) => {
+  const filtered = catalog.filter((b) => {
     const bGrade = b.grade.trim().toLowerCase().replace(/[\s_]+/g, "-");
     return bGrade === normalized || (normalized.includes("6") && bGrade.includes("6"));
   });
   if (filtered.length > 0) return filtered;
   if (normalized.includes("6")) {
-    return NCTB_CATALOG.filter((b) => b.grade.toLowerCase().includes("6"));
+    return catalog.filter((b) => b.grade.toLowerCase().includes("6"));
   }
   return filtered;
 }

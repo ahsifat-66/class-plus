@@ -232,19 +232,21 @@ export default function Navbar({
                           {t("profile.workspaceNav", "Workspace Navigation")}
                         </div>
 
-                        <Link
-                          href="/dashboard?view=teaching"
-                          onClick={() => setDropdownOpen(false)}
-                          className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-purple-50 dark:hover:bg-purple-950/50 hover:text-purple-900 dark:hover:text-purple-200 rounded-xl transition-colors"
-                        >
-                          <div className="flex items-center gap-2">
-                            <ShieldCheck strokeWidth={1.75} size={16} className="text-purple-600 dark:text-purple-400" />
-                            <span>{t("profile.teachingDashboard", "Teaching Dashboard")}</span>
-                          </div>
-                          <span className="text-[10px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
-                            {userSummary?.teachingCount || 0}
-                          </span>
-                        </Link>
+                        {currentUser?.role !== "STUDENT" && (
+                          <Link
+                            href="/dashboard?view=teaching"
+                            onClick={() => setDropdownOpen(false)}
+                            className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-purple-50 dark:hover:bg-purple-950/50 hover:text-purple-900 dark:hover:text-purple-200 rounded-xl transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <ShieldCheck strokeWidth={1.75} size={16} className="text-purple-600 dark:text-purple-400" />
+                              <span>{t("profile.teachingDashboard", "Teaching Dashboard")}</span>
+                            </div>
+                            <span className="text-[10px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
+                              {userSummary?.teachingCount || 0}
+                            </span>
+                          </Link>
+                        )}
 
                         <Link
                           href="/dashboard?view=enrolled"

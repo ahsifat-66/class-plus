@@ -423,6 +423,17 @@ export const translations: TranslationDictionary = {
   selectGrade: { en: "Select Grade Level", bn: "শ্রেণি নির্বাচন করুন" },
   noQuizzesYet: { en: "No quizzes published yet", bn: "এখনও কোনো কুইজ নেই" },
   quizDescription: { en: "Timed assessments with instant automated evaluation.", bn: "টাইমারযুক্ত কুইজ এবং তাত্ক্ষণিক স্বয়ংক্রিয় মূল্যায়ন।" },
+  retakeQuiz: { en: "Retake Quiz", bn: "পুনরায় কুইজ দিন" },
+  confirmSubmitTitle: { en: "Submit Quiz Confirmation", bn: "কুইজ জমা নিশ্চিত করুন" },
+  confirmSubmitDesc: { en: "Are you sure you want to finish and submit your quiz?", bn: "আপনি কি নিশ্চিতভাবে আপনার কুইজ জমা দিতে চান?" },
+  unansweredNotice: { en: "Unanswered questions will be scored as incorrect.", bn: "যেসব প্রশ্নের উত্তর দেওয়া হয়নি, সেগুলোর জন্য শূন্য নম্বর দেওয়া হবে।" },
+  continueQuiz: { en: "Continue Quiz", bn: "ফিরে যান" },
+  confirmSubmitBtn: { en: "Yes, Submit Quiz", bn: "হ্যাঁ, জমা দিন" },
+  timeUpAutoSubmitted: { en: "Time is up! Your quiz has been auto-submitted.", bn: "সময় শেষ! আপনার কুইজ স্বয়ংক্রিয়ভাবে জমা হয়েছে।" },
+  questionsAnswered: { en: "questions answered", bn: "প্রশ্নের উত্তর দেওয়া হয়েছে" },
+  proficientMastery: { en: "Proficient Mastery", bn: "চমৎকার দক্ষতা" },
+  reviewRecommended: { en: "Review Recommended", bn: "আরও অনুশীলনের পরামর্শ" },
+  closeReview: { en: "Close Review", bn: "রিভিউ বন্ধ করুন" },
 
   // Stream & Announcements
   announcements: { en: "Announcements", bn: "বিজ্ঞপ্তি" },

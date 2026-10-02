@@ -19,7 +19,7 @@ import {
   BarChart,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
-import { booksData, BookItem } from "@/data/booksData";
+import { flatBooksData, Book } from "@/data/booksData";
 
 interface QuestionItem {
   question: string;
@@ -89,7 +89,7 @@ export default function CreateQuizModal({
   const assignedBooks = useMemo(() => {
     if (textbooks && textbooks.length > 0) {
       return textbooks.map((tb) => {
-        const fullBook = booksData.find((b) => b.id === tb.id);
+        const fullBook = flatBooksData.find((b) => b.id === tb.id);
         return {
           id: tb.id,
           title: tb.title,
@@ -100,10 +100,10 @@ export default function CreateQuizModal({
       });
     }
     if (bookIds && bookIds.length > 0) {
-      return booksData.filter((b) => bookIds.includes(b.id));
+      return flatBooksData.filter((b) => bookIds.includes(b.id));
     }
     // Fallback to Grade 6 catalog if none explicitly assigned yet
-    return booksData.filter((b) => b.grade === "class-6" || b.grade === "Class 6");
+    return flatBooksData.filter((b) => b.grade === "class-6" || b.grade === "Class 6");
   }, [textbooks, bookIds, gradeLevel]);
 
   // Initialize selected book when modal opens

@@ -64,7 +64,7 @@ import {
   Filter,
   Loader2,
 } from "lucide-react";
-import { booksData } from "@/data/booksData";
+import { booksData, flatBooksData } from "@/data/booksData";
 import { formatDate, formatRelativeDueDate } from "@/lib/utils";
 
 interface ClassroomData {
@@ -190,6 +190,7 @@ export default function ClassroomHub() {
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [isCreateQuizOpen, setIsCreateQuizOpen] = useState(false);
   const [takingQuiz, setTakingQuiz] = useState<any | null>(null);
+  const [quizModalMode, setQuizModalMode] = useState<"TAKE" | "REVIEW">("TAKE");
   const [selectedQuizSubmissions, setSelectedQuizSubmissions] = useState<any | null>(null);
 
   // Announcement edit/delete state
@@ -1277,7 +1278,11 @@ export default function ClassroomHub() {
                             </div>
                           ) : (
                             <button
-                              onClick={() => setTakingQuiz(quiz)}
+                              type="button"
+                              onClick={() => {
+                                setQuizModalMode(isSubmitted ? "REVIEW" : "TAKE");
+                                setTakingQuiz(quiz);
+                              }}
                               className={`inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-xs font-bold transition-all shadow-sm ${
                                 isSubmitted
                                   ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
@@ -1304,7 +1309,7 @@ export default function ClassroomHub() {
             classroom?.textbooks && classroom.textbooks.length > 0
               ? classroom.textbooks
               : classroom?.bookIds && classroom.bookIds.length > 0
-              ? booksData.filter((b) => classroom.bookIds!.includes(b.id))
+              ? flatBooksData.filter((b) => classroom.bookIds!.includes(b.id))
               : [];
 
           const uniqueSubjects = [
@@ -2080,7 +2085,7 @@ export default function ClassroomHub() {
               : (classroom.textbooks || []).map((b) => b.id)
           }
           onSuccess={(updatedBookIds) => {
-            const updatedBooks = booksData.filter((b) =>
+            const updatedBooks = flatBooksData.filter((b) =>
               updatedBookIds.includes(b.id)
             );
             setClassroom((prev) => {
@@ -2120,6 +2125,7 @@ export default function ClassroomHub() {
         onClose={() => setTakingQuiz(null)}
         classroomId={classroom.id}
         quiz={takingQuiz}
+        mode={quizModalMode}
         onSubmitted={() => {
           fetchQuizzes();
           setSubmissionToast("Quiz submitted and auto-graded.");
