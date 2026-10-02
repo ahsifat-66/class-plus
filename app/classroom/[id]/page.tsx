@@ -2079,6 +2079,7 @@ export default function ClassroomHub() {
           onClose={() => setIsAssignBooksOpen(false)}
           classroomId={classroom.id}
           classroomName={classroom.name}
+          gradeLevel={classroom.gradeLevel}
           currentBookIds={
             classroom.bookIds && classroom.bookIds.length > 0
               ? classroom.bookIds

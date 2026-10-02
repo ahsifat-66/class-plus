@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { getSessionUser } from "@/lib/auth/session";
+import { flatBooksData } from "@/data/booksData";
 
 export async function GET(
   req: NextRequest,
@@ -119,6 +120,31 @@ export async function PATCH(
         disconnect: [{ id: removeTextbookId }],
       };
     } else if (effectiveBookIds !== null) {
+      // Ensure all connected textbooks exist in the database table
+      for (const tid of effectiveBookIds) {
+        const meta = flatBooksData.find((b) => b.id === tid);
+        if (meta) {
+          await prisma.nctbBook.upsert({
+            where: { id: tid },
+            update: {
+              title: meta.title,
+              subject: meta.subject,
+              driveUrl: meta.driveUrl,
+              grade: meta.grade || "Class 9-10",
+              version: meta.version || "bangla",
+            },
+            create: {
+              id: meta.id,
+              title: meta.title,
+              subject: meta.subject,
+              driveUrl: meta.driveUrl,
+              grade: meta.grade || "Class 9-10",
+              version: meta.version || "bangla",
+            },
+          });
+        }
+      }
+
       updateData.textbooks = {
         set: effectiveBookIds.map((tid: string) => ({ id: tid })),
       };

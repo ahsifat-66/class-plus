@@ -52,8 +52,8 @@ async function main() {
     },
   });
 
-  // 2.5 Seed NCTB Class 6 Textbooks (Bangla & English versions)
-  console.log("Seeding NCTB Class 6 textbooks (Bangla & English versions)...");
+  // 2.5 Seed NCTB Textbooks (Class 6 & Class 9-10)
+  console.log("Seeding NCTB Textbooks (Class 6 & Class 9-10)...");
   for (const book of flatBooksData) {
     await prisma.nctbBook.create({
       data: {
