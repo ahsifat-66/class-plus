@@ -68,39 +68,47 @@ export default function AboutCreatorModal({
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-lg my-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl text-slate-900 dark:text-slate-100 shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200"
       >
-        {/* Decorative Top Accent Banner */}
-        <div className="h-28 sm:h-32 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 relative overflow-hidden shrink-0">
-          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
-          <div className="absolute -top-12 -right-12 w-44 h-44 bg-white/20 rounded-full blur-2xl pointer-events-none" />
+        {/* Subtle Top Gradient Bar */}
+        <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shrink-0" />
 
-          {/* Close Button */}
+        {/* Top Header with Close Button */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-1 shrink-0">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+            <Code2 size={13} />
+            <span>Creator Profile</span>
+          </div>
+
           <button
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="absolute top-3.5 right-3.5 flex h-9 w-9 items-center justify-center rounded-full bg-black/25 hover:bg-black/40 text-white backdrop-blur-md transition-all active:scale-95"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-all active:scale-95"
           >
-            <X size={18} strokeWidth={2} />
+            <X size={16} strokeWidth={2} />
           </button>
         </div>
 
         {/* Modal Scrollable Content */}
-        <div className="p-5 sm:p-7 overflow-y-auto space-y-6">
+        <div className="p-6 pt-3 overflow-y-auto space-y-6">
           {/* Header & Profile Details */}
-          <div className="relative -mt-14 sm:-mt-16 flex flex-col items-center text-center space-y-3 z-10">
-            {/* Glowing Gradient Avatar */}
-            <div className="relative p-1 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-xl shadow-purple-500/25">
+          <div className="flex flex-col items-center text-center space-y-3">
+            {/* Avatar Container with Guaranteed Inline Styles */}
+            <div className="w-28 h-28 mx-auto rounded-full overflow-hidden border-4 border-indigo-500/20 shadow-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
               {!imgError ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src="https://github.com/ahsifat-66.png"
                   alt="Md Abid Hasan Sifat"
                   onError={() => setImgError(true)}
-                  style={{ objectPosition: "center 15%" }}
-                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover object-top ring-4 ring-white dark:ring-slate-900 bg-slate-100 dark:bg-slate-800 shadow-lg relative z-10"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    objectPosition: "center 15%",
+                  }}
                 />
               ) : (
-                <div className="flex w-24 h-24 sm:w-28 sm:h-28 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-black text-2xl ring-4 ring-white dark:ring-slate-900">
+                <div className="flex w-full h-full items-center justify-center bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-black text-2xl">
                   AS
                 </div>
               )}
