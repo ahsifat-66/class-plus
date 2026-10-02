@@ -35,7 +35,7 @@ export async function GET(
         submissions: {
           include: {
             user: {
-              select: { id: true, name: true, email: true, avatar: true },
+              select: { id: true, uniqueId: true, name: true, email: true, avatar: true },
             },
           },
           orderBy: { completedAt: "desc" },

@@ -5,6 +5,7 @@ import { comparePassword } from "@/lib/auth/password";
 import { signJwtToken } from "@/lib/auth/jwt";
 import { AUTH_COOKIE_NAME } from "@/lib/auth/session";
 import { generateOtpCode, sendOtpEmail } from "@/lib/email/mailer";
+import { ensureUserUniqueId } from "@/lib/utils/uniqueId";
 
 export const dynamic = "force-dynamic";
 
@@ -96,8 +97,12 @@ export async function POST(req: NextRequest) {
     const isSecure = req.nextUrl.protocol === "https:";
     const redirectTo = user.role === "TEACHER" ? "/dashboard?view=teaching" : "/dashboard?view=enrolled";
 
+    // Auto-backfill uniqueId if missing
+    const uniqueId = await ensureUserUniqueId(user);
+
     const sanitizedUser = {
       id: user.id,
+      uniqueId,
       name: user.name,
       email: user.email,
       role: user.role,

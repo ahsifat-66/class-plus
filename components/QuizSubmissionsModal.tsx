@@ -10,6 +10,7 @@ interface SubmissionItem {
   completedAt: string;
   user: {
     id: string;
+    uniqueId?: string | null;
     name: string;
     email: string;
     avatar?: string | null;
@@ -104,9 +105,16 @@ export default function QuizSubmissionsModal({
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
-                        {sub.user.name}
-                      </h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                          {sub.user.name}
+                        </h4>
+                        {sub.user.uniqueId && (
+                          <span className="text-[10px] font-mono font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 px-1.5 py-0.5 rounded-md shrink-0">
+                            {sub.user.uniqueId}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                         {sub.user.email}
                       </p>

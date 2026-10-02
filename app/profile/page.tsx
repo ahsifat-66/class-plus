@@ -44,6 +44,7 @@ interface ProfileStats {
 
 interface ProfileUser {
   id: string;
+  uniqueId?: string | null;
   name: string;
   email: string;
   role: string;
@@ -338,6 +339,13 @@ export default function ProfilePage() {
                         {dynamicBadge}
                       </span>
                     </div>
+
+                    {effectiveProfile.uniqueId && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 border border-white/20 text-xs font-mono font-bold text-indigo-200 backdrop-blur-md shadow-sm">
+                        <ShieldCheck className="h-3.5 w-3.5 text-indigo-400" />
+                        <span>ClassPulse ID: {effectiveProfile.uniqueId}</span>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-300">
                       <Mail className="h-3.5 w-3.5 text-slate-400" />

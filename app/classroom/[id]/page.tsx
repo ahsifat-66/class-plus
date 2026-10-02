@@ -75,6 +75,7 @@ interface ClassroomData {
   teacherId: string;
   teacher: {
     id: string;
+    uniqueId?: string | null;
     name: string;
     email: string;
     avatar: string | null;
@@ -83,6 +84,7 @@ interface ClassroomData {
     id: string;
     user: {
       id: string;
+      uniqueId?: string | null;
       name: string;
       email: string;
       avatar: string | null;
@@ -402,15 +404,18 @@ export default function ClassroomHub() {
   const enrolledStudents = useMemo(() => {
     return (classroom?.enrollments || []).map((e) => ({
       id: e.user.id,
+      uniqueId: e.user.uniqueId,
       name: e.user.name,
       email: e.user.email,
       avatar: e.user.avatar,
     }));
   }, [classroom?.enrollments]);
 
-  const isTeacher =
-    currentUser?.role === "TEACHER" ||
-    (!!classroom && !!currentUser && classroom.teacherId === currentUser.id);
+  // Strict Classroom Ownership Security: Only the creator of this specific classroom holds teacher permissions
+  const isClassInstructor = Boolean(
+    classroom && currentUser && (classroom.teacherId === currentUser.id)
+  );
+  const isTeacher = isClassInstructor;
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1856,9 +1861,16 @@ export default function ClassroomHub() {
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
-                      {classroom.teacher.name}
-                    </h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
+                        {classroom.teacher.name}
+                      </h4>
+                      {classroom.teacher.uniqueId && (
+                        <span className="text-[10px] font-mono font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-md shrink-0">
+                          {classroom.teacher.uniqueId}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                       {classroom.teacher.email}
                     </p>
@@ -1921,6 +1933,11 @@ export default function ClassroomHub() {
                             <h4 className="text-sm font-semibold truncate text-slate-900 dark:text-slate-100">
                               {enr.user.name}
                             </h4>
+                            {enr.user.uniqueId && (
+                              <span className="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-md shrink-0">
+                                {enr.user.uniqueId}
+                              </span>
+                            )}
                             {enr.user.id === currentUser?.id && (
                               <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 px-2 py-0.2 rounded-full shrink-0">
                                 You

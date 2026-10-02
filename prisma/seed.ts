@@ -23,6 +23,7 @@ async function main() {
   // 1. Create Teacher
   const teacher = await prisma.user.create({
     data: {
+      uniqueId: "CP-1001",
       name: "Dr. Kamal Hossain",
       email: "kamal@classpulse.edu",
       password: defaultPasswordHash,
@@ -34,6 +35,7 @@ async function main() {
   // 2. Create Students
   const student1 = await prisma.user.create({
     data: {
+      uniqueId: "CP-1002",
       name: "MD Abid Hasan",
       email: "abid@classpulse.edu",
       password: defaultPasswordHash,
@@ -44,6 +46,7 @@ async function main() {
 
   const student2 = await prisma.user.create({
     data: {
+      uniqueId: "CP-1003",
       name: "Sarah Ahmed",
       email: "sarah@classpulse.edu",
       password: defaultPasswordHash,

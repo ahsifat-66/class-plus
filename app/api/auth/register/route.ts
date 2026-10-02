@@ -4,6 +4,7 @@ import { signUpSchema } from "@/lib/validations/auth";
 import { hashPassword } from "@/lib/auth/password";
 import { Resend } from "resend";
 import { generateOtpCode, getVerificationEmailHtml, sendOtpEmail } from "@/lib/email/mailer";
+import { getNextUniqueId, ensureUserUniqueId } from "@/lib/utils/uniqueId";
 
 export const dynamic = "force-dynamic";
 
@@ -77,10 +78,15 @@ export async function POST(req: NextRequest) {
           avatar,
         },
       });
+      if (!user.uniqueId) {
+        user.uniqueId = await ensureUserUniqueId(user);
+      }
     } else {
-      // Create new user with isVerified: false
+      // Create new user with isVerified: false and sequential uniqueId
+      const nextUniqueId = await getNextUniqueId();
       user = await prisma.user.create({
         data: {
+          uniqueId: nextUniqueId,
           name: name.trim(),
           email: normalizedEmail,
           password: hashedPassword,

@@ -204,7 +204,7 @@ export default function Navbar({
                     />
                     <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-1.5rem)] origin-top-right rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 z-50 animate-in fade-in zoom-in-95 duration-100">
                       {/* User Header */}
-                      <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800">
+                      <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-slate-900 dark:text-white text-sm truncate max-w-[170px]">
                             {currentUser.name}
@@ -221,9 +221,16 @@ export default function Navbar({
                             {activeRoleBadge}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                          {currentUser.email}
-                        </p>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {currentUser.email}
+                          </p>
+                          {currentUser.uniqueId && (
+                            <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 px-1.5 py-0.2 rounded shrink-0">
+                              {currentUser.uniqueId}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Quick Dashboard Toggles */}

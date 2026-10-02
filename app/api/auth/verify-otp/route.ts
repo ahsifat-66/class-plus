@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
       data: { isVerified: true },
       select: {
         id: true,
+        uniqueId: true,
         name: true,
         email: true,
         role: true,
@@ -84,6 +85,11 @@ export async function POST(req: NextRequest) {
         createdAt: true,
       },
     });
+
+    if (!updatedUser.uniqueId) {
+      const { ensureUserUniqueId } = await import("@/lib/utils/uniqueId");
+      updatedUser.uniqueId = await ensureUserUniqueId(updatedUser);
+    }
 
     // Clean up OTPs
     await prisma.emailOtp.deleteMany({

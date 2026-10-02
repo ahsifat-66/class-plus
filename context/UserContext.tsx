@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 
 export interface User {
   id: string;
+  uniqueId?: string | null;
   name: string;
   email: string;
   role: "TEACHER" | "STUDENT";

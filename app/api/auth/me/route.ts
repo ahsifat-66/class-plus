@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { AUTH_COOKIE_NAME } from "@/lib/auth/session";
 import { verifyJwtToken, signJwtToken } from "@/lib/auth/jwt";
+import { ensureUserUniqueId } from "@/lib/utils/uniqueId";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
         where: { id: session.id },
         select: {
           id: true,
+          uniqueId: true,
           name: true,
           email: true,
           role: true,
@@ -47,6 +49,11 @@ export async function GET(req: NextRequest) {
         const response = NextResponse.json({ user: null, summary: null }, { status: 200 });
         response.cookies.delete(AUTH_COOKIE_NAME);
         return response;
+      }
+
+      // Auto-backfill uniqueId if missing
+      if (!user.uniqueId) {
+        user.uniqueId = await ensureUserUniqueId(user);
       }
 
       // Compute activity summary for flexible multi-role experience
@@ -125,6 +132,7 @@ export async function POST(req: NextRequest) {
         where: { email },
         select: {
           id: true,
+          uniqueId: true,
           name: true,
           email: true,
           role: true,
@@ -135,6 +143,11 @@ export async function POST(req: NextRequest) {
 
       if (!user) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+
+      // Auto-backfill uniqueId if missing
+      if (!user.uniqueId) {
+        user.uniqueId = await ensureUserUniqueId(user);
       }
 
       const token = await signJwtToken({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth/session";
 import { comparePassword, hashPassword } from "@/lib/auth/password";
+import { ensureUserUniqueId } from "@/lib/utils/uniqueId";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest) {
       where: { id: userId },
       select: {
         id: true,
+        uniqueId: true,
         name: true,
         email: true,
         role: true,
@@ -46,6 +48,11 @@ export async function GET(req: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Auto-backfill uniqueId if missing
+    if (!user.uniqueId) {
+      user.uniqueId = await ensureUserUniqueId(user);
     }
 
     const [
@@ -191,6 +198,7 @@ export async function PUT(req: NextRequest) {
       data: updateData,
       select: {
         id: true,
+        uniqueId: true,
         name: true,
         email: true,
         role: true,

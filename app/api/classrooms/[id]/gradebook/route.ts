@@ -30,7 +30,7 @@ export async function GET(
         enrollments: {
           include: {
             user: {
-              select: { id: true, name: true, email: true },
+              select: { id: true, uniqueId: true, name: true, email: true },
             },
           },
           orderBy: { createdAt: "asc" },
@@ -63,7 +63,7 @@ export async function GET(
     }
 
     // Build CSV Headers
-    const headers: string[] = ["Student Name", "Student Email"];
+    const headers: string[] = ["ClassPulse ID", "Student Name", "Student Email"];
 
     classroom.assignments.forEach((a) => {
       headers.push(`Assignment: ${a.title} (Max ${a.maxPoints})`);
@@ -83,7 +83,7 @@ export async function GET(
 
     classroom.enrollments.forEach((enr) => {
       const student = enr.user;
-      const row: string[] = [student.name, student.email];
+      const row: string[] = [student.uniqueId || "—", student.name, student.email];
 
       let studentEarnedPoints = 0;
       let studentPossiblePoints = 0;
