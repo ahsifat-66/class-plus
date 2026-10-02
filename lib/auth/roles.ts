@@ -107,6 +107,22 @@ export function assignUserRole(targetEmail: string, newRole: AppRole): { success
 }
 
 /**
+ * Removes a user's role override from the persistent store upon deletion.
+ */
+export function removeUserRole(targetEmail: string): boolean {
+  const email = targetEmail.toLowerCase().trim();
+  if (email === PERMANENT_SUPER_ADMIN_EMAIL.toLowerCase()) {
+    return false;
+  }
+  const store = readRoleStore();
+  if (store[email]) {
+    delete store[email];
+    return writeRoleStore(store);
+  }
+  return true;
+}
+
+/**
  * Access check helper functions
  */
 export function checkIsSuperAdmin(user?: { email?: string | null; role?: string | null } | null): boolean {

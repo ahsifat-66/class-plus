@@ -54,7 +54,7 @@ ${bulletList}
 * **Q: Will the lecture or lab recording be made available?**
   * *A:* Yes, supplementary notes and references will be archived in the course channel within 24 hours of the session.
 * **Q: What should I do if I experience technical difficulty or scheduling conflicts?**
-  * *A:* Post immediately in the \`#lab-help\` channel or message Dr. Kamal Hossain with supporting documentation.
+  * *A:* Post immediately in the \`#lab-help\` channel or message the course instructor with supporting documentation.
 * **Q: Are there practice problems or review questions we can consult?**
   * *A:* Please consult the practice exercises posted under Classwork and review sample schema queries.
 

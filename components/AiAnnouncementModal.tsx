@@ -292,7 +292,7 @@ export default function AiAnnouncementModal({
               {/* Publish directly to Class Stream */}
               <div className="flex items-center justify-between pt-2">
                 <span className="text-xs text-slate-500">
-                  Will be posted to class stream as Dr. Kamal Hossain
+                  Will be posted to class stream as {currentUser?.name || "Instructor"}
                 </span>
                 <button
                   type="button"

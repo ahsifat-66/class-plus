@@ -106,6 +106,22 @@ export function deleteFeedback(id: string): boolean {
 }
 
 /**
+ * Deletes all feedbacks submitted by a given user (by userId or userEmail)
+ */
+export function deleteFeedbacksByUser(userId: string, email?: string): number {
+  const feedbacks = readFeedbacks();
+  const normalizedEmail = email?.toLowerCase().trim();
+  const filtered = feedbacks.filter(
+    (f) => f.userId !== userId && (!normalizedEmail || f.userEmail.toLowerCase().trim() !== normalizedEmail)
+  );
+  const deletedCount = feedbacks.length - filtered.length;
+  if (deletedCount > 0) {
+    writeFeedbacks(filtered);
+  }
+  return deletedCount;
+}
+
+/**
  * Computes feedback telemetry metrics
  */
 export function getFeedbackStats() {

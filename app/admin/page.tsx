@@ -115,6 +115,7 @@ export default function AdminDashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [updatingEmail, setUpdatingEmail] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   // Classes tab search
   const [classSearch, setClassSearch] = useState("");
@@ -213,6 +214,71 @@ export default function AdminDashboardPage() {
       });
     } finally {
       setUpdatingEmail(null);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string, userEmail: string) => {
+    if (userEmail.toLowerCase().trim() === "abidhasansifat66@gmail.com") {
+      alert("Permanent Super Admin cannot be deleted.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${userName}? This will remove all their enrollments, notes, and activity.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeletingUserId(userId);
+      setStatusMessage(null);
+
+      const res = await fetch(`/api/admin/users?id=${encodeURIComponent(userId)}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to delete user.");
+      }
+
+      // Remove immediately from state
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+
+      // Decrement counter stats
+      setStats((prev) => {
+        if (!prev) return prev;
+        const targetUser = users.find((u) => u.id === userId);
+        const targetRole = targetUser?.role?.toLowerCase();
+        return {
+          ...prev,
+          totalUsers: Math.max(0, prev.totalUsers - 1),
+          teacherCount:
+            targetRole === "teacher"
+              ? Math.max(0, prev.teacherCount - 1)
+              : prev.teacherCount,
+          studentCount:
+            targetRole === "student"
+              ? Math.max(0, prev.studentCount - 1)
+              : prev.studentCount,
+          moderatorCount:
+            targetRole === "moderator"
+              ? Math.max(0, prev.moderatorCount - 1)
+              : prev.moderatorCount,
+        };
+      });
+
+      setStatusMessage({
+        type: "success",
+        text: `User ${userName} deleted successfully.`,
+      });
+      fetchAdminData();
+    } catch (err: any) {
+      setStatusMessage({
+        type: "error",
+        text: err.message || "Failed to delete user.",
+      });
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -722,21 +788,24 @@ export default function AdminDashboardPage() {
                       <th className="py-3 px-3">ClassPulse ID</th>
                       <th className="py-3 px-3">Active Role</th>
                       <th className="py-3 px-3">Activity</th>
-                      <th className="py-3 px-3 text-right">Role Governance</th>
+                      <th className="py-3 px-3">Role Governance</th>
+                      <th className="py-3 px-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                     {isLoading ? (
                       <tr>
-                        <td colSpan={5} className="py-12 text-center text-slate-400">
+                        <td colSpan={6} className="py-12 text-center text-slate-400">
                           <RefreshCw size={24} className="animate-spin mx-auto mb-2 text-indigo-500" />
                           <span>Loading user directory...</span>
                         </td>
                       </tr>
                     ) : filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-10 text-center text-slate-400">
-                          No matching users found.
+                        <td colSpan={6} className="py-10 text-center text-slate-400">
+                          {users.length === 0 || users.every((u) => u.isPermanentSuperAdmin)
+                            ? "No external users registered yet."
+                            : "No matching users found."}
                         </td>
                       </tr>
                     ) : (
@@ -822,7 +891,7 @@ export default function AdminDashboardPage() {
                             </td>
 
                             {/* Role Governance Actions */}
-                            <td className="py-3 px-3 text-right">
+                            <td className="py-3 px-3">
                               {isPermanentAdmin ? (
                                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-2.5 py-1 rounded-xl">
                                   <Lock size={12} />
@@ -846,6 +915,27 @@ export default function AdminDashboardPage() {
                                 <span className="text-[11px] text-slate-400 italic">
                                   Super Admin Required
                                 </span>
+                              )}
+                            </td>
+
+                            {/* Actions / Delete User */}
+                            <td className="py-3 px-3 text-right">
+                              {!isPermanentAdmin && u.email?.toLowerCase().trim() !== "abidhasansifat66@gmail.com" ? (
+                                isSuperAdmin ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteUser(u.id, u.name, u.email)}
+                                    disabled={deletingUserId === u.id}
+                                    className="p-1.5 px-3 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/40 dark:hover:bg-red-900/40 dark:text-red-400 border border-red-200 dark:border-red-900/60 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all disabled:opacity-50"
+                                  >
+                                    <Trash2 size={14} />
+                                    <span>{deletingUserId === u.id ? "Deleting..." : "Delete"}</span>
+                                  </button>
+                                ) : (
+                                  <span className="text-[11px] text-slate-400 italic">No access</span>
+                                )
+                              ) : (
+                                <span className="text-[11px] font-semibold text-slate-400 italic">Protected</span>
                               )}
                             </td>
                           </tr>
