@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import CreateClassModal from "@/components/CreateClassModal";
 import JoinClassModal from "@/components/JoinClassModal";
 import AvatarUploadModal from "@/components/AvatarUploadModal";
+import AboutCreatorModal from "@/components/AboutCreatorModal";
 import {
   User as UserIcon,
   Mail,
@@ -31,6 +32,8 @@ import {
   Eye,
   EyeOff,
   Camera,
+  Code2,
+  ChevronRight,
 } from "lucide-react";
 
 interface ProfileStats {
@@ -89,6 +92,7 @@ export default function ProfilePage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isCreatorModalOpen, setIsCreatorModalOpen] = useState(false);
 
   // Synchronize profile immediately if currentUser is loaded in context
   useEffect(() => {
@@ -799,6 +803,37 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
+
+            {/* Meet the Creator Entry Card */}
+            <div className="rounded-3xl border border-indigo-100 dark:border-indigo-950/60 bg-gradient-to-r from-indigo-50/70 via-white to-purple-50/70 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/30 p-1 shadow-sm hover:shadow-md transition-all">
+              <button
+                type="button"
+                onClick={() => setIsCreatorModalOpen(true)}
+                className="w-full flex items-center justify-between p-4 sm:p-5 rounded-[22px] hover:bg-white/80 dark:hover:bg-slate-800/60 transition-all text-left group"
+              >
+                <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+                  <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform shrink-0">
+                    <Code2 className="h-6 w-6" strokeWidth={1.75} />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors flex items-center gap-2 flex-wrap">
+                      <span>Meet the Creator</span>
+                      <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 font-sans">
+                        (অ্যাপের নির্মাতা)
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                      The vision & developer behind ClassPulse
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors shrink-0 ml-3">
+                  <span className="hidden sm:inline text-xs font-bold">About Developer</span>
+                  <ChevronRight className="h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
+            </div>
           </>
         ) : (
           <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center space-y-4">
@@ -844,6 +879,12 @@ export default function ProfilePage() {
           }
           fetchProfile();
         }}
+      />
+
+      {/* About the Creator Modal */}
+      <AboutCreatorModal
+        isOpen={isCreatorModalOpen}
+        onClose={() => setIsCreatorModalOpen(false)}
       />
     </div>
   );
