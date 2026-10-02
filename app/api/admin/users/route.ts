@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const [rawUsers, totalClassrooms] = await Promise.all([
+    const [rawUsers, totalClassrooms, rawClassrooms] = await Promise.all([
       prisma.user.findMany({
         orderBy: { createdAt: "asc" },
         select: {
@@ -77,6 +77,27 @@ export async function GET(req: NextRequest) {
         },
       }),
       prisma.classroom.count(),
+      prisma.classroom.findMany({
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          subject: true,
+          code: true,
+          gradeLevel: true,
+          createdAt: true,
+          teacher: {
+            select: { id: true, name: true, email: true },
+          },
+          _count: {
+            select: {
+              enrollments: true,
+              assignments: true,
+              announcements: true,
+            },
+          },
+        },
+      }),
     ]);
 
     let superAdminCount = 0;
@@ -117,6 +138,20 @@ export async function GET(req: NextRequest) {
       })
     );
 
+    const classrooms = rawClassrooms.map((c) => ({
+      id: c.id,
+      name: c.name,
+      subject: c.subject,
+      code: c.code,
+      gradeLevel: c.gradeLevel,
+      createdAt: c.createdAt,
+      teacherName: c.teacher?.name || "Unknown Teacher",
+      teacherEmail: c.teacher?.email || "",
+      studentCount: c._count?.enrollments || 0,
+      assignmentCount: c._count?.assignments || 0,
+      announcementCount: c._count?.announcements || 0,
+    }));
+
     const stats = {
       totalUsers: users.length,
       superAdminCount,
@@ -128,6 +163,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       users,
+      classrooms,
       stats,
       callerRole: caller.role,
       isCallerSuperAdmin: checkIsSuperAdmin(caller),
