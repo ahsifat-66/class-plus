@@ -19,10 +19,8 @@ export const NCTB_GRADES = [
   "Class 5",
   "Class 7",
   "Class 8",
-  "Class 9",
-  "Class 10",
-  "Class 11",
-  "Class 12",
+  "Class 9-10",
+  "Class 11-12",
 ] as const;
 
 export type NctbGrade = typeof NCTB_GRADES[number];
@@ -54,6 +52,13 @@ export function getCatalogBooksByGrade(
   if (!grade) return catalog;
 
   const normalized = grade.trim().toLowerCase().replace(/[\s_]+/g, "-");
+  if (normalized.includes("9") || normalized.includes("10")) {
+    return catalog.filter((b) => {
+      const bg = b.grade.toLowerCase();
+      return bg.includes("9") || bg.includes("10");
+    });
+  }
+
   const filtered = catalog.filter((b) => {
     const bGrade = b.grade.trim().toLowerCase().replace(/[\s_]+/g, "-");
     return bGrade === normalized || (normalized.includes("6") && bGrade.includes("6"));

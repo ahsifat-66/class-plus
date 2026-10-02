@@ -1,9 +1,19 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { X, Settings, BookMarked, CheckSquare, Square, Loader2, Sparkles } from "lucide-react";
+import {
+  X,
+  Settings,
+  BookMarked,
+  CheckSquare,
+  Square,
+  Loader2,
+  Sparkles,
+  ExternalLink,
+  Layers,
+} from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
-import { NCTB_GRADES, getCatalogBooksByGrade, NctbBookItem } from "@/lib/nctb-catalog";
+import { booksData, flatBooksData, Book } from "@/data/booksData";
 
 interface EditClassModalProps {
   isOpen: boolean;
@@ -18,6 +28,61 @@ interface EditClassModalProps {
   onClassUpdated: () => void;
 }
 
+// Class 9-10 & 11-12 Textbooks Dataset injected directly into component state
+const nctbBooksData = {
+  "9-10": {
+    bn: {
+      common: [
+        { id: "bn1", title: "সাহিত্য কণিকা (বাংলা ১ম পত্র)", url: "https://drive.google.com/file/d/17bH291V5txub-YCrg5ab-o2CA4MKvwD4/view?usp=drive_link", subject: "Bangla Literature" },
+        { id: "bn_sp", title: "সহপাঠ (বাংলা)", url: "https://drive.google.com/file/d/12WjKZdodXSSzvkwO8_LViQpydKi3zXtw/view?usp=drive_link", subject: "Bangla Literature" },
+        { id: "bn2", title: "বাংলা ব্যাকরণ ও নির্মিতি (বাংলা ২য় পত্র)", url: "https://drive.google.com/file/d/1leaeW1dOzPZG7rn8bc5fyiIT1TjRgJvN/view?usp=drive_link", subject: "Bangla Grammar" },
+        { id: "en1", title: "English for Today", url: "https://drive.google.com/file/d/1EekMeoOWO4nVPdCUyvSLA4Y9uuBUONPo/view?usp=drive_link", subject: "English" },
+        { id: "en2", title: "English Grammar and Composition", url: "https://drive.google.com/file/d/1VvKMLPUfuENVBh5lg6_CVsyrf7BegaBC/view?usp=drive_link", subject: "English Grammar" },
+        { id: "math", title: "গণিত", url: "https://drive.google.com/file/d/1EKdNO1FRA7SoRafQzEVspEuGI5M1-mkg/view?usp=drive_link", subject: "Mathematics" },
+        { id: "ict", title: "তথ্য ও যোগাযোগ প্রযুক্তি", url: "https://drive.google.com/file/d/1EzubZfMIWg6mbswtaQHpjjxwm-FD4KD8/view?usp=drive_link", subject: "ICT" },
+        { id: "rel_is", title: "ইসলাম ও নৈতিক শিক্ষা", url: "https://drive.google.com/file/d/1rpxIsMK5B3vUihTHxcVVm4ER8nnI4VkV/view?usp=drive_link", subject: "Religion" },
+        { id: "rel_hi", title: "হিন্দুধর্ম ও নৈতিক শিক্ষা", url: "https://drive.google.com/file/d/1HF1YMz5kR7zdmTgkYgUuVHMcW5HU3VOq/view?usp=drive_link", subject: "Religion" },
+        { id: "rel_bu", title: "বৌদ্ধধর্ম ও নৈতিক শিক্ষা", url: "https://drive.google.com/file/d/1hqH-TNfe_az9JwofCxFEPoJ2x30QnLxD/view?usp=drive_link", subject: "Religion" },
+        { id: "rel_ch", title: "খ্রিস্টধর্ম ও নৈতিক শিক্ষা", url: "https://drive.google.com/file/d/1e_CAtdOktysyJydbtGH9WkpTAqg9qmcK/view?usp=drive_link", subject: "Religion" },
+      ],
+      groups: {
+        science: [
+          { id: "phy", title: "পদার্থবিজ্ঞান", url: "https://drive.google.com/file/d/1G_y4t4fW3ZfbgbXSV2fqH4PvHiXApDyu/view?usp=drive_link", subject: "Physics" },
+          { id: "chem", title: "রসায়ন", url: "https://drive.google.com/file/d/16teUgLDPKTIB8ZOp6dS59DKY-3R7w72L/view?usp=drive_link", subject: "Chemistry" },
+          { id: "bio", title: "জীববিজ্ঞান", url: "https://drive.google.com/file/d/1zhk3MHn6XUbPTz48ywJcs63A01cwtnzd/view?usp=drive_link", subject: "Biology" },
+          { id: "hm", title: "উচ্চতর গণিত", url: "https://drive.google.com/file/d/1o6Wf0NbCswP0NhtmZXJowvIvPaA30mVK/view?usp=drive_link", subject: "Higher Mathematics" },
+          { id: "bgs", title: "বাংলাদেশ ও বিশ্বপরিচয়", url: "https://drive.google.com/file/d/1KIh7R6J_egWbfD6N-yikdbFMu2SvfG0h/view?usp=drive_link", subject: "Social Science" },
+        ],
+        commerce: [
+          { id: "gen_sci_comm", title: "বিজ্ঞান (সাধারণ বিজ্ঞান)", url: "https://drive.google.com/file/d/1PMA3U1Pghs7bSAxuyWO12S4ltFerjucj/view?usp=drive_link", subject: "General Science" },
+          { id: "acc", title: "হিসাববিজ্ঞান", url: "https://drive.google.com/file/d/1ys1MbQk9EW8wTOan58Rt0YPca53ZYZHP/view?usp=drive_link", subject: "Accounting" },
+          { id: "bus_ent", title: "ব্যবসায় উদ্যোগ", url: "https://drive.google.com/file/d/1OoA-foSjnstGw7OJxB_dvuuF_bm9-R8i/view?usp=drive_link", subject: "Business Studies" },
+          { id: "fin", title: "ফিন্যান্স ও ব্যাংকিং", url: "https://drive.google.com/file/d/1gNBkuWDJxYGTNSF9KppN4iGEAWkoIt7Y/view?usp=drive_link", subject: "Finance & Banking" },
+          { id: "agri_comm", title: "কৃষিশিক্ষা", url: "https://drive.google.com/file/d/1Pz7D9vw1z11B-OQlbDdKFva8_fwrYoY0/view?usp=drive_link", subject: "Agriculture" },
+          { id: "home_sci_comm", title: "গার্হস্থ্য বিজ্ঞান", url: "https://drive.google.com/file/d/1HSEx5MnCfB-a6DCeN_RcK0XevcETAa5t/view?usp=drive_link", subject: "Home Science" },
+        ],
+        arts: [
+          { id: "gen_sci_arts", title: "বিজ্ঞান (সাধারণ বিজ্ঞান)", url: "https://drive.google.com/file/d/1PMA3U1Pghs7bSAxuyWO12S4ltFerjucj/view?usp=drive_link", subject: "General Science" },
+          { id: "hist", title: "বাংলাদেশের ইতিহাস ও বিশ্বসভ্যতা", url: "https://drive.google.com/file/d/1k1hmA3SfczWmLsJR-QQT8QybAFGkaY4B/view?usp=drive_link", subject: "History" },
+          { id: "geo", title: "ভূগোল ও পরিবেশ", url: "https://drive.google.com/file/d/1xBYA6YBstbArM8uAwRSlsiuW8QqMTYRL/view?usp=drive_link", subject: "Geography" },
+          { id: "civ", title: "পৌরনীতি ও নাগরিকতা", url: "https://drive.google.com/file/d/1QdtCDgJ-kRhbm8Vm-x1JIyQsfCQdvY8q/view?usp=drive_link", subject: "Civics & Citizenship" },
+          { id: "econ", title: "অর্থনীতি", url: "https://drive.google.com/file/d/1NVIjVD7hmOM1ZRkhTcOYnUrAqbTWjWH0/view?usp=drive_link", subject: "Economics" },
+          { id: "agri_arts", title: "কৃষিশিক্ষা", url: "https://drive.google.com/file/d/1Pz7D9vw1z11B-OQlbDdKFva8_fwrYoY0/view?usp=drive_link", subject: "Agriculture" },
+          { id: "home_sci_arts", title: "গার্হস্থ্য বিজ্ঞান", url: "https://drive.google.com/file/d/1HSEx5MnCfB-a6DCeN_RcK0XevcETAa5t/view?usp=drive_link", subject: "Home Science" },
+        ],
+      },
+    },
+  },
+  "11-12": {
+    bn: {
+      common: [],
+      groups: { science: [], commerce: [], arts: [] },
+    },
+  },
+};
+
+type GroupType = "science" | "commerce" | "arts" | "";
+
 export default function EditClassModal({
   isOpen,
   onClose,
@@ -27,11 +92,10 @@ export default function EditClassModal({
   const { t, language } = useLanguage();
   const [name, setName] = useState(classroom.name);
   const [subject, setSubject] = useState(classroom.subject);
-  const [gradeLevel, setGradeLevel] = useState<string>(classroom.gradeLevel || "Class 6");
+  const [gradeLevel, setGradeLevel] = useState<string>("Class 6");
+  const [selectedGroup, setSelectedGroup] = useState<GroupType>("");
   const [activeVersion, setActiveVersion] = useState<"bangla" | "english">("bangla");
-  const [availableBooks, setAvailableBooks] = useState<NctbBookItem[]>([]);
   const [selectedBookIds, setSelectedBookIds] = useState<string[]>([]);
-  const [isLoadingBooks, setIsLoadingBooks] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -40,93 +104,115 @@ export default function EditClassModal({
     if (isOpen) {
       setName(classroom.name);
       setSubject(classroom.subject);
-      const initialGrade = classroom.gradeLevel || "Class 6";
+
+      // Normalize incoming gradeLevel
+      let initialGrade = classroom.gradeLevel || "Class 6";
+      const gLower = initialGrade.toLowerCase();
+      if (gLower.includes("9") || gLower.includes("10")) {
+        initialGrade = "Class 9-10";
+      } else if (gLower.includes("11") || gLower.includes("12")) {
+        initialGrade = "Class 11-12";
+      }
       setGradeLevel(initialGrade);
+
+      // Handle conditional group detection
+      if (initialGrade === "Class 9-10" || initialGrade === "Class 11-12") {
+        const existingIds = (classroom.textbooks || []).map((b) => b.id);
+        const subj = (classroom.subject || "").toLowerCase();
+        if (
+          existingIds.some((id) => ["acc", "bus_ent", "fin", "agri_comm"].includes(id)) ||
+          subj.includes("commerce") ||
+          subj.includes("ব্যবসায়")
+        ) {
+          setSelectedGroup("commerce");
+        } else if (
+          existingIds.some((id) => ["hist", "geo", "civ", "econ", "agri_arts"].includes(id)) ||
+          subj.includes("arts") ||
+          subj.includes("humanities") ||
+          subj.includes("মানবিক")
+        ) {
+          setSelectedGroup("arts");
+        } else {
+          setSelectedGroup("science");
+        }
+      } else {
+        setSelectedGroup("");
+      }
+
       setActiveVersion("bangla");
       const existingIds = (classroom.textbooks || []).map((b) => b.id);
       setSelectedBookIds(existingIds);
-      loadBooksForGrade(initialGrade, existingIds);
+      setError("");
     }
   }, [isOpen, classroom]);
 
-  const loadBooksForGrade = async (grade: string, existingSelectedIds?: string[]) => {
-    try {
-      setIsLoadingBooks(true);
-      const res = await fetch(`/api/nctb/books?grade=${encodeURIComponent(grade)}`);
-      if (res.ok) {
-        const data = await res.json();
-        const books: NctbBookItem[] = data.books || [];
-        setAvailableBooks(books);
+  const isGroupApplicable = gradeLevel === "Class 9-10" || gradeLevel === "Class 11-12";
 
-        // If existing IDs provided, keep those that are still in the list or keep them selected
-        if (existingSelectedIds && existingSelectedIds.length > 0) {
-          setSelectedBookIds(existingSelectedIds);
-        } else {
-          // By default, select bangla recommended books for this newly chosen grade
-          const banglaOnly = books.filter(
-            (b) => (b.version || (b.id.includes("-en-") ? "english" : "bangla")) === "bangla"
-          );
-          setSelectedBookIds(banglaOnly.map((b) => b.id));
-        }
-      } else {
-        // Fallback to static catalog
-        const fallback = getCatalogBooksByGrade(grade);
-        setAvailableBooks(fallback);
-        if (!existingSelectedIds || existingSelectedIds.length === 0) {
-          const banglaOnly = fallback.filter(
-            (b) => (b.version || (b.id.includes("-en-") ? "english" : "bangla")) === "bangla"
-          );
-          setSelectedBookIds(banglaOnly.map((b) => b.id));
-        }
-      }
-    } catch (e) {
-      console.error("Error fetching grade books:", e);
-      const fallback = getCatalogBooksByGrade(grade);
-      setAvailableBooks(fallback);
-      if (!existingSelectedIds || existingSelectedIds.length === 0) {
-        const banglaOnly = fallback.filter(
-          (b) => (b.version || (b.id.includes("-en-") ? "english" : "bangla")) === "bangla"
-        );
-        setSelectedBookIds(banglaOnly.map((b) => b.id));
-      }
-    } finally {
-      setIsLoadingBooks(false);
+  const handleGradeChange = (newGrade: string) => {
+    setGradeLevel(newGrade);
+    if (newGrade === "Class 9-10" || newGrade === "Class 11-12") {
+      // Show group dropdown and default to Science if not set
+      setSelectedGroup((prev) => (prev ? prev : "science"));
+    } else {
+      // Hide group dropdown and clear selected group
+      setSelectedGroup("");
     }
   };
 
-  const banglaAvailableBooks = useMemo(() => {
-    return availableBooks.filter(
-      (b) => (b.version || (b.id.includes("-en-") ? "english" : "bangla")) === "bangla"
-    );
-  }, [availableBooks]);
+  const handleGroupChange = (newGroup: string) => {
+    setSelectedGroup(newGroup as GroupType);
+  };
 
-  const englishAvailableBooks = useMemo(() => {
-    return availableBooks.filter(
-      (b) => (b.version || (b.id.includes("-en-") ? "english" : "bangla")) === "english"
-    );
-  }, [availableBooks]);
+  // Class 6 Books
+  const class6BanglaBooks = useMemo(
+    () => booksData[0]?.versions.banglaVersion || [],
+    []
+  );
+  const class6EnglishBooks = useMemo(
+    () => booksData[0]?.versions.englishVersion || [],
+    []
+  );
 
-  const currentVersionBooks =
-    activeVersion === "bangla" ? banglaAvailableBooks : englishAvailableBooks;
+  // Class 9-10 Compulsory Books
+  const class910CommonBooks = useMemo(() => {
+    return nctbBooksData["9-10"].bn.common;
+  }, []);
 
+  // Class 9-10 Group Books
+  const class910GroupBooks = useMemo(() => {
+    const grpKey = (selectedGroup || "science") as "science" | "commerce" | "arts";
+    return nctbBooksData["9-10"].bn.groups[grpKey] || [];
+  }, [selectedGroup]);
+
+  // All books currently visible in the active view
+  const currentViewBooks = useMemo(() => {
+    if (gradeLevel === "Class 9-10") {
+      if (activeVersion === "bangla") {
+        return [...class910CommonBooks, ...class910GroupBooks];
+      }
+      return []; // English version not yet loaded for 9-10
+    }
+    if (gradeLevel === "Class 6") {
+      return activeVersion === "bangla"
+        ? class6BanglaBooks.map((b) => ({ id: b.id, title: b.title, url: b.driveUrl, subject: b.subject }))
+        : class6EnglishBooks.map((b) => ({ id: b.id, title: b.title, url: b.driveUrl, subject: b.subject }));
+    }
+    return [];
+  }, [gradeLevel, activeVersion, class910CommonBooks, class910GroupBooks, class6BanglaBooks, class6EnglishBooks]);
+
+  // Bulk Selection Status for the currently active tab
   const allCurrentSelected =
-    currentVersionBooks.length > 0 &&
-    currentVersionBooks.every((b) => selectedBookIds.includes(b.id));
+    currentViewBooks.length > 0 &&
+    currentViewBooks.every((b) => selectedBookIds.includes(b.id));
 
   const handleSelectAllCurrent = () => {
-    const ids = currentVersionBooks.map((b) => b.id);
+    const ids = currentViewBooks.map((b) => b.id);
     setSelectedBookIds((prev) => Array.from(new Set([...prev, ...ids])));
   };
 
   const handleDeselectAllCurrent = () => {
-    const ids = new Set(currentVersionBooks.map((b) => b.id));
+    const ids = new Set(currentViewBooks.map((b) => b.id));
     setSelectedBookIds((prev) => prev.filter((id) => !ids.has(id)));
-  };
-
-  const handleGradeChange = (newGrade: string) => {
-    setGradeLevel(newGrade);
-    // Load books for newly selected grade and select all by default
-    loadBooksForGrade(newGrade);
   };
 
   const handleToggleBook = (bookId: string) => {
@@ -165,17 +251,69 @@ export default function EditClassModal({
       onClassUpdated();
       onClose();
     } catch (err: any) {
+      console.error("Error updating classroom:", err);
       setError(err.message || "Failed to update classroom.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Reusable Textbook Item Card
+  const renderTextbookCard = (book: { id: string; title: string; url?: string; subject?: string }) => {
+    const isChecked = selectedBookIds.includes(book.id);
+    return (
+      <div
+        key={book.id}
+        onClick={() => handleToggleBook(book.id)}
+        className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
+          isChecked
+            ? "border-indigo-400 dark:border-indigo-700 bg-indigo-50/70 dark:bg-indigo-950/40 shadow-sm"
+            : "border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700"
+        }`}
+      >
+        <div className="flex items-center gap-3 min-w-0 pr-2">
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={() => {}} // handled by parent div
+            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0 cursor-pointer"
+          />
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+              {book.title}
+            </p>
+            {book.subject && (
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-0.5 inline-block">
+                {book.subject}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {book.url && (
+            <a
+              href={book.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-900/40 transition-colors"
+              title="Open in Google Drive"
+            >
+              <ExternalLink size={11} />
+              <span>{language === "bn" ? "বই দেখুন" : "View PDF"}</span>
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-xl rounded-t-[28px] sm:rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-5 sm:p-6 shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+      <div className="w-full max-w-xl rounded-t-[28px] sm:rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-5 sm:p-6 shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-2.5">
@@ -246,14 +384,38 @@ export default function EditClassModal({
                 onChange={(e) => handleGradeChange(e.target.value)}
                 className="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 text-base sm:text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[44px]"
               >
-                {NCTB_GRADES.map((g) => (
-                  <option key={g} value={g}>
-                    {g} ({language === "bn" ? `${g.replace("Class ", "")}ম শ্রেণি` : g})
-                  </option>
-                ))}
+                <option value="Class 6">Class 6 (৬ষ্ঠ শ্রেণি)</option>
+                <option value="Class 1">Class 1 (১ম শ্রেণি)</option>
+                <option value="Class 2">Class 2 (২য় শ্রেণি)</option>
+                <option value="Class 3">Class 3 (৩য় শ্রেণি)</option>
+                <option value="Class 4">Class 4 (৪র্থ শ্রেণি)</option>
+                <option value="Class 5">Class 5 (৫ম শ্রেণি)</option>
+                <option value="Class 7">Class 7 (৭ম শ্রেণি)</option>
+                <option value="Class 8">Class 8 (৮ম শ্রেণি)</option>
+                <option value="Class 9-10">Class 9-10 (৯ম-১০ম শ্রেণি)</option>
+                <option value="Class 11-12">Class 11-12 (একাদশ-দ্বাদশ শ্রেণি)</option>
               </select>
             </div>
           </div>
+
+          {/* Conditional Group Selection Dropdown (Only for Class 9-10 or Class 11-12) */}
+          {isGroupApplicable && (
+            <div className="animate-in fade-in duration-200">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                <Layers size={14} className="text-indigo-600 dark:text-indigo-400" />
+                <span>GROUP / বিভাগ</span>
+              </label>
+              <select
+                value={selectedGroup}
+                onChange={(e) => handleGroupChange(e.target.value)}
+                className="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 text-base sm:text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[44px]"
+              >
+                <option value="science">Science (বিজ্ঞান)</option>
+                <option value="commerce">Commerce (ব্যবসায় শিক্ষা)</option>
+                <option value="arts">Arts (মানবিক)</option>
+              </select>
+            </div>
+          )}
 
           {/* Recommended NCTB Textbooks Section */}
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-4">
@@ -261,30 +423,32 @@ export default function EditClassModal({
               <div className="flex items-center gap-2">
                 <BookMarked className="h-4 w-4 text-indigo-600 dark:text-indigo-400" strokeWidth={1.75} />
                 <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
-                  {t("recommendedBooks", "Recommended NCTB Textbooks")} ({currentVersionBooks.length})
+                  {t("recommendedBooks", "Recommended NCTB Textbooks")} ({currentViewBooks.length})
                 </h4>
               </div>
 
               {/* Version-Scoped Select All / Deselect All */}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={allCurrentSelected ? handleDeselectAllCurrent : handleSelectAllCurrent}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                >
-                  {allCurrentSelected ? (
-                    <>
-                      <Square className="h-3.5 w-3.5" strokeWidth={1.75} />
-                      {t("deselectAll", "Deselect All")}
-                    </>
-                  ) : (
-                    <>
-                      <CheckSquare className="h-3.5 w-3.5" strokeWidth={1.75} />
-                      {t("selectAll", "Select All")}
-                    </>
-                  )}
-                </button>
-              </div>
+              {currentViewBooks.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={allCurrentSelected ? handleDeselectAllCurrent : handleSelectAllCurrent}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    {allCurrentSelected ? (
+                      <>
+                        <Square className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        {t("deselectAll", "Deselect All")}
+                      </>
+                    ) : (
+                      <>
+                        <CheckSquare className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        {t("selectAll", "Select All")}
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 2-Way Version Tabs */}
@@ -299,9 +463,16 @@ export default function EditClassModal({
                 }`}
               >
                 <span>বাংলা ভার্সন</span>
-                <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                  {banglaAvailableBooks.length}
-                </span>
+                {gradeLevel === "Class 9-10" && (
+                  <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    {class910CommonBooks.length + class910GroupBooks.length}
+                  </span>
+                )}
+                {gradeLevel === "Class 6" && (
+                  <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    {class6BanglaBooks.length}
+                  </span>
+                )}
               </button>
 
               <button
@@ -314,9 +485,11 @@ export default function EditClassModal({
                 }`}
               >
                 <span>English Version</span>
-                <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                  {englishAvailableBooks.length}
-                </span>
+                {gradeLevel === "Class 6" && (
+                  <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    {class6EnglishBooks.length}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -327,75 +500,105 @@ export default function EditClassModal({
             </p>
 
             {/* Book Checkboxes Grid */}
-            <div className="mt-3 max-h-56 overflow-y-auto space-y-1.5 pr-1">
-              {isLoadingBooks ? (
-                <div className="py-6 flex items-center justify-center text-xs text-slate-500 gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
-                  {language === "bn" ? "পাঠ্যপুস্তক লোড হচ্ছে..." : "Loading textbooks..."}
-                </div>
-              ) : currentVersionBooks.length === 0 ? (
-                <div className="py-4 text-center text-xs text-slate-500">
-                  {language === "bn" ? "কোনো বই পাওয়া যায়নি।" : "No books found for this version."}
+            <div className="mt-3 max-h-60 overflow-y-auto space-y-3 pr-1">
+              {/* CLASS 9-10 POPULATION */}
+              {gradeLevel === "Class 9-10" ? (
+                activeVersion === "bangla" ? (
+                  <div className="space-y-4">
+                    {/* সকলের জন্য আবশ্যিক বিষয় (Compulsory) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                          সকলের জন্য আবশ্যিক বিষয় (Compulsory)
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {class910CommonBooks.length} টি বিষয়
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {class910CommonBooks.map((b) => renderTextbookCard(b))}
+                      </div>
+                    </div>
+
+                    {/* গ্রুপভিত্তিক বিষয় (Group Subjects) */}
+                    <div className="space-y-1.5 pt-2 border-t border-slate-200/80 dark:border-slate-700/80">
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          গ্রুপভিত্তিক বিষয় (
+                          {selectedGroup === "science"
+                            ? "Science"
+                            : selectedGroup === "commerce"
+                            ? "Commerce"
+                            : "Arts"}
+                          )
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {class910GroupBooks.length} টি বিষয়
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {class910GroupBooks.map((b) => renderTextbookCard(b))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-6 text-center text-xs text-slate-400 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl">
+                    {language === "bn"
+                      ? "নবম-দশম শ্রেণির ইংলিশ ভার্সন পাঠ্যবই শীঘ্রই যুক্ত হবে।"
+                      : "English version textbooks for Class 9-10 will be available soon."}
+                  </div>
+                )
+              ) : gradeLevel === "Class 6" ? (
+                /* CLASS 6 POPULATION */
+                <div className="space-y-1.5">
+                  {currentViewBooks.length === 0 ? (
+                    <div className="py-4 text-center text-xs text-slate-500">
+                      {language === "bn" ? "কোনো বই পাওয়া যায়নি।" : "No books found for this version."}
+                    </div>
+                  ) : (
+                    currentViewBooks.map((b) => renderTextbookCard(b))
+                  )}
                 </div>
               ) : (
-                currentVersionBooks.map((book) => {
-                  const isChecked = selectedBookIds.includes(book.id);
-                  return (
-                    <label
-                      key={book.id}
-                      onClick={() => handleToggleBook(book.id)}
-                      className={`flex items-start gap-3 p-2.5 rounded-xl border transition-all cursor-pointer text-left select-none ${
-                        isChecked
-                          ? "border-indigo-300 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/40"
-                          : "border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {}} // handled by label onClick
-                        className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
-                            {book.title}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                            {book.subject}
-                          </span>
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                            {book.grade}
-                          </span>
-                        </div>
-                      </div>
-                    </label>
-                  );
-                })
+                /* OTHER GRADES */
+                <div className="py-8 text-center text-xs text-slate-400 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl">
+                  {language === "bn"
+                    ? "এই শ্রেণির পাঠ্যবই শীঘ্রই উপলব্ধ হবে।"
+                    : "Curriculum textbooks for this grade will be available soon."}
+                </div>
               )}
             </div>
           </div>
 
           {/* Modal Action Buttons */}
-          <div className="mt-6 flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-h-[44px]"
-            >
-              {t("cancel", "Cancel")}
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-all disabled:opacity-50 min-h-[44px]"
-            >
-              {isSubmitting
-                ? t("submitting", "Saving...")
-                : t("saveChanges", "Save Changes")}
-            </button>
+          <div className="mt-6 flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <span>{language === "bn" ? "নির্বাচিত বই:" : "Selected:"} </span>
+              <span className="font-bold text-slate-900 dark:text-slate-100">
+                {selectedBookIds.length} {language === "bn" ? "টি" : "books"}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-xl px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-h-[44px]"
+              >
+                {t("cancel", "Cancel")}
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-all disabled:opacity-50 min-h-[44px]"
+              >
+                {isSubmitting
+                  ? t("submitting", "Saving...")
+                  : t("saveChanges", "Save Changes")}
+              </button>
+            </div>
           </div>
         </form>
       </div>

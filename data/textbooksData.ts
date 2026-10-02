@@ -239,48 +239,134 @@ export const textbooksData: TextbooksCatalogMap = {
   },
 };
 
+export const nctbBooksData = {
+  "9-10": {
+    bn: {
+      common: [
+        { id: "bn1", title: "সাহিত্য কণিকা (বাংলা ১ম পত্র)", url: "https://drive.google.com/file/d/17bH291V5txub-YCrg5ab-o2CA4MKvwD4/view?usp=drive_link", subject: "Bangla Literature" },
+        { id: "bn_sp", title: "সহপাঠ (বাংলা)", url: "https://drive.google.com/file/d/12WjKZdodXSSzvkwO8_LViQpydKi3zXtw/view?usp=drive_link", subject: "Bangla Literature" },
+        { id: "bn2", title: "বাংলা ব্যাকরণ ও নির্মিতি (বাংলা ২য় পত্র)", url: "https://drive.google.com/file/d/1leaeW1dOzPZG7rn8bc5fyiIT1TjRgJvN/view?usp=drive_link", subject: "Bangla Grammar" },
+        { id: "en1", title: "English for Today", url: "https://drive.google.com/file/d/1EekMeoOWO4nVPdCUyvSLA4Y9uuBUONPo/view?usp=drive_link", subject: "English" },
+        { id: "en2", title: "English Grammar and Composition", url: "https://drive.google.com/file/d/1VvKMLPUfuENVBh5lg6_CVsyrf7BegaBC/view?usp=drive_link", subject: "English Grammar" },
+        { id: "math", title: "গণিত", url: "https://drive.google.com/file/d/1EKdNO1FRA7SoRafQzEVspEuGI5M1-mkg/view?usp=drive_link", subject: "Mathematics" },
+        { id: "ict", title: "তথ্য ও যোগাযোগ প্রযুক্তি", url: "https://drive.google.com/file/d/1EzubZfMIWg6mbswtaQHpjjxwm-FD4KD8/view?usp=drive_link", subject: "ICT" },
+        { id: "rel_is", title: "ইসলাম ও নৈতিক শিক্ষা", url: "https://drive.google.com/file/d/1rpxIsMK5B3vUihTHxcVVm4ER8nnI4VkV/view?usp=drive_link", subject: "Religion" },
+        { id: "rel_hi", title: "হিন্দুধর্ম ও নৈতিক শিক্ষা", url: "https://drive.google.com/file/d/1HF1YMz5kR7zdmTgkYgUuVHMcW5HU3VOq/view?usp=drive_link", subject: "Religion" },
+        { id: "rel_bu", title: "বৌদ্ধধর্ম ও নৈতিক শিক্ষা", url: "https://drive.google.com/file/d/1hqH-TNfe_az9JwofCxFEPoJ2x30QnLxD/view?usp=drive_link", subject: "Religion" },
+        { id: "rel_ch", title: "খ্রিস্টধর্ম ও নৈতিক শিক্ষা", url: "https://drive.google.com/file/d/1e_CAtdOktysyJydbtGH9WkpTAqg9qmcK/view?usp=drive_link", subject: "Religion" }
+      ],
+      groups: {
+        science: [
+          { id: "phy", title: "পদার্থবিজ্ঞান", url: "https://drive.google.com/file/d/1G_y4t4fW3ZfbgbXSV2fqH4PvHiXApDyu/view?usp=drive_link", subject: "Physics" },
+          { id: "chem", title: "রসায়ন", url: "https://drive.google.com/file/d/16teUgLDPKTIB8ZOp6dS59DKY-3R7w72L/view?usp=drive_link", subject: "Chemistry" },
+          { id: "bio", title: "জীববিজ্ঞান", url: "https://drive.google.com/file/d/1zhk3MHn6XUbPTz48ywJcs63A01cwtnzd/view?usp=drive_link", subject: "Biology" },
+          { id: "hm", title: "উচ্চতর গণিত", url: "https://drive.google.com/file/d/1o6Wf0NbCswP0NhtmZXJowvIvPaA30mVK/view?usp=drive_link", subject: "Higher Mathematics" },
+          { id: "bgs", title: "বাংলাদেশ ও বিশ্বপরিচয়", url: "https://drive.google.com/file/d/1KIh7R6J_egWbfD6N-yikdbFMu2SvfG0h/view?usp=drive_link", subject: "Social Science" }
+        ],
+        commerce: [
+          { id: "gen_sci", title: "বিজ্ঞান (সাধারণ বিজ্ঞান)", url: "https://drive.google.com/file/d/1PMA3U1Pghs7bSAxuyWO12S4ltFerjucj/view?usp=drive_link", subject: "General Science" },
+          { id: "acc", title: "হিসাববিজ্ঞান", url: "https://drive.google.com/file/d/1ys1MbQk9EW8wTOan58Rt0YPca53ZYZHP/view?usp=drive_link", subject: "Accounting" },
+          { id: "bus_ent", title: "ব্যবসায় উদ্যোগ", url: "https://drive.google.com/file/d/1OoA-foSjnstGw7OJxB_dvuuF_bm9-R8i/view?usp=drive_link", subject: "Business Studies" },
+          { id: "fin", title: "ফিন্যান্স ও ব্যাংকিং", url: "https://drive.google.com/file/d/1gNBkuWDJxYGTNSF9KppN4iGEAWkoIt7Y/view?usp=drive_link", subject: "Finance & Banking" },
+          { id: "agri", title: "কৃষিশিক্ষা", url: "https://drive.google.com/file/d/1Pz7D9vw1z11B-OQlbDdKFva8_fwrYoY0/view?usp=drive_link", subject: "Agriculture" },
+          { id: "home_sci", title: "গার্হস্থ্য বিজ্ঞান", url: "https://drive.google.com/file/d/1HSEx5MnCfB-a6DCeN_RcK0XevcETAa5t/view?usp=drive_link", subject: "Home Science" }
+        ],
+        arts: [
+          { id: "gen_sci", title: "বিজ্ঞান (সাধারণ বিজ্ঞান)", url: "https://drive.google.com/file/d/1PMA3U1Pghs7bSAxuyWO12S4ltFerjucj/view?usp=drive_link", subject: "General Science" },
+          { id: "hist", title: "বাংলাদেশের ইতিহাস ও বিশ্বসভ্যতা", url: "https://drive.google.com/file/d/1k1hmA3SfczWmLsJR-QQT8QybAFGkaY4B/view?usp=drive_link", subject: "History" },
+          { id: "geo", title: "ভূগোল ও পরিবেশ", url: "https://drive.google.com/file/d/1xBYA6YBstbArM8uAwRSlsiuW8QqMTYRL/view?usp=drive_link", subject: "Geography" },
+          { id: "civ", title: "পৌরনীতি ও নাগরিকতা", url: "https://drive.google.com/file/d/1QdtCDgJ-kRhbm8Vm-x1JIyQsfCQdvY8q/view?usp=drive_link", subject: "Civics & Citizenship" },
+          { id: "econ", title: "অর্থনীতি", url: "https://drive.google.com/file/d/1NVIjVD7hmOM1ZRkhTcOYnUrAqbTWjWH0/view?usp=drive_link", subject: "Economics" },
+          { id: "agri", title: "কৃষিশিক্ষা", url: "https://drive.google.com/file/d/1Pz7D9vw1z11B-OQlbDdKFva8_fwrYoY0/view?usp=drive_link", subject: "Agriculture" },
+          { id: "home_sci", title: "গার্হস্থ্য বিজ্ঞান", url: "https://drive.google.com/file/d/1HSEx5MnCfB-a6DCeN_RcK0XevcETAa5t/view?usp=drive_link", subject: "Home Science" }
+        ]
+      }
+    }
+  },
+  "11-12": {
+    bn: {
+      common: [],
+      groups: { science: [], commerce: [], arts: [] }
+    }
+  }
+};
+
 /**
- * Convert all textbooks in textbooksData into standard Book[] items
+ * Convert all textbooks in textbooksData and nctbBooksData into standard Book[] items
  */
 export function getGrade9To10FlatBooks(): Book[] {
   const c910 = textbooksData["9-10"];
-  if (!c910) return [];
-
   const results: Book[] = [];
   const addedIds = new Set<string>();
 
-  // 1. Compulsory
-  for (const item of c910.compulsory) {
-    if (item.id && !addedIds.has(item.id)) {
-      addedIds.add(item.id);
-      results.push({
-        id: item.id,
-        title: item.name,
-        subject: item.subject || "General",
-        driveUrl: item.link,
-        version: "bangla",
-        grade: "Class 9-10",
-      });
+  // 1. TextbooksData Compulsory
+  if (c910) {
+    for (const item of c910.compulsory) {
+      if (item.id && !addedIds.has(item.id)) {
+        addedIds.add(item.id);
+        results.push({
+          id: item.id,
+          title: item.name,
+          subject: item.subject || "General",
+          driveUrl: item.link,
+          version: "bangla",
+          grade: "Class 9-10",
+        });
+      }
+    }
+
+    // 2. TextbooksData Groups
+    if (c910.groups) {
+      for (const groupKey of ["science", "commerce", "arts"] as const) {
+        const grp = c910.groups[groupKey];
+        if (grp && grp.books) {
+          for (const item of grp.books) {
+            if (item.id && !addedIds.has(item.id)) {
+              addedIds.add(item.id);
+              results.push({
+                id: item.id,
+                title: item.name,
+                subject: item.subject || grp.label.split(" ")[0] || "General",
+                driveUrl: item.link,
+                version: "bangla",
+                grade: "Class 9-10",
+              });
+            }
+          }
+        }
+      }
     }
   }
 
-  // 2. Groups
-  if (c910.groups) {
+  // 3. NCTB Books Data (bn1, phy, etc.)
+  const n910 = nctbBooksData["9-10"]?.bn;
+  if (n910) {
+    for (const item of n910.common) {
+      if (item.id && !addedIds.has(item.id)) {
+        addedIds.add(item.id);
+        results.push({
+          id: item.id,
+          title: item.title,
+          subject: (item as any).subject || "General",
+          driveUrl: item.url,
+          version: "bangla",
+          grade: "Class 9-10",
+        });
+      }
+    }
     for (const groupKey of ["science", "commerce", "arts"] as const) {
-      const grp = c910.groups[groupKey];
-      if (grp && grp.books) {
-        for (const item of grp.books) {
-          if (item.id && !addedIds.has(item.id)) {
-            addedIds.add(item.id);
-            results.push({
-              id: item.id,
-              title: item.name,
-              subject: item.subject || grp.label.split(" ")[0] || "General",
-              driveUrl: item.link,
-              version: "bangla",
-              grade: "Class 9-10",
-            });
-          }
+      const gBooks = n910.groups[groupKey] || [];
+      for (const item of gBooks) {
+        if (item.id && !addedIds.has(item.id)) {
+          addedIds.add(item.id);
+          results.push({
+            id: item.id,
+            title: item.title,
+            subject: (item as any).subject || (groupKey === "science" ? "Science" : groupKey === "commerce" ? "Commerce" : "Arts"),
+            driveUrl: item.url,
+            version: "bangla",
+            grade: "Class 9-10",
+          });
         }
       }
     }
