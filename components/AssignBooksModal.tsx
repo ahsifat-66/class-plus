@@ -46,14 +46,8 @@ export default function AssignBooksModal({
       setSearchQuery("");
       setError("");
 
-      // If classroom already has mostly English books, default to english tab, otherwise bangla
-      const hasEnglish = currentBookIds.some((id) => id.includes("-en-"));
-      const hasBangla = currentBookIds.some((id) => id.includes("-bn-"));
-      if (hasEnglish && !hasBangla) {
-        setActiveVersion("english");
-      } else {
-        setActiveVersion("bangla");
-      }
+      // Default to bangla version tab on open as required
+      setActiveVersion("bangla");
     }
   }, [isOpen, currentBookIds]);
 

@@ -77,6 +77,7 @@ export default function CreateQuizModal({
   const [selectedBookId, setSelectedBookId] = useState<string>("");
   const [aiChapter, setAiChapter] = useState("");
   const [aiDifficulty, setAiDifficulty] = useState<DifficultyLevel>("Medium");
+  const [activeVersion, setActiveVersion] = useState<"bangla" | "english">("bangla");
   const [aiNumQuestions, setAiNumQuestions] = useState<number>(10);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [aiError, setAiError] = useState("");
@@ -85,41 +86,83 @@ export default function CreateQuizModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Dynamically resolve assigned books for this classroom
+  // Dynamically resolve assigned books for this classroom with versions
   const assignedBooks = useMemo(() => {
     if (textbooks && textbooks.length > 0) {
       return textbooks.map((tb) => {
         const fullBook = flatBooksData.find((b) => b.id === tb.id);
+        const version: "bangla" | "english" =
+          fullBook?.version || (tb.id.includes("-en-") ? "english" : "bangla");
         return {
           id: tb.id,
           title: tb.title,
           subject: tb.subject,
           grade: fullBook?.grade || gradeLevel || "Class 6",
+          version,
           driveUrl: tb.driveUrl || fullBook?.driveUrl || "",
         };
       });
     }
     if (bookIds && bookIds.length > 0) {
-      return flatBooksData.filter((b) => bookIds.includes(b.id));
+      return flatBooksData
+        .filter((b) => bookIds.includes(b.id))
+        .map((b) => ({
+          id: b.id,
+          title: b.title,
+          subject: b.subject,
+          grade: b.grade || gradeLevel || "Class 6",
+          version: (b.version || (b.id.includes("-en-") ? "english" : "bangla")) as "bangla" | "english",
+          driveUrl: b.driveUrl || "",
+        }));
     }
     // Fallback to Grade 6 catalog if none explicitly assigned yet
-    return flatBooksData.filter((b) => b.grade === "class-6" || b.grade === "Class 6");
+    return flatBooksData
+      .filter((b) => b.grade === "class-6" || b.grade === "Class 6")
+      .map((b) => ({
+        id: b.id,
+        title: b.title,
+        subject: b.subject,
+        grade: b.grade || gradeLevel || "Class 6",
+        version: (b.version || (b.id.includes("-en-") ? "english" : "bangla")) as "bangla" | "english",
+        driveUrl: b.driveUrl || "",
+      }));
   }, [textbooks, bookIds, gradeLevel]);
 
-  // Initialize selected book when modal opens
+  // Separate books by version
+  const banglaAssignedBooks = useMemo(() => {
+    return assignedBooks.filter((b) => b.version === "bangla");
+  }, [assignedBooks]);
+
+  const englishAssignedBooks = useMemo(() => {
+    return assignedBooks.filter((b) => b.version === "english");
+  }, [assignedBooks]);
+
+  const currentVersionBooks = activeVersion === "bangla" ? banglaAssignedBooks : englishAssignedBooks;
+
+  // Initialize or update selected book based on active version tab
   useEffect(() => {
     if (isOpen) {
-      if (assignedBooks.length > 0) {
-        setSelectedBookId((prev) => (prev ? prev : assignedBooks[0].id));
-      }
       setError("");
       setAiError("");
+      const available = activeVersion === "bangla" ? banglaAssignedBooks : englishAssignedBooks;
+      if (available.length > 0) {
+        setSelectedBookId((prev) => {
+          const stillValid = available.some((b) => b.id === prev);
+          return stillValid ? prev : available[0].id;
+        });
+      } else {
+        setSelectedBookId("");
+      }
     }
-  }, [isOpen, assignedBooks]);
+  }, [isOpen, activeVersion, banglaAssignedBooks, englishAssignedBooks]);
 
   const selectedBook = useMemo(() => {
-    return assignedBooks.find((b) => b.id === selectedBookId) || assignedBooks[0];
-  }, [assignedBooks, selectedBookId]);
+    return (
+      currentVersionBooks.find((b) => b.id === selectedBookId) ||
+      currentVersionBooks[0] ||
+      assignedBooks[0]
+    );
+  }, [currentVersionBooks, selectedBookId, assignedBooks]);
 
   if (!isOpen) return null;
 
@@ -428,19 +471,80 @@ export default function CreateQuizModal({
 
               {/* Form fields */}
               <div className="space-y-4 pt-1">
+                {/* Version Selector Tabs */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                    <span>{language === "bn" ? "কারিকুলাম ভার্সন নির্বাচন" : "Select Curriculum Version"}</span>
+                    <span className="text-[11px] font-normal text-slate-400">
+                      {language === "bn" ? "নির্ধারিত পাঠ্যবইসমূহ" : "Assigned Books"}
+                    </span>
+                  </label>
+                  <div className="p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 grid grid-cols-2 gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setActiveVersion("bangla")}
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                        activeVersion === "bangla"
+                          ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                      }`}
+                    >
+                      <span>বাংলা ভার্সন</span>
+                      <span
+                        className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                          activeVersion === "bangla"
+                            ? "bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300"
+                            : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
+                        }`}
+                      >
+                        {banglaAssignedBooks.length}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveVersion("english")}
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                        activeVersion === "english"
+                          ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                      }`}
+                    >
+                      <span>English Version</span>
+                      <span
+                        className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                          activeVersion === "english"
+                            ? "bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300"
+                            : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
+                        }`}
+                      >
+                        {englishAssignedBooks.length}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
                 {/* 1. Subject / Book Selector */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                     <BookMarked size={14} className="text-indigo-600 dark:text-indigo-400" />
-                    <span>{language === "bn" ? "পাঠ্যবই নির্বাচন করুন (Assigned Textbooks)" : "Assigned Textbook"}</span>
+                    <span>
+                      {language === "bn"
+                        ? activeVersion === "bangla"
+                          ? "বাংলা ভার্সনের পাঠ্যবই নির্বাচন করুন"
+                          : "English Version পাঠ্যবই নির্বাচন করুন"
+                        : activeVersion === "bangla"
+                        ? "Select Bangla Version Textbook"
+                        : "Select English Version Textbook"}
+                    </span>
                   </label>
-                  {assignedBooks.length > 0 ? (
+                  {currentVersionBooks.length > 0 ? (
                     <select
                       value={selectedBookId}
                       onChange={(e) => setSelectedBookId(e.target.value)}
                       className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[44px]"
                     >
-                      {assignedBooks.map((book) => (
+                      {currentVersionBooks.map((book) => (
                         <option key={book.id} value={book.id}>
                           {book.title} ({book.subject})
                         </option>
@@ -449,8 +553,12 @@ export default function CreateQuizModal({
                   ) : (
                     <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
                       {language === "bn"
-                        ? "এই ক্লাসরুমে এখনও কোনো পাঠ্যবই যুক্ত করা হয়নি। বুকশেলফে বই যোগ করার পর এখানে সরাসরি প্রদর্শিত হবে।"
-                        : "No textbooks currently assigned to this classroom. Textbooks will appear here once added to BookShelf."}
+                        ? `এই ক্লাসরুমে কোনো ${
+                            activeVersion === "bangla" ? "বাংলা" : "English"
+                          } ভার্সনের পাঠ্যবই যুক্ত করা হয়নি। বুকশেলফে বই যোগ করার পর এখানে সরাসরি প্রদর্শিত হবে।`
+                        : `No ${
+                            activeVersion === "bangla" ? "Bangla" : "English"
+                          } version textbooks currently assigned to this classroom.`}
                     </div>
                   )}
                 </div>

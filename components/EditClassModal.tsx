@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { X, Settings, BookMarked, CheckSquare, Square, Loader2, Sparkles } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { NCTB_GRADES, getCatalogBooksByGrade, NctbBookItem } from "@/lib/nctb-catalog";
@@ -28,6 +28,7 @@ export default function EditClassModal({
   const [name, setName] = useState(classroom.name);
   const [subject, setSubject] = useState(classroom.subject);
   const [gradeLevel, setGradeLevel] = useState<string>(classroom.gradeLevel || "Class 6");
+  const [activeVersion, setActiveVersion] = useState<"bangla" | "english">("bangla");
   const [availableBooks, setAvailableBooks] = useState<NctbBookItem[]>([]);
   const [selectedBookIds, setSelectedBookIds] = useState<string[]>([]);
   const [isLoadingBooks, setIsLoadingBooks] = useState(false);
@@ -41,6 +42,7 @@ export default function EditClassModal({
       setSubject(classroom.subject);
       const initialGrade = classroom.gradeLevel || "Class 6";
       setGradeLevel(initialGrade);
+      setActiveVersion("bangla");
       const existingIds = (classroom.textbooks || []).map((b) => b.id);
       setSelectedBookIds(existingIds);
       loadBooksForGrade(initialGrade, existingIds);
@@ -60,15 +62,21 @@ export default function EditClassModal({
         if (existingSelectedIds && existingSelectedIds.length > 0) {
           setSelectedBookIds(existingSelectedIds);
         } else {
-          // By default, select all recommended books for this newly chosen grade
-          setSelectedBookIds(books.map((b) => b.id));
+          // By default, select bangla recommended books for this newly chosen grade
+          const banglaOnly = books.filter(
+            (b) => (b.version || (b.id.includes("-en-") ? "english" : "bangla")) === "bangla"
+          );
+          setSelectedBookIds(banglaOnly.map((b) => b.id));
         }
       } else {
         // Fallback to static catalog
         const fallback = getCatalogBooksByGrade(grade);
         setAvailableBooks(fallback);
         if (!existingSelectedIds || existingSelectedIds.length === 0) {
-          setSelectedBookIds(fallback.map((b) => b.id));
+          const banglaOnly = fallback.filter(
+            (b) => (b.version || (b.id.includes("-en-") ? "english" : "bangla")) === "bangla"
+          );
+          setSelectedBookIds(banglaOnly.map((b) => b.id));
         }
       }
     } catch (e) {
@@ -76,11 +84,43 @@ export default function EditClassModal({
       const fallback = getCatalogBooksByGrade(grade);
       setAvailableBooks(fallback);
       if (!existingSelectedIds || existingSelectedIds.length === 0) {
-        setSelectedBookIds(fallback.map((b) => b.id));
+        const banglaOnly = fallback.filter(
+          (b) => (b.version || (b.id.includes("-en-") ? "english" : "bangla")) === "bangla"
+        );
+        setSelectedBookIds(banglaOnly.map((b) => b.id));
       }
     } finally {
       setIsLoadingBooks(false);
     }
+  };
+
+  const banglaAvailableBooks = useMemo(() => {
+    return availableBooks.filter(
+      (b) => (b.version || (b.id.includes("-en-") ? "english" : "bangla")) === "bangla"
+    );
+  }, [availableBooks]);
+
+  const englishAvailableBooks = useMemo(() => {
+    return availableBooks.filter(
+      (b) => (b.version || (b.id.includes("-en-") ? "english" : "bangla")) === "english"
+    );
+  }, [availableBooks]);
+
+  const currentVersionBooks =
+    activeVersion === "bangla" ? banglaAvailableBooks : englishAvailableBooks;
+
+  const allCurrentSelected =
+    currentVersionBooks.length > 0 &&
+    currentVersionBooks.every((b) => selectedBookIds.includes(b.id));
+
+  const handleSelectAllCurrent = () => {
+    const ids = currentVersionBooks.map((b) => b.id);
+    setSelectedBookIds((prev) => Array.from(new Set([...prev, ...ids])));
+  };
+
+  const handleDeselectAllCurrent = () => {
+    const ids = new Set(currentVersionBooks.map((b) => b.id));
+    setSelectedBookIds((prev) => prev.filter((id) => !ids.has(id)));
   };
 
   const handleGradeChange = (newGrade: string) => {
@@ -93,14 +133,6 @@ export default function EditClassModal({
     setSelectedBookIds((prev) =>
       prev.includes(bookId) ? prev.filter((id) => id !== bookId) : [...prev, bookId]
     );
-  };
-
-  const handleSelectAll = () => {
-    setSelectedBookIds(availableBooks.map((b) => b.id));
-  };
-
-  const handleDeselectAll = () => {
-    setSelectedBookIds([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -140,10 +172,6 @@ export default function EditClassModal({
   };
 
   if (!isOpen) return null;
-
-  const allSelected =
-    availableBooks.length > 0 &&
-    availableBooks.every((b) => selectedBookIds.includes(b.id));
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -233,18 +261,18 @@ export default function EditClassModal({
               <div className="flex items-center gap-2">
                 <BookMarked className="h-4 w-4 text-indigo-600 dark:text-indigo-400" strokeWidth={1.75} />
                 <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
-                  {t("recommendedBooks", "Recommended NCTB Textbooks")} ({availableBooks.length})
+                  {t("recommendedBooks", "Recommended NCTB Textbooks")} ({currentVersionBooks.length})
                 </h4>
               </div>
 
-              {/* Master Select All / Deselect All */}
+              {/* Version-Scoped Select All / Deselect All */}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={allSelected ? handleDeselectAll : handleSelectAll}
+                  onClick={allCurrentSelected ? handleDeselectAllCurrent : handleSelectAllCurrent}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 >
-                  {allSelected ? (
+                  {allCurrentSelected ? (
                     <>
                       <Square className="h-3.5 w-3.5" strokeWidth={1.75} />
                       {t("deselectAll", "Deselect All")}
@@ -257,6 +285,39 @@ export default function EditClassModal({
                   )}
                 </button>
               </div>
+            </div>
+
+            {/* 2-Way Version Tabs */}
+            <div className="mt-3 p-1 rounded-xl bg-slate-200/70 dark:bg-slate-700/60 grid grid-cols-2 gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveVersion("bangla")}
+                className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                  activeVersion === "bangla"
+                    ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
+              >
+                <span>বাংলা ভার্সন</span>
+                <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                  {banglaAvailableBooks.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveVersion("english")}
+                className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                  activeVersion === "english"
+                    ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
+              >
+                <span>English Version</span>
+                <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                  {englishAvailableBooks.length}
+                </span>
+              </button>
             </div>
 
             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
@@ -272,12 +333,12 @@ export default function EditClassModal({
                   <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
                   {language === "bn" ? "পাঠ্যপুস্তক লোড হচ্ছে..." : "Loading textbooks..."}
                 </div>
-              ) : availableBooks.length === 0 ? (
+              ) : currentVersionBooks.length === 0 ? (
                 <div className="py-4 text-center text-xs text-slate-500">
-                  {language === "bn" ? "কোনো বই পাওয়া যায়নি।" : "No books found for this grade."}
+                  {language === "bn" ? "কোনো বই পাওয়া যায়নি।" : "No books found for this version."}
                 </div>
               ) : (
-                availableBooks.map((book) => {
+                currentVersionBooks.map((book) => {
                   const isChecked = selectedBookIds.includes(book.id);
                   return (
                     <label
