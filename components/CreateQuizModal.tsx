@@ -26,7 +26,7 @@ interface QuestionItem {
   options: string[];
   correctOptionIndex: number;
   answerIndex?: number;
-  points: number;
+  points: number | "";
   explanation?: string;
 }
 
@@ -60,7 +60,7 @@ export default function CreateQuizModal({
   // Quiz Meta
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [timeLimitMinutes, setTimeLimitMinutes] = useState(15);
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | "">(15);
   const [dueDate, setDueDate] = useState("");
 
   // Questions
@@ -208,10 +208,19 @@ export default function CreateQuizModal({
     );
   };
 
-  const handlePointsChange = (qIdx: number, points: number) => {
-    setQuestions((prev) =>
-      prev.map((q, i) => (i === qIdx ? { ...q, points: Math.max(1, points) } : q))
-    );
+  const handlePointsChange = (qIdx: number, val: string | number) => {
+    if (val === "") {
+      setQuestions((prev) =>
+        prev.map((q, i) => (i === qIdx ? { ...q, points: "" } : q))
+      );
+      return;
+    }
+    const parsed = typeof val === "number" ? val : parseInt(val, 10);
+    if (!isNaN(parsed) && parsed >= 0) {
+      setQuestions((prev) =>
+        prev.map((q, i) => (i === qIdx ? { ...q, points: parsed } : q))
+      );
+    }
   };
 
   // Generate Questions from Assigned Textbook via AI
@@ -334,7 +343,7 @@ export default function CreateQuizModal({
             question: q.question,
             options: q.options,
             correctOptionIndex: q.correctOptionIndex,
-            points: q.points,
+            points: Number(q.points) || 1,
           })),
         }),
       });
@@ -745,7 +754,22 @@ export default function CreateQuizModal({
                   min={1}
                   max={180}
                   value={timeLimitMinutes}
-                  onChange={(e) => setTimeLimitMinutes(Number(e.target.value) || 1)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setTimeLimitMinutes("");
+                      return;
+                    }
+                    const num = parseInt(val, 10);
+                    if (!isNaN(num) && num >= 0) {
+                      setTimeLimitMinutes(num);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (timeLimitMinutes === "" || Number(timeLimitMinutes) <= 0) {
+                      setTimeLimitMinutes(15);
+                    }
+                  }}
                   className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[44px]"
                 />
               </div>
@@ -771,7 +795,7 @@ export default function CreateQuizModal({
                 </h4>
                 <span className="text-[11px] text-slate-400">
                   {language === "bn" ? "মোট নম্বর:" : "Total Points:"}{" "}
-                  {questions.reduce((sum, q) => sum + (q.points || 1), 0)}
+                  {questions.reduce((sum, q) => sum + (Number(q.points) || 1), 0)}
                 </span>
               </div>
               <button
@@ -803,7 +827,12 @@ export default function CreateQuizModal({
                           min={1}
                           max={50}
                           value={q.points}
-                          onChange={(e) => handlePointsChange(qIdx, Number(e.target.value) || 1)}
+                          onChange={(e) => handlePointsChange(qIdx, e.target.value)}
+                          onBlur={() => {
+                            if (q.points === "" || Number(q.points) <= 0) {
+                              handlePointsChange(qIdx, 1);
+                            }
+                          }}
                           className="w-12 px-1.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-center font-bold text-xs min-h-[28px]"
                         />
                       </div>
