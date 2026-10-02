@@ -10,9 +10,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { category, message, userId, userName, userEmail, uniqueId, userRole } = body;
 
-    if (!message || typeof message !== "string" || message.trim().length < 10) {
+    if (!message || typeof message !== "string" || !message.trim()) {
       return NextResponse.json(
-        { error: "মতামত বা বিবরণের জন্য কমপক্ষে ১০টি অক্ষর লিখুন।" },
+        { error: "অনুগ্রহ করে আপনার মূল্যবান মতামত বা সমস্যার বিবরণ লিখুন।" },
         { status: 400 }
       );
     }
@@ -22,9 +22,9 @@ export async function POST(req: NextRequest) {
 
     // Attempt to recover session user if info missing
     const session = await getSessionUser(req);
-    let effectiveUserId = userId || session?.id || "anonymous";
-    let effectiveUserName = userName || session?.name || "Anonymous";
-    let effectiveUserEmail = userEmail || session?.email || "";
+    let effectiveUserId = userId || session?.id || "guest";
+    let effectiveUserName = userName || session?.name || "Anonymous User";
+    let effectiveUserEmail = userEmail || session?.email || "N/A";
     let effectiveUserRole = userRole || session?.role || "student";
     let effectiveUniqueId = uniqueId || "N/A";
 
@@ -35,9 +35,9 @@ export async function POST(req: NextRequest) {
           select: { email: true, name: true, role: true, uniqueId: true },
         });
         if (dbUser) {
-          effectiveUserEmail = effectiveUserEmail || dbUser.email;
-          effectiveUserName = effectiveUserName || dbUser.name;
-          effectiveUserRole = effectiveUserRole || dbUser.role;
+          effectiveUserEmail = effectiveUserEmail || dbUser.email || "N/A";
+          effectiveUserName = effectiveUserName || dbUser.name || "Anonymous User";
+          effectiveUserRole = effectiveUserRole || dbUser.role || "student";
           effectiveUniqueId = effectiveUniqueId === "N/A" ? dbUser.uniqueId || "N/A" : effectiveUniqueId;
         }
       } catch (err) {
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const feedback = createFeedback({
+    const feedback = await createFeedback({
       userId: effectiveUserId,
       userName: effectiveUserName,
       userEmail: effectiveUserEmail,
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: "ধন্যবাদ! আপনার মতামত সফলভাবে অ্যাডমিনের কাছে পাঠানো হয়েছে।",
+        message: "আপনার মতামত সফলভাবে অ্যাডমিনের কাছে পৌঁছেছে!",
         feedback,
       },
       { status: 201 }

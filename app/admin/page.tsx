@@ -109,6 +109,8 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [feedbacks, setFeedbacks] = useState<AdminFeedback[]>([]);
   const [feedbackStats, setFeedbackStats] = useState<FeedbackStats | null>(null);
+  const [unreadFeedbackCount, setUnreadFeedbackCount] = useState<number>(0);
+  const [isSyncingFeedbacks, setIsSyncingFeedbacks] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // User tab search & filter
@@ -133,6 +135,37 @@ export default function AdminDashboardPage() {
     text: string;
   } | null>(null);
 
+  // Real-time synchronization for Feedbacks Collection directly from Database
+  const syncFeedbacks = useCallback(async (silent = false) => {
+    try {
+      if (!silent) setIsSyncingFeedbacks(true);
+      const res = await fetch("/api/admin/feedbacks", { cache: "no-store" });
+      if (res.ok) {
+        const fbData = await res.json();
+        const items = fbData.feedbacks || [];
+        setFeedbacks(items);
+        const newCount = items.filter((f: AdminFeedback) => f.status === "new").length;
+        setUnreadFeedbackCount(newCount);
+        if (fbData.stats) {
+          setFeedbackStats(fbData.stats);
+        } else {
+          setFeedbackStats({
+            total: items.length,
+            newCount,
+            reviewedCount: items.length - newCount,
+            bugCount: items.filter((f: AdminFeedback) => f.category === "bug").length,
+            suggestionCount: items.filter((f: AdminFeedback) => f.category === "suggestion").length,
+            generalCount: items.filter((f: AdminFeedback) => f.category === "general").length,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error listening to feedbacks:", error);
+    } finally {
+      if (!silent) setIsSyncingFeedbacks(false);
+    }
+  }, []);
+
   const fetchAdminData = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -155,8 +188,11 @@ export default function AdminDashboardPage() {
 
       if (feedbacksRes.ok) {
         const fbData = await feedbacksRes.json();
-        setFeedbacks(fbData.feedbacks || []);
+        const items = fbData.feedbacks || [];
+        setFeedbacks(items);
         setFeedbackStats(fbData.stats || null);
+        const newCount = items.filter((f: AdminFeedback) => f.status === "new").length;
+        setUnreadFeedbackCount(newCount);
       }
     } catch (err: any) {
       console.error("Failed to load admin data:", err);
@@ -178,6 +214,35 @@ export default function AdminDashboardPage() {
       }
     }
   }, [userLoading, hasAdminAccess, fetchAdminData]);
+
+  // Real-time listener for feedbacks: active database sync + cross-tab event wakeup
+  useEffect(() => {
+    if (!hasAdminAccess) return;
+
+    // Active live polling interval (every 4s) to listen to feedbacks collection
+    const interval = setInterval(() => {
+      syncFeedbacks(true);
+    }, 4000);
+
+    // Cross-tab and local submission listener
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "classpulse_last_feedback") {
+        syncFeedbacks(true);
+      }
+    };
+    const handleFeedbackEvent = () => {
+      syncFeedbacks(true);
+    };
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("feedback-submitted", handleFeedbackEvent);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("feedback-submitted", handleFeedbackEvent);
+    };
+  }, [hasAdminAccess, syncFeedbacks]);
 
   const handleRoleChange = async (targetEmail: string, newRole: string) => {
     try {
@@ -287,6 +352,13 @@ export default function AdminDashboardPage() {
       setUpdatingFeedbackId(id);
       setStatusMessage(null);
 
+      // Optimistic update
+      setFeedbacks((prev) => {
+        const next = prev.map((f) => (f.id === id ? { ...f, status: newStatus } : f));
+        setUnreadFeedbackCount(next.filter((f) => f.status === "new").length);
+        return next;
+      });
+
       const res = await fetch("/api/admin/feedbacks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -295,21 +367,28 @@ export default function AdminDashboardPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setFeedbacks((prev) =>
-          prev.map((f) => (f.id === id ? { ...f, status: newStatus } : f))
-        );
-        if (data.stats) setFeedbackStats(data.stats);
+        if (data.feedback) {
+          setFeedbacks((prev) =>
+            prev.map((f) => (f.id === id ? { ...f, ...data.feedback } : f))
+          );
+        }
+        if (data.stats) {
+          setFeedbackStats(data.stats);
+          setUnreadFeedbackCount(data.stats.newCount);
+        }
         setStatusMessage({
           type: "success",
           text: `Feedback marked as ${newStatus === "reviewed" ? "Reviewed" : "New"}.`,
         });
       } else {
+        syncFeedbacks(true);
         setStatusMessage({
           type: "error",
           text: data.error || "Failed to update feedback status.",
         });
       }
     } catch (err: any) {
+      syncFeedbacks(true);
       setStatusMessage({
         type: "error",
         text: "Error updating feedback status.",
@@ -328,25 +407,36 @@ export default function AdminDashboardPage() {
       setDeletingFeedbackId(id);
       setStatusMessage(null);
 
+      // Optimistic update
+      setFeedbacks((prev) => {
+        const next = prev.filter((f) => f.id !== id);
+        setUnreadFeedbackCount(next.filter((f) => f.status === "new").length);
+        return next;
+      });
+
       const res = await fetch(`/api/admin/feedbacks?id=${id}`, {
         method: "DELETE",
       });
 
       const data = await res.json();
       if (res.ok) {
-        setFeedbacks((prev) => prev.filter((f) => f.id !== id));
-        if (data.stats) setFeedbackStats(data.stats);
+        if (data.stats) {
+          setFeedbackStats(data.stats);
+          setUnreadFeedbackCount(data.stats.newCount);
+        }
         setStatusMessage({
           type: "success",
           text: "Feedback deleted successfully.",
         });
       } else {
+        syncFeedbacks(true);
         setStatusMessage({
           type: "error",
           text: data.error || "Failed to delete feedback.",
         });
       }
     } catch (err: any) {
+      syncFeedbacks(true);
       setStatusMessage({
         type: "error",
         text: "Error deleting feedback entry.",
@@ -670,11 +760,11 @@ export default function AdminDashboardPage() {
                 <div className="flex items-center gap-3.5">
                   <div className="relative w-11 h-11 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 shadow-sm">
                     <MessageSquare size={22} strokeWidth={2} />
-                    {(feedbackStats?.newCount || 0) > 0 && (
+                    {unreadFeedbackCount > 0 && (
                       <span className="absolute -top-1 -right-1 flex h-4 w-4">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 text-white text-[9px] font-extrabold items-center justify-center">
-                          {feedbackStats?.newCount}
+                          {unreadFeedbackCount}
                         </span>
                       </span>
                     )}
@@ -684,14 +774,14 @@ export default function AdminDashboardPage() {
                       <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
                         User Feedbacks & Inquiries
                       </h3>
-                      {(feedbackStats?.newCount || 0) > 0 && (
+                      {unreadFeedbackCount > 0 && (
                         <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                          {feedbackStats?.newCount} New
+                          {unreadFeedbackCount} New
                         </span>
                       )}
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Inspect user suggestions, bug reports, and feedback ({feedbackStats?.total || 0} total)
+                      Inspect user suggestions, bug reports, and feedback ({feedbackStats?.total ?? feedbacks.length} total)
                     </p>
                   </div>
                 </div>
@@ -1112,9 +1202,18 @@ export default function AdminDashboardPage() {
                 <ArrowLeft size={16} />
                 <span>Back to Admin Overview</span>
               </button>
-              <span className="text-xs font-semibold text-slate-400">
-                Total Feedbacks: {feedbackStats?.total || 0} ({feedbackStats?.newCount || 0} unread)
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold text-slate-400">
+                  Total Feedbacks: {feedbackStats?.total ?? feedbacks.length} ({unreadFeedbackCount} unread)
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span>Live Sync</span>
+                </span>
+              </div>
             </div>
 
             {/* Feedback Inbox Card */}
@@ -1126,23 +1225,37 @@ export default function AdminDashboardPage() {
                     <span>User Feedbacks & Inquiries Inbox</span>
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Review and triage reports, feature requests, and suggestions from students and teachers.
+                    Review and triage reports, feature requests, and suggestions directly synced from database.
                   </p>
                 </div>
 
-                {/* Search Input */}
-                <div className="relative w-full sm:w-72">
-                  <Search
-                    size={16}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                  />
-                  <input
-                    type="text"
-                    value={feedbackSearch}
-                    onChange={(e) => setFeedbackSearch(e.target.value)}
-                    placeholder="Search feedback text, user..."
-                    className="w-full pl-10 pr-4 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white"
-                  />
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  {/* Search Input */}
+                  <div className="relative flex-1 sm:w-72">
+                    <Search
+                      size={16}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+                    <input
+                      type="text"
+                      value={feedbackSearch}
+                      onChange={(e) => setFeedbackSearch(e.target.value)}
+                      placeholder="Search feedback text, user..."
+                      className="w-full pl-10 pr-4 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white"
+                    />
+                  </div>
+
+                  {/* Manual Refresh Button */}
+                  <button
+                    type="button"
+                    onClick={() => syncFeedbacks(false)}
+                    disabled={isSyncingFeedbacks}
+                    className="p-2 sm:px-3 sm:py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 text-xs font-bold inline-flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                    title="Refresh Feedbacks from database"
+                  >
+                    <RefreshCw size={14} className={isSyncingFeedbacks ? "animate-spin text-teal-600" : ""} />
+                    <span className="hidden sm:inline">Refresh</span>
+                  </button>
                 </div>
               </div>
 
@@ -1151,9 +1264,9 @@ export default function AdminDashboardPage() {
                 {/* Status Tabs */}
                 <div className="flex items-center gap-1.5 overflow-x-auto font-bold">
                   {[
-                    { id: "all", label: `All (${feedbackStats?.total || 0})` },
-                    { id: "new", label: `Unread (${feedbackStats?.newCount || 0})` },
-                    { id: "reviewed", label: `Reviewed (${feedbackStats?.reviewedCount || 0})` },
+                    { id: "all", label: `All (${feedbackStats?.total ?? feedbacks.length})` },
+                    { id: "new", label: `Unread (${unreadFeedbackCount})` },
+                    { id: "reviewed", label: `Reviewed (${Math.max(0, (feedbackStats?.total ?? feedbacks.length) - unreadFeedbackCount)})` },
                   ].map((tab) => (
                     <button
                       key={tab.id}

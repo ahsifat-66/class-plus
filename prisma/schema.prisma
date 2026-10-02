@@ -296,3 +296,21 @@ model NctbBook {
   @@index([subject])
 }
 
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String?  @default("guest")
+  userName  String?  @default("Anonymous User")
+  userEmail String?  @default("N/A")
+  uniqueId  String?  @default("N/A")
+  userRole  String?  @default("student")
+  category  String   @default("general") // 'suggestion' | 'bug' | 'general'
+  message   String   @db.Text
+  status    String   @default("new")     // 'new' | 'reviewed'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+}
+

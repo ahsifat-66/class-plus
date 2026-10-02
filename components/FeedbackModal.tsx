@@ -58,8 +58,8 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     setErrorMessage(null);
 
     const trimmed = message.trim();
-    if (trimmed.length < 10) {
-      setErrorMessage("অনুগ্রহ করে আপনার মতামতের জন্য কমপক্ষে ১০টি অক্ষর লিখুন।");
+    if (!trimmed) {
+      setErrorMessage("অনুগ্রহ করে আপনার মূল্যবান মতামত বা সমস্যার বিবরণ লিখুন।");
       return;
     }
 
@@ -69,28 +69,37 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          category,
-          message: trimmed,
-          userId: currentUser?.id,
-          userName: currentUser?.name || "Anonymous",
-          userEmail: currentUser?.email || "",
+          userId: currentUser?.id || "guest",
+          userName: currentUser?.name || "Anonymous User",
+          userEmail: currentUser?.email || "N/A",
           uniqueId: currentUser?.uniqueId || "N/A",
           userRole: currentUser?.role || "student",
+          category: category || "general",
+          message: trimmed,
+          status: "new",
         }),
       });
 
       const data = await res.json();
       if (res.ok) {
         setIsSuccess(true);
+        setMessage("");
+        // Notify other components/tabs in real-time
+        try {
+          window.dispatchEvent(new CustomEvent("feedback-submitted", { detail: data.feedback }));
+          localStorage.setItem("classpulse_last_feedback", Date.now().toString());
+        } catch (e) {
+          // ignore
+        }
         setTimeout(() => {
           onClose();
-        }, 2200);
+        }, 1800);
       } else {
-        setErrorMessage(data.error || "মতামত পাঠাতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+        setErrorMessage(data.error || "ফিডব্যাক পাঠাতে সমস্যা হয়েছে, আবার চেষ্টা করুন।");
       }
     } catch (err: any) {
-      console.error("Feedback error:", err);
-      setErrorMessage("নেটওয়ার্ক সমস্যা। আপনার ইন্টারনেট সংযোগ পরীক্ষা করে পুনরায় চেষ্টা করুন।");
+      console.error("Error submitting feedback:", err);
+      setErrorMessage("ফিডব্যাক পাঠাতে সমস্যা হয়েছে, আবার চেষ্টা করুন।");
     } finally {
       setIsSubmitting(false);
     }
@@ -222,12 +231,12 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                   </label>
                   <span
                     className={`text-[11px] font-mono ${
-                      message.trim().length >= 10
+                      message.trim().length > 0
                         ? "text-emerald-600 dark:text-emerald-400 font-semibold"
                         : "text-slate-400"
                     }`}
                   >
-                    {message.trim().length}/10 chars min
+                    {message.trim().length} chars
                   </span>
                 </div>
                 <textarea
@@ -264,7 +273,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting || message.trim().length < 10}
+                  disabled={isSubmitting || !message.trim()}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                 >
                   {isSubmitting ? (

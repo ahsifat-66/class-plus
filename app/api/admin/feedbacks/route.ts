@@ -53,8 +53,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const feedbacks = getAllFeedbacks();
-    const stats = getFeedbackStats();
+    const feedbacks = await getAllFeedbacks();
+    const stats = await getFeedbackStats();
 
     return NextResponse.json({
       feedbacks,
@@ -89,7 +89,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const updated = updateFeedbackStatus(id, status);
+    const updated = await updateFeedbackStatus(id, status);
     if (!updated) {
       return NextResponse.json(
         { error: "Feedback not found." },
@@ -97,10 +97,12 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    const stats = await getFeedbackStats();
+
     return NextResponse.json({
       success: true,
       feedback: updated,
-      stats: getFeedbackStats(),
+      stats,
     });
   } catch (error: any) {
     console.error("Admin feedbacks PATCH error:", error);
@@ -140,7 +142,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const deleted = deleteFeedback(id);
+    const deleted = await deleteFeedback(id);
     if (!deleted) {
       return NextResponse.json(
         { error: "Feedback not found or already deleted." },
@@ -148,10 +150,12 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
+    const stats = await getFeedbackStats();
+
     return NextResponse.json({
       success: true,
       message: "Feedback deleted successfully.",
-      stats: getFeedbackStats(),
+      stats,
     });
   } catch (error: any) {
     console.error("Admin feedbacks DELETE error:", error);

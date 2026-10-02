@@ -384,7 +384,7 @@ export async function DELETE(req: NextRequest) {
 
     // 7. Clean up secondary stores
     removeUserRole(targetUser.email);
-    deleteFeedbacksByUser(targetUser.id, targetUser.email);
+    await deleteFeedbacksByUser(targetUser.id, targetUser.email);
 
     return NextResponse.json({
       success: true,
