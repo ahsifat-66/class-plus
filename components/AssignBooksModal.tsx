@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { booksData, flatBooksData, Book } from "@/data/booksData";
-import { textbooksData } from "@/data/textbooksData";
+import { textbooksData, nctbBooksData } from "@/data/textbooksData";
 
 interface AssignBooksModalProps {
   isOpen: boolean;
@@ -30,7 +30,7 @@ interface AssignBooksModalProps {
   onSuccess: (updatedBookIds: string[]) => void;
 }
 
-type GroupType = "science" | "commerce" | "arts";
+type GroupType = "science" | "business_studies" | "humanities";
 
 export default function AssignBooksModal({
   isOpen,
@@ -79,7 +79,7 @@ export default function AssignBooksModal({
         } else {
           setSelectedGrade("9-10");
         }
-      } else if (currentBookIds.some((id) => id.startsWith("c910-"))) {
+      } else if (currentBookIds.some((id) => id.startsWith("c910-") || id.startsWith("ev_") || ["bn_lit", "phy", "acc", "hist"].includes(id))) {
         setSelectedGrade("9-10");
       } else if (currentBookIds.some((id) => id.startsWith("c6-"))) {
         setSelectedGrade("class-6");
@@ -88,10 +88,48 @@ export default function AssignBooksModal({
       }
 
       // Group detection for 9-10
-      if (currentBookIds.some((id) => id.includes("comm-"))) {
-        setSelectedGroup("commerce");
-      } else if (currentBookIds.some((id) => id.includes("arts-"))) {
-        setSelectedGroup("arts");
+      if (
+        currentBookIds.some((id) =>
+          [
+            "acc",
+            "bus_ent",
+            "fin",
+            "agri",
+            "home_sci",
+            "gen_sci",
+            "ev_acc",
+            "ev_fin",
+            "ev_bus_ent",
+            "ev_sci",
+            "ev_agri",
+            "ev_home_sci",
+            "comm-",
+          ].some((prefix) => id.includes(prefix))
+        )
+      ) {
+        setSelectedGroup("business_studies");
+      } else if (
+        currentBookIds.some((id) =>
+          [
+            "hist",
+            "geo",
+            "civ",
+            "econ",
+            "agri_hum",
+            "home_sci_hum",
+            "gen_sci_hum",
+            "ev_hist",
+            "ev_geo",
+            "ev_civ",
+            "ev_econ",
+            "ev_sci_hum",
+            "ev_agri_hum",
+            "ev_home_sci_hum",
+            "arts-",
+          ].some((prefix) => id.includes(prefix))
+        )
+      ) {
+        setSelectedGroup("humanities");
       } else {
         setSelectedGroup("science");
       }
@@ -112,36 +150,53 @@ export default function AssignBooksModal({
 
   // Class 9-10 Compulsory Books
   const compulsoryBooks: Book[] = useMemo(() => {
-    const list = textbooksData["9-10"]?.compulsory || [];
+    const vKey = activeVersion === "bangla" ? "bn" : "en";
+    const list = nctbBooksData["9-10"]?.[vKey]?.compulsory || [];
     return list.map((c) => ({
-      id: c.id!,
-      title: c.name,
+      id: c.id,
+      title: c.title,
       subject: c.subject || "General",
-      driveUrl: c.link,
+      driveUrl: c.url,
       grade: "Class 9-10",
-      version: "bangla" as const,
+      version: activeVersion,
     }));
-  }, []);
+  }, [activeVersion]);
 
   // Class 9-10 Group-Specific Books
   const groupBooks: Book[] = useMemo(() => {
-    const grp = textbooksData["9-10"]?.groups?.[selectedGroup];
-    if (!grp) return [];
-    return (grp.books || []).map((b) => ({
-      id: b.id!,
-      title: b.name,
-      subject: b.subject || grp.label.split(" ")[0] || "Group Subject",
-      driveUrl: b.link,
+    const vKey = activeVersion === "bangla" ? "bn" : "en";
+    const grpKey = (selectedGroup || "science") as "science" | "business_studies" | "humanities";
+    const list = nctbBooksData["9-10"]?.[vKey]?.groups?.[grpKey] || [];
+    return list.map((b) => ({
+      id: b.id,
+      title: b.title,
+      subject: b.subject || "Group Subject",
+      driveUrl: b.url,
       grade: "Class 9-10",
-      version: "bangla" as const,
+      version: activeVersion,
     }));
+  }, [activeVersion, selectedGroup]);
+
+  // Dynamic counts for version tabs
+  const class910BanglaCount = useMemo(() => {
+    const comp = nctbBooksData["9-10"]?.bn?.compulsory?.length || 0;
+    const grpKey = (selectedGroup || "science") as "science" | "business_studies" | "humanities";
+    const grp = nctbBooksData["9-10"]?.bn?.groups?.[grpKey]?.length || 0;
+    return comp + grp;
+  }, [selectedGroup]);
+
+  const class910EnglishCount = useMemo(() => {
+    const comp = nctbBooksData["9-10"]?.en?.compulsory?.length || 0;
+    const grpKey = (selectedGroup || "science") as "science" | "business_studies" | "humanities";
+    const grp = nctbBooksData["9-10"]?.en?.groups?.[grpKey]?.length || 0;
+    return comp + grp;
   }, [selectedGroup]);
 
   // Active group label
   const activeGroupLabel = useMemo(() => {
-    if (selectedGroup === "science") return "বিজ্ঞান (Science)";
-    if (selectedGroup === "commerce") return "ব্যবসায় শিক্ষা (Commerce)";
-    return "মানবিক (Arts)";
+    if (selectedGroup === "science") return "Science (বিজ্ঞান)";
+    if (selectedGroup === "business_studies") return "Business Studies (ব্যবসায় শিক্ষা)";
+    return "Humanities (মানবিক)";
   }, [selectedGroup]);
 
   // Check if active grade has groups
@@ -421,9 +476,9 @@ export default function AssignBooksModal({
                 }}
                 className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="science">বিজ্ঞান (Science)</option>
-                <option value="commerce">ব্যবসায় শিক্ষা (Commerce)</option>
-                <option value="arts">মানবিক (Arts)</option>
+                <option value="science">Science (বিজ্ঞান)</option>
+                <option value="business_studies">Business Studies (ব্যবসায় শিক্ষা)</option>
+                <option value="humanities">Humanities (মানবিক)</option>
               </select>
             </div>
           ) : (
@@ -433,8 +488,8 @@ export default function AssignBooksModal({
           )}
         </div>
 
-        {/* Class 6 Version Switcher */}
-        {selectedGrade === "class-6" && (
+        {/* Version Switcher (for Class 6 and Class 9-10) */}
+        {(selectedGrade === "class-6" || selectedGrade === "9-10") && (
           <div className="mt-3 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 grid grid-cols-2 gap-1.5 shrink-0">
             <button
               type="button"
@@ -447,7 +502,7 @@ export default function AssignBooksModal({
             >
               <span>বাংলা ভার্সন</span>
               <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                15
+                {selectedGrade === "9-10" ? class910BanglaCount : class6BanglaBooks.length}
               </span>
             </button>
             <button
@@ -461,7 +516,7 @@ export default function AssignBooksModal({
             >
               <span>English Version</span>
               <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                15
+                {selectedGrade === "9-10" ? class910EnglishCount : class6EnglishBooks.length}
               </span>
             </button>
           </div>

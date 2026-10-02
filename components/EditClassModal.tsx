@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { booksData, flatBooksData, Book } from "@/data/booksData";
+import { nctbBooksData } from "@/data/textbooksData";
 
 interface EditClassModalProps {
   isOpen: boolean;
@@ -28,60 +29,7 @@ interface EditClassModalProps {
   onClassUpdated: () => void;
 }
 
-// Class 9-10 & 11-12 Textbooks Dataset injected directly into component state
-const nctbBooksData = {
-  "9-10": {
-    bn: {
-      common: [
-        { id: "bn1", title: "সাহিত্য কণিকা (বাংলা ১ম পত্র)", url: "https://drive.google.com/file/d/17bH291V5txub-YCrg5ab-o2CA4MKvwD4/view?usp=drive_link", subject: "Bangla Literature" },
-        { id: "bn_sp", title: "সহপাঠ (বাংলা)", url: "https://drive.google.com/file/d/12WjKZdodXSSzvkwO8_LViQpydKi3zXtw/view?usp=drive_link", subject: "Bangla Literature" },
-        { id: "bn2", title: "বাংলা ব্যাকরণ ও নির্মিতি (বাংলা ২য় পত্র)", url: "https://drive.google.com/file/d/1leaeW1dOzPZG7rn8bc5fyiIT1TjRgJvN/view?usp=drive_link", subject: "Bangla Grammar" },
-        { id: "en1", title: "English for Today", url: "https://drive.google.com/file/d/1EekMeoOWO4nVPdCUyvSLA4Y9uuBUONPo/view?usp=drive_link", subject: "English" },
-        { id: "en2", title: "English Grammar and Composition", url: "https://drive.google.com/file/d/1VvKMLPUfuENVBh5lg6_CVsyrf7BegaBC/view?usp=drive_link", subject: "English Grammar" },
-        { id: "math", title: "গণিত", url: "https://drive.google.com/file/d/1EKdNO1FRA7SoRafQzEVspEuGI5M1-mkg/view?usp=drive_link", subject: "Mathematics" },
-        { id: "ict", title: "তথ্য ও যোগাযোগ প্রযুক্তি", url: "https://drive.google.com/file/d/1EzubZfMIWg6mbswtaQHpjjxwm-FD4KD8/view?usp=drive_link", subject: "ICT" },
-        { id: "rel_is", title: "ইসলাম ও নৈতিক শিক্ষা", url: "https://drive.google.com/file/d/1rpxIsMK5B3vUihTHxcVVm4ER8nnI4VkV/view?usp=drive_link", subject: "Religion" },
-        { id: "rel_hi", title: "হিন্দুধর্ম ও নৈতিক শিক্ষা", url: "https://drive.google.com/file/d/1HF1YMz5kR7zdmTgkYgUuVHMcW5HU3VOq/view?usp=drive_link", subject: "Religion" },
-        { id: "rel_bu", title: "বৌদ্ধধর্ম ও নৈতিক শিক্ষা", url: "https://drive.google.com/file/d/1hqH-TNfe_az9JwofCxFEPoJ2x30QnLxD/view?usp=drive_link", subject: "Religion" },
-        { id: "rel_ch", title: "খ্রিস্টধর্ম ও নৈতিক শিক্ষা", url: "https://drive.google.com/file/d/1e_CAtdOktysyJydbtGH9WkpTAqg9qmcK/view?usp=drive_link", subject: "Religion" },
-      ],
-      groups: {
-        science: [
-          { id: "phy", title: "পদার্থবিজ্ঞান", url: "https://drive.google.com/file/d/1G_y4t4fW3ZfbgbXSV2fqH4PvHiXApDyu/view?usp=drive_link", subject: "Physics" },
-          { id: "chem", title: "রসায়ন", url: "https://drive.google.com/file/d/16teUgLDPKTIB8ZOp6dS59DKY-3R7w72L/view?usp=drive_link", subject: "Chemistry" },
-          { id: "bio", title: "জীববিজ্ঞান", url: "https://drive.google.com/file/d/1zhk3MHn6XUbPTz48ywJcs63A01cwtnzd/view?usp=drive_link", subject: "Biology" },
-          { id: "hm", title: "উচ্চতর গণিত", url: "https://drive.google.com/file/d/1o6Wf0NbCswP0NhtmZXJowvIvPaA30mVK/view?usp=drive_link", subject: "Higher Mathematics" },
-          { id: "bgs", title: "বাংলাদেশ ও বিশ্বপরিচয়", url: "https://drive.google.com/file/d/1KIh7R6J_egWbfD6N-yikdbFMu2SvfG0h/view?usp=drive_link", subject: "Social Science" },
-        ],
-        commerce: [
-          { id: "gen_sci_comm", title: "বিজ্ঞান (সাধারণ বিজ্ঞান)", url: "https://drive.google.com/file/d/1PMA3U1Pghs7bSAxuyWO12S4ltFerjucj/view?usp=drive_link", subject: "General Science" },
-          { id: "acc", title: "হিসাববিজ্ঞান", url: "https://drive.google.com/file/d/1ys1MbQk9EW8wTOan58Rt0YPca53ZYZHP/view?usp=drive_link", subject: "Accounting" },
-          { id: "bus_ent", title: "ব্যবসায় উদ্যোগ", url: "https://drive.google.com/file/d/1OoA-foSjnstGw7OJxB_dvuuF_bm9-R8i/view?usp=drive_link", subject: "Business Studies" },
-          { id: "fin", title: "ফিন্যান্স ও ব্যাংকিং", url: "https://drive.google.com/file/d/1gNBkuWDJxYGTNSF9KppN4iGEAWkoIt7Y/view?usp=drive_link", subject: "Finance & Banking" },
-          { id: "agri_comm", title: "কৃষিশিক্ষা", url: "https://drive.google.com/file/d/1Pz7D9vw1z11B-OQlbDdKFva8_fwrYoY0/view?usp=drive_link", subject: "Agriculture" },
-          { id: "home_sci_comm", title: "গার্হস্থ্য বিজ্ঞান", url: "https://drive.google.com/file/d/1HSEx5MnCfB-a6DCeN_RcK0XevcETAa5t/view?usp=drive_link", subject: "Home Science" },
-        ],
-        arts: [
-          { id: "gen_sci_arts", title: "বিজ্ঞান (সাধারণ বিজ্ঞান)", url: "https://drive.google.com/file/d/1PMA3U1Pghs7bSAxuyWO12S4ltFerjucj/view?usp=drive_link", subject: "General Science" },
-          { id: "hist", title: "বাংলাদেশের ইতিহাস ও বিশ্বসভ্যতা", url: "https://drive.google.com/file/d/1k1hmA3SfczWmLsJR-QQT8QybAFGkaY4B/view?usp=drive_link", subject: "History" },
-          { id: "geo", title: "ভূগোল ও পরিবেশ", url: "https://drive.google.com/file/d/1xBYA6YBstbArM8uAwRSlsiuW8QqMTYRL/view?usp=drive_link", subject: "Geography" },
-          { id: "civ", title: "পৌরনীতি ও নাগরিকতা", url: "https://drive.google.com/file/d/1QdtCDgJ-kRhbm8Vm-x1JIyQsfCQdvY8q/view?usp=drive_link", subject: "Civics & Citizenship" },
-          { id: "econ", title: "অর্থনীতি", url: "https://drive.google.com/file/d/1NVIjVD7hmOM1ZRkhTcOYnUrAqbTWjWH0/view?usp=drive_link", subject: "Economics" },
-          { id: "agri_arts", title: "কৃষিশিক্ষা", url: "https://drive.google.com/file/d/1Pz7D9vw1z11B-OQlbDdKFva8_fwrYoY0/view?usp=drive_link", subject: "Agriculture" },
-          { id: "home_sci_arts", title: "গার্হস্থ্য বিজ্ঞান", url: "https://drive.google.com/file/d/1HSEx5MnCfB-a6DCeN_RcK0XevcETAa5t/view?usp=drive_link", subject: "Home Science" },
-        ],
-      },
-    },
-  },
-  "11-12": {
-    bn: {
-      common: [],
-      groups: { science: [], commerce: [], arts: [] },
-    },
-  },
-};
-
-type GroupType = "science" | "commerce" | "arts" | "";
+type GroupType = "science" | "business_studies" | "humanities" | "";
 
 export default function EditClassModal({
   isOpen,
@@ -120,18 +68,51 @@ export default function EditClassModal({
         const existingIds = (classroom.textbooks || []).map((b) => b.id);
         const subj = (classroom.subject || "").toLowerCase();
         if (
-          existingIds.some((id) => ["acc", "bus_ent", "fin", "agri_comm"].includes(id)) ||
+          existingIds.some((id) =>
+            [
+              "acc",
+              "bus_ent",
+              "fin",
+              "agri",
+              "home_sci",
+              "gen_sci",
+              "ev_acc",
+              "ev_fin",
+              "ev_bus_ent",
+              "ev_sci",
+              "ev_agri",
+              "ev_home_sci",
+            ].includes(id)
+          ) ||
+          subj.includes("business") ||
           subj.includes("commerce") ||
           subj.includes("ব্যবসায়")
         ) {
-          setSelectedGroup("commerce");
+          setSelectedGroup("business_studies");
         } else if (
-          existingIds.some((id) => ["hist", "geo", "civ", "econ", "agri_arts"].includes(id)) ||
+          existingIds.some((id) =>
+            [
+              "hist",
+              "geo",
+              "civ",
+              "econ",
+              "agri_hum",
+              "home_sci_hum",
+              "gen_sci_hum",
+              "ev_hist",
+              "ev_geo",
+              "ev_civ",
+              "ev_econ",
+              "ev_sci_hum",
+              "ev_agri_hum",
+              "ev_home_sci_hum",
+            ].includes(id)
+          ) ||
           subj.includes("arts") ||
           subj.includes("humanities") ||
           subj.includes("মানবিক")
         ) {
-          setSelectedGroup("arts");
+          setSelectedGroup("humanities");
         } else {
           setSelectedGroup("science");
         }
@@ -163,6 +144,19 @@ export default function EditClassModal({
     setSelectedGroup(newGroup as GroupType);
   };
 
+  const getGroupLabel = (group: GroupType) => {
+    switch (group) {
+      case "science":
+        return "Science (বিজ্ঞান)";
+      case "business_studies":
+        return "Business Studies (ব্যবসায় শিক্ষা)";
+      case "humanities":
+        return "Humanities (মানবিক)";
+      default:
+        return "Science (বিজ্ঞান)";
+    }
+  };
+
   // Class 6 Books
   const class6BanglaBooks = useMemo(
     () => booksData[0]?.versions.banglaVersion || [],
@@ -173,24 +167,38 @@ export default function EditClassModal({
     []
   );
 
-  // Class 9-10 Compulsory Books
-  const class910CommonBooks = useMemo(() => {
-    return nctbBooksData["9-10"].bn.common;
-  }, []);
+  // Class 9-10 Compulsory Books for active version
+  const class910CompulsoryBooks = useMemo(() => {
+    const vKey = activeVersion === "bangla" ? "bn" : "en";
+    return nctbBooksData["9-10"]?.[vKey]?.compulsory || [];
+  }, [activeVersion]);
 
-  // Class 9-10 Group Books
+  // Class 9-10 Group Books for active version and selected group
   const class910GroupBooks = useMemo(() => {
-    const grpKey = (selectedGroup || "science") as "science" | "commerce" | "arts";
-    return nctbBooksData["9-10"].bn.groups[grpKey] || [];
+    const vKey = activeVersion === "bangla" ? "bn" : "en";
+    const grpKey = (selectedGroup || "science") as "science" | "business_studies" | "humanities";
+    return nctbBooksData["9-10"]?.[vKey]?.groups?.[grpKey] || [];
+  }, [activeVersion, selectedGroup]);
+
+  // Dynamic counts for version tabs
+  const class910BanglaCount = useMemo(() => {
+    const comp = nctbBooksData["9-10"]?.bn?.compulsory?.length || 0;
+    const grpKey = (selectedGroup || "science") as "science" | "business_studies" | "humanities";
+    const grp = nctbBooksData["9-10"]?.bn?.groups?.[grpKey]?.length || 0;
+    return comp + grp;
+  }, [selectedGroup]);
+
+  const class910EnglishCount = useMemo(() => {
+    const comp = nctbBooksData["9-10"]?.en?.compulsory?.length || 0;
+    const grpKey = (selectedGroup || "science") as "science" | "business_studies" | "humanities";
+    const grp = nctbBooksData["9-10"]?.en?.groups?.[grpKey]?.length || 0;
+    return comp + grp;
   }, [selectedGroup]);
 
   // All books currently visible in the active view
   const currentViewBooks = useMemo(() => {
     if (gradeLevel === "Class 9-10") {
-      if (activeVersion === "bangla") {
-        return [...class910CommonBooks, ...class910GroupBooks];
-      }
-      return []; // English version not yet loaded for 9-10
+      return [...class910CompulsoryBooks, ...class910GroupBooks];
     }
     if (gradeLevel === "Class 6") {
       return activeVersion === "bangla"
@@ -198,7 +206,7 @@ export default function EditClassModal({
         : class6EnglishBooks.map((b) => ({ id: b.id, title: b.title, url: b.driveUrl, subject: b.subject }));
     }
     return [];
-  }, [gradeLevel, activeVersion, class910CommonBooks, class910GroupBooks, class6BanglaBooks, class6EnglishBooks]);
+  }, [gradeLevel, activeVersion, class910CompulsoryBooks, class910GroupBooks, class6BanglaBooks, class6EnglishBooks]);
 
   // Bulk Selection Status for the currently active tab
   const allCurrentSelected =
@@ -406,13 +414,13 @@ export default function EditClassModal({
                 <span>GROUP / বিভাগ</span>
               </label>
               <select
-                value={selectedGroup}
+                value={selectedGroup || "science"}
                 onChange={(e) => handleGroupChange(e.target.value)}
                 className="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 text-base sm:text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[44px]"
               >
                 <option value="science">Science (বিজ্ঞান)</option>
-                <option value="commerce">Commerce (ব্যবসায় শিক্ষা)</option>
-                <option value="arts">Arts (মানবিক)</option>
+                <option value="business_studies">Business Studies (ব্যবসায় শিক্ষা)</option>
+                <option value="humanities">Humanities (মানবিক)</option>
               </select>
             </div>
           )}
@@ -465,7 +473,7 @@ export default function EditClassModal({
                 <span>বাংলা ভার্সন</span>
                 {gradeLevel === "Class 9-10" && (
                   <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                    {class910CommonBooks.length + class910GroupBooks.length}
+                    {class910BanglaCount}
                   </span>
                 )}
                 {gradeLevel === "Class 6" && (
@@ -485,6 +493,11 @@ export default function EditClassModal({
                 }`}
               >
                 <span>English Version</span>
+                {gradeLevel === "Class 9-10" && (
+                  <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    {class910EnglishCount}
+                  </span>
+                )}
                 {gradeLevel === "Class 6" && (
                   <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                     {class6EnglishBooks.length}
@@ -503,53 +516,41 @@ export default function EditClassModal({
             <div className="mt-3 max-h-60 overflow-y-auto space-y-3 pr-1">
               {/* CLASS 9-10 POPULATION */}
               {gradeLevel === "Class 9-10" ? (
-                activeVersion === "bangla" ? (
-                  <div className="space-y-4">
-                    {/* সকলের জন্য আবশ্যিক বিষয় (Compulsory) */}
+                <div className="space-y-4">
+                  {/* আবশ্যিক বিষয় (Compulsory Subjects) */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                        {language === "bn"
+                          ? "আবশ্যিক বিষয় (Compulsory Subjects)"
+                          : "Compulsory Subjects (আবশ্যিক বিষয়)"}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {class910CompulsoryBooks.length} {language === "bn" ? "টি বিষয়" : "subjects"}
+                      </span>
+                    </div>
                     <div className="space-y-1.5">
-                      <div className="flex items-center justify-between px-1">
-                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                          <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-                          সকলের জন্য আবশ্যিক বিষয় (Compulsory)
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-medium">
-                          {class910CommonBooks.length} টি বিষয়
-                        </span>
-                      </div>
-                      <div className="space-y-1.5">
-                        {class910CommonBooks.map((b) => renderTextbookCard(b))}
-                      </div>
+                      {class910CompulsoryBooks.map((b) => renderTextbookCard(b))}
                     </div>
+                  </div>
 
-                    {/* গ্রুপভিত্তিক বিষয় (Group Subjects) */}
-                    <div className="space-y-1.5 pt-2 border-t border-slate-200/80 dark:border-slate-700/80">
-                      <div className="flex items-center justify-between px-1">
-                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                          গ্রুপভিত্তিক বিষয় (
-                          {selectedGroup === "science"
-                            ? "Science"
-                            : selectedGroup === "commerce"
-                            ? "Commerce"
-                            : "Arts"}
-                          )
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-medium">
-                          {class910GroupBooks.length} টি বিষয়
-                        </span>
-                      </div>
-                      <div className="space-y-1.5">
-                        {class910GroupBooks.map((b) => renderTextbookCard(b))}
-                      </div>
+                  {/* বিভাগীয় বিষয় (Group Subjects) */}
+                  <div className="space-y-1.5 pt-2 border-t border-slate-200/80 dark:border-slate-700/80">
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        {language === "bn" ? "বিভাগীয় বিষয়" : "Group Subjects"} ({getGroupLabel(selectedGroup)})
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {class910GroupBooks.length} {language === "bn" ? "টি বিষয়" : "subjects"}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {class910GroupBooks.map((b) => renderTextbookCard(b))}
                     </div>
                   </div>
-                ) : (
-                  <div className="py-6 text-center text-xs text-slate-400 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl">
-                    {language === "bn"
-                      ? "নবম-দশম শ্রেণির ইংলিশ ভার্সন পাঠ্যবই শীঘ্রই যুক্ত হবে।"
-                      : "English version textbooks for Class 9-10 will be available soon."}
-                  </div>
-                )
+                </div>
               ) : gradeLevel === "Class 6" ? (
                 /* CLASS 6 POPULATION */
                 <div className="space-y-1.5">
