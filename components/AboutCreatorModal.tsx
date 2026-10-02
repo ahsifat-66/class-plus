@@ -87,19 +87,20 @@ export default function AboutCreatorModal({
         {/* Modal Scrollable Content */}
         <div className="p-5 sm:p-7 overflow-y-auto space-y-6">
           {/* Header & Profile Details */}
-          <div className="relative -mt-16 sm:-mt-20 flex flex-col items-center text-center space-y-3">
+          <div className="relative -mt-14 sm:-mt-16 flex flex-col items-center text-center space-y-3 z-10">
             {/* Glowing Gradient Avatar */}
-            <div className="relative p-1 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-xl shadow-purple-500/20">
+            <div className="relative p-1 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-xl shadow-purple-500/25">
               {!imgError ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src="https://github.com/ahsifat-66.png"
                   alt="Md Abid Hasan Sifat"
                   onError={() => setImgError(true)}
-                  className="h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover ring-4 ring-white dark:ring-slate-900 bg-slate-100 dark:bg-slate-800"
+                  style={{ objectPosition: "center 15%" }}
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover object-top ring-4 ring-white dark:ring-slate-900 bg-slate-100 dark:bg-slate-800 shadow-lg relative z-10"
                 />
               ) : (
-                <div className="flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-black text-2xl ring-4 ring-white dark:ring-slate-900">
+                <div className="flex w-24 h-24 sm:w-28 sm:h-28 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-black text-2xl ring-4 ring-white dark:ring-slate-900">
                   AS
                 </div>
               )}
