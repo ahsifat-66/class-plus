@@ -2,12 +2,23 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 
+export type UserRole =
+  | "student"
+  | "teacher"
+  | "moderator"
+  | "super_admin"
+  | "STUDENT"
+  | "TEACHER"
+  | "MODERATOR"
+  | "SUPER_ADMIN"
+  | string;
+
 export interface User {
   id: string;
   uniqueId?: string | null;
   name: string;
   email: string;
-  role: "TEACHER" | "STUDENT";
+  role: UserRole;
   avatar: string | null;
   avatarUrl?: string | null;
   institution?: string | null;
@@ -30,6 +41,9 @@ interface UserContextType {
   userSummary: UserSummary | null;
   allUsers: User[];
   isLoading: boolean;
+  isSuperAdmin: boolean;
+  isModerator: boolean;
+  hasAdminAccess: boolean;
   switchUser: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -98,13 +112,32 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const normalizeUser = (user: User | null): User | null => {
+    if (!user) return null;
+    if (user.email?.toLowerCase().trim() === "abidhasansifat66@gmail.com") {
+      return {
+        ...user,
+        role: "super_admin",
+        uniqueId: "ADM-001",
+      };
+    }
+    return user;
+  };
+
+  const isSuperAdmin = Boolean(
+    currentUser?.email?.toLowerCase().trim() === "abidhasansifat66@gmail.com" ||
+    currentUser?.role?.toLowerCase().trim() === "super_admin"
+  );
+  const isModerator = Boolean(currentUser?.role?.toLowerCase().trim() === "moderator");
+  const hasAdminAccess = Boolean(isSuperAdmin || isModerator);
+
   useEffect(() => {
     try {
       const cached = localStorage.getItem("classpulse_user_cache");
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed?.id) {
-          setCurrentUser(parsed);
+          setCurrentUser(normalizeUser(parsed));
           setIsLoading(false);
         }
       }
@@ -115,10 +148,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   return (
     <UserContext.Provider
       value={{
-        currentUser,
+        currentUser: normalizeUser(currentUser),
         userSummary,
         allUsers,
         isLoading,
+        isSuperAdmin,
+        isModerator,
+        hasAdminAccess,
         switchUser,
         refreshUser,
       }}

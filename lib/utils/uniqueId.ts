@@ -35,9 +35,24 @@ export async function getNextUniqueId(client = prisma): Promise<string> {
  * Ensures a user has a valid uniqueId. If missing, sequentially assigns the next available CP-xxxx and persists it.
  */
 export async function ensureUserUniqueId(
-  user: { id: string; uniqueId?: string | null },
+  user: { id: string; email?: string | null; uniqueId?: string | null },
   client = prisma
 ): Promise<string> {
+  // Permanent Super Admin always gets ADM-001
+  if (user.email?.toLowerCase().trim() === "abidhasansifat66@gmail.com") {
+    if (user.uniqueId !== "ADM-001") {
+      try {
+        await client.user.update({
+          where: { id: user.id },
+          data: { uniqueId: "ADM-001" },
+        });
+      } catch (err: any) {
+        // Continue even if DB write fails/offline
+      }
+    }
+    return "ADM-001";
+  }
+
   if (user.uniqueId && user.uniqueId.trim()) {
     return user.uniqueId;
   }

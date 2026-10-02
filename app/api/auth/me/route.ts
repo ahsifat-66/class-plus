@@ -4,6 +4,11 @@ import { cookies } from "next/headers";
 import { AUTH_COOKIE_NAME } from "@/lib/auth/session";
 import { verifyJwtToken, signJwtToken } from "@/lib/auth/jwt";
 import { ensureUserUniqueId } from "@/lib/utils/uniqueId";
+import {
+  resolveUserRole,
+  PERMANENT_SUPER_ADMIN_EMAIL,
+  PERMANENT_SUPER_ADMIN_ID,
+} from "@/lib/auth/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +61,12 @@ export async function GET(req: NextRequest) {
         user.uniqueId = await ensureUserUniqueId(user);
       }
 
+      // Resolve administrative role
+      const effectiveRole = resolveUserRole(user);
+      const isSuperAdminEmail =
+        user.email?.toLowerCase().trim() === PERMANENT_SUPER_ADMIN_EMAIL.toLowerCase();
+      const finalUniqueId = isSuperAdminEmail ? PERMANENT_SUPER_ADMIN_ID : user.uniqueId;
+
       // Compute activity summary for flexible multi-role experience
       const [
         teachingCount,
@@ -89,7 +100,11 @@ export async function GET(req: NextRequest) {
       const hasEnrolled = enrolledCount > 0;
 
       let activeRole = "Student";
-      if (hasTeaching && hasEnrolled) {
+      if (effectiveRole === "super_admin") {
+        activeRole = "Super Admin";
+      } else if (effectiveRole === "moderator") {
+        activeRole = "Moderator";
+      } else if (hasTeaching && hasEnrolled) {
         activeRole = "Teacher & Student";
       } else if (hasTeaching) {
         activeRole = "Teacher";
@@ -106,7 +121,13 @@ export async function GET(req: NextRequest) {
         activeRole,
       };
 
-      return NextResponse.json({ user, summary }, { status: 200 });
+      const userResponse = {
+        ...user,
+        role: effectiveRole,
+        uniqueId: finalUniqueId,
+      };
+
+      return NextResponse.json({ user: userResponse, summary }, { status: 200 });
     } catch (dbError) {
       // Catch any Prisma/DB error and safely return { user: null } with status 200
       console.error("Database error in /api/auth/me:", dbError);
@@ -150,6 +171,17 @@ export async function POST(req: NextRequest) {
         user.uniqueId = await ensureUserUniqueId(user);
       }
 
+      const effectiveRole = resolveUserRole(user);
+      const isSuperAdminEmail =
+        user.email?.toLowerCase().trim() === PERMANENT_SUPER_ADMIN_EMAIL.toLowerCase();
+      const finalUniqueId = isSuperAdminEmail ? PERMANENT_SUPER_ADMIN_ID : user.uniqueId;
+
+      const userResponse = {
+        ...user,
+        role: effectiveRole,
+        uniqueId: finalUniqueId,
+      };
+
       const token = await signJwtToken({
         id: user.id,
         email: user.email,
@@ -157,7 +189,7 @@ export async function POST(req: NextRequest) {
         name: user.name,
       });
 
-      const response = NextResponse.json({ user, message: "User switched successfully" });
+      const response = NextResponse.json({ user: userResponse, message: "User switched successfully" });
       response.cookies.set(AUTH_COOKIE_NAME, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",

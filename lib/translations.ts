@@ -42,6 +42,10 @@ export const translations: TranslationDictionary = {
   "profile.roleTeacher": { en: "Teacher", bn: "শিক্ষক" },
   "profile.roleStudent": { en: "Student", bn: "শিক্ষার্থী" },
   "profile.roleBoth": { en: "Teacher & Student", bn: "শিক্ষক ও শিক্ষার্থী" },
+  "profile.roleSuperAdmin": { en: "Super Admin", bn: "সুপার অ্যাডমিন" },
+  "profile.roleModerator": { en: "Moderator", bn: "মডারেটর" },
+  "navbar.adminDashboard": { en: "Admin Dashboard", bn: "অ্যাডমিন ড্যাশবোর্ড" },
+  "navbar.admin": { en: "Admin", bn: "অ্যাডমিন" },
 
   // Bottom Navigation
   "nav.classes": { en: "Classes", bn: "ক্লাসসমূহ" },

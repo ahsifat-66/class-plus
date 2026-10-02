@@ -34,6 +34,7 @@ import {
   Camera,
   Code2,
   ChevronRight,
+  ShieldAlert,
 } from "lucide-react";
 
 interface ProfileStats {
@@ -61,7 +62,14 @@ interface ProfileUser {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { currentUser, userSummary, refreshUser } = useUser();
+  const {
+    currentUser,
+    userSummary,
+    refreshUser,
+    isSuperAdmin,
+    isModerator,
+    hasAdminAccess,
+  } = useUser();
 
   const [profile, setProfile] = useState<ProfileUser | null>(null);
   const [stats, setStats] = useState<ProfileStats | null>(null);
@@ -229,12 +237,29 @@ export default function ProfilePage() {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const dynamicBadge =
-    stats?.activeRole ||
-    userSummary?.activeRole ||
-    (currentUser?.role === "TEACHER" ? "Teacher" : "Student");
-
   const effectiveProfile = profile || (currentUser as ProfileUser | null);
+
+  const isSuperAdminRole =
+    isSuperAdmin ||
+    effectiveProfile?.email?.toLowerCase().trim() === "abidhasansifat66@gmail.com" ||
+    effectiveProfile?.role?.toLowerCase().trim() === "super_admin";
+
+  const isModeratorRole =
+    !isSuperAdminRole &&
+    (isModerator || effectiveProfile?.role?.toLowerCase().trim() === "moderator");
+
+  const dynamicBadge =
+    isSuperAdminRole
+      ? "Super Admin"
+      : isModeratorRole
+      ? "Moderator"
+      : stats?.activeRole ||
+        userSummary?.activeRole ||
+        (currentUser?.role === "TEACHER" ? "Teacher" : "Student");
+
+  const effectiveUniqueId = isSuperAdminRole
+    ? "ADM-001"
+    : effectiveProfile?.uniqueId;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-slate-100 transition-colors">
@@ -304,7 +329,13 @@ export default function ProfilePage() {
                     )}
                     <span
                       className={`absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-slate-900 ${
-                        dynamicBadge.includes("Teacher") ? "bg-purple-400" : "bg-emerald-400"
+                        isSuperAdminRole
+                          ? "bg-rose-400"
+                          : isModeratorRole
+                          ? "bg-indigo-400"
+                          : dynamicBadge.includes("Teacher")
+                          ? "bg-purple-400"
+                          : "bg-emerald-400"
                       }`}
                     />
                     <button
@@ -333,7 +364,11 @@ export default function ProfilePage() {
                       </button>
                       <span
                         className={`text-[11px] font-extrabold uppercase tracking-wider px-3 py-0.5 rounded-full backdrop-blur-md border ${
-                          dynamicBadge.includes("Teacher") && dynamicBadge.includes("Student")
+                          isSuperAdminRole
+                            ? "bg-rose-500/30 text-rose-200 border-rose-400/40"
+                            : isModeratorRole
+                            ? "bg-indigo-500/30 text-indigo-200 border-indigo-400/40"
+                            : dynamicBadge.includes("Teacher") && dynamicBadge.includes("Student")
                             ? "bg-indigo-500/30 text-indigo-200 border-indigo-400/40"
                             : dynamicBadge.includes("Teacher")
                             ? "bg-purple-500/30 text-purple-200 border-purple-400/40"
@@ -344,10 +379,10 @@ export default function ProfilePage() {
                       </span>
                     </div>
 
-                    {effectiveProfile.uniqueId && (
+                    {effectiveUniqueId && (
                       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 border border-white/20 text-xs font-mono font-bold text-indigo-200 backdrop-blur-md shadow-sm">
                         <ShieldCheck className="h-3.5 w-3.5 text-indigo-400" />
-                        <span>ClassPulse ID: {effectiveProfile.uniqueId}</span>
+                        <span>ClassPulse ID: {effectiveUniqueId}</span>
                       </div>
                     )}
 
@@ -803,6 +838,40 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
+
+            {/* Admin Dashboard Entry Card (for Super Admin & Moderator) */}
+            {hasAdminAccess && (
+              <div className="rounded-3xl border border-rose-200 dark:border-rose-900/60 bg-gradient-to-r from-rose-50/70 via-white to-purple-50/70 dark:from-slate-900 dark:via-slate-900 dark:to-rose-950/30 p-1 shadow-sm hover:shadow-md transition-all">
+                <Link
+                  href="/admin"
+                  className="w-full flex items-center justify-between p-4 sm:p-5 rounded-[22px] hover:bg-white/80 dark:hover:bg-slate-800/60 transition-all text-left group"
+                >
+                  <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+                    <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-rose-600 to-indigo-600 text-white shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform shrink-0">
+                      <ShieldAlert className="h-6 w-6" strokeWidth={1.75} />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors flex items-center gap-2 flex-wrap">
+                        <span>Admin Dashboard</span>
+                        <span className="text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-900/60 px-2 py-0.5 rounded-full font-mono text-[10px]">
+                          {isSuperAdminRole ? "SUPER ADMIN" : "MODERATOR"}
+                        </span>
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                        {isSuperAdminRole
+                          ? "Root platform management, user role assignments & system metrics"
+                          : "Platform moderation, user directory & activity oversight"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-slate-400 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors shrink-0 ml-3">
+                    <span className="hidden sm:inline text-xs font-bold">Open Console</span>
+                    <ChevronRight className="h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+              </div>
+            )}
 
             {/* Meet the Creator Entry Card */}
             <div className="rounded-3xl border border-indigo-100 dark:border-indigo-950/60 bg-gradient-to-r from-indigo-50/70 via-white to-purple-50/70 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/30 p-1 shadow-sm hover:shadow-md transition-all">

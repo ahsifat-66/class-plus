@@ -19,6 +19,7 @@ import {
   Sun,
   Moon,
   Globe,
+  ShieldAlert,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { useLanguage } from "@/lib/i18n";
@@ -32,15 +33,26 @@ export default function Navbar({
   onCreateClassOpen,
   onJoinClassOpen,
 }: NavbarProps) {
-  const { currentUser, userSummary, isLoading } = useUser();
+  const {
+    currentUser,
+    userSummary,
+    isLoading,
+    isSuperAdmin,
+    isModerator,
+    hasAdminAccess,
+  } = useUser();
   const { theme, toggleTheme } = useTheme();
   const { t, language, toggleLanguage } = useLanguage();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // Derive dynamic role badge: "Teacher & Student", "Teacher", or "Student"
+  // Derive dynamic role badge: "Super Admin", "Moderator", "Teacher & Student", "Teacher", or "Student"
   const activeRoleBadge =
-    userSummary?.activeRole ||
-    (currentUser?.role === "TEACHER" ? "Teacher" : "Student");
+    isSuperAdmin
+      ? t("profile.roleSuperAdmin", "Super Admin")
+      : isModerator
+      ? t("profile.roleModerator", "Moderator")
+      : userSummary?.activeRole ||
+        (currentUser?.role === "TEACHER" ? "Teacher" : "Student");
 
   const homeLink = "/dashboard";
 
@@ -145,6 +157,22 @@ export default function Navbar({
                   <BarChart3 strokeWidth={1.75} size={16} className="text-indigo-600 dark:text-indigo-400" />
                   <span className="hidden md:inline">{t("navbar.analytics")}</span>
                 </Link>
+
+                {/* Conditional Admin Dashboard Button for Super Admin & Moderator */}
+                {hasAdminAccess && (
+                  <Link
+                    href="/admin"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-300 dark:border-rose-800/80 bg-gradient-to-r from-rose-500/10 via-purple-500/10 to-indigo-500/10 hover:from-rose-500/20 hover:to-indigo-500/20 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-bold text-rose-700 dark:text-rose-300 shadow-sm transition-all active:scale-95 shrink-0 min-h-[36px]"
+                    title={isSuperAdmin ? "Super Admin Dashboard" : "Moderator Admin Dashboard"}
+                  >
+                    <ShieldAlert strokeWidth={2} size={16} className="text-rose-600 dark:text-rose-400 shrink-0" />
+                    <span className="hidden md:inline">{t("navbar.adminDashboard", "Admin Dashboard")}</span>
+                    <span className="md:hidden hidden sm:inline">{t("navbar.admin", "Admin")}</span>
+                    <span className="text-[9px] sm:text-[10px] font-extrabold uppercase px-1.5 py-0.2 rounded-md bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 shrink-0">
+                      {isSuperAdmin ? "Super" : "Mod"}
+                    </span>
+                  </Link>
+                )}
               </div>
 
               {/* Profile Avatar Dropdown Button */}
@@ -170,7 +198,13 @@ export default function Navbar({
                     )}
                     <span
                       className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${
-                        activeRoleBadge.includes("Teacher") ? "bg-purple-500" : "bg-emerald-500"
+                        isSuperAdmin
+                          ? "bg-rose-500"
+                          : isModerator
+                          ? "bg-indigo-500"
+                          : activeRoleBadge.includes("Teacher")
+                          ? "bg-purple-500"
+                          : "bg-emerald-500"
                       }`}
                     />
                   </div>
@@ -211,7 +245,11 @@ export default function Navbar({
                           </span>
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              activeRoleBadge.includes("Teacher") && activeRoleBadge.includes("Student")
+                              isSuperAdmin
+                                ? "bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                                : isModerator
+                                ? "bg-indigo-100 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
+                                : activeRoleBadge.includes("Teacher") && activeRoleBadge.includes("Student")
                                 ? "bg-indigo-100 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
                                 : activeRoleBadge.includes("Teacher")
                                 ? "bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
@@ -238,6 +276,23 @@ export default function Navbar({
                         <div className="px-3 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                           {t("profile.workspaceNav", "Workspace Navigation")}
                         </div>
+
+                        {/* Admin Dashboard Option */}
+                        {hasAdminAccess && (
+                          <Link
+                            href="/admin"
+                            onClick={() => setDropdownOpen(false)}
+                            className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50/70 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-950/70 rounded-xl transition-colors border border-rose-200/70 dark:border-rose-900/50"
+                          >
+                            <div className="flex items-center gap-2">
+                              <ShieldAlert strokeWidth={1.75} size={16} className="text-rose-600 dark:text-rose-400 shrink-0" />
+                              <span>{t("navbar.adminDashboard", "Admin Dashboard")}</span>
+                            </div>
+                            <span className="text-[9px] font-extrabold uppercase bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 px-2 py-0.5 rounded-full border border-rose-200 dark:border-rose-800">
+                              {isSuperAdmin ? "Super Admin" : "Moderator"}
+                            </span>
+                          </Link>
+                        )}
 
                         {currentUser?.role !== "STUDENT" && (
                           <Link

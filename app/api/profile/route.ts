@@ -3,6 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth/session";
 import { comparePassword, hashPassword } from "@/lib/auth/password";
 import { ensureUserUniqueId } from "@/lib/utils/uniqueId";
+import {
+  resolveUserRole,
+  PERMANENT_SUPER_ADMIN_EMAIL,
+  PERMANENT_SUPER_ADMIN_ID,
+} from "@/lib/auth/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -86,8 +91,17 @@ export async function GET(req: NextRequest) {
     const hasTeaching = teachingCount > 0 || user.role === "TEACHER";
     const hasEnrolled = enrolledCount > 0;
 
+    const effectiveRole = resolveUserRole(user);
+    const isSuperAdminEmail =
+      user.email?.toLowerCase().trim() === PERMANENT_SUPER_ADMIN_EMAIL.toLowerCase();
+    const finalUniqueId = isSuperAdminEmail ? PERMANENT_SUPER_ADMIN_ID : user.uniqueId;
+
     let activeRole = "Student";
-    if (hasTeaching && hasEnrolled) {
+    if (effectiveRole === "super_admin") {
+      activeRole = "Super Admin";
+    } else if (effectiveRole === "moderator") {
+      activeRole = "Moderator";
+    } else if (hasTeaching && hasEnrolled) {
       activeRole = "Teacher & Student";
     } else if (hasTeaching) {
       activeRole = "Teacher";
@@ -104,7 +118,13 @@ export async function GET(req: NextRequest) {
       activeRole,
     };
 
-    return NextResponse.json({ user, stats }, { status: 200 });
+    const userResponse = {
+      ...user,
+      role: effectiveRole,
+      uniqueId: finalUniqueId,
+    };
+
+    return NextResponse.json({ user: userResponse, stats }, { status: 200 });
   } catch (error) {
     console.error("Error fetching profile:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
