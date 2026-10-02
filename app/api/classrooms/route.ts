@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth/session";
+import { flatBooksData } from "@/data/booksData";
 
 export const dynamic = "force-dynamic";
 
@@ -197,6 +198,29 @@ export async function POST(req: NextRequest) {
     };
 
     if (Array.isArray(textbookIds) && textbookIds.length > 0) {
+      for (const tid of textbookIds) {
+        const meta = flatBooksData.find((b) => b.id === tid);
+        if (meta) {
+          await prisma.nctbBook.upsert({
+            where: { id: tid },
+            update: {
+              title: meta.title,
+              subject: meta.subject,
+              driveUrl: meta.driveUrl,
+              grade: meta.grade || "Class 9-10",
+              version: meta.version || "bangla",
+            },
+            create: {
+              id: meta.id,
+              title: meta.title,
+              subject: meta.subject,
+              driveUrl: meta.driveUrl,
+              grade: meta.grade || "Class 9-10",
+              version: meta.version || "bangla",
+            },
+          });
+        }
+      }
       classroomData.textbooks = {
         connect: textbookIds.map((tid: string) => ({ id: tid })),
       };

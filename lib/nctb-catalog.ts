@@ -55,7 +55,13 @@ export function getCatalogBooksByGrade(
   if (normalized.includes("9") || normalized.includes("10")) {
     return catalog.filter((b) => {
       const bg = b.grade.toLowerCase();
-      return bg.includes("9") || bg.includes("10");
+      return (bg.includes("9") || bg.includes("10")) && !bg.includes("11") && !bg.includes("12");
+    });
+  }
+  if (normalized.includes("11") || normalized.includes("12")) {
+    return catalog.filter((b) => {
+      const bg = b.grade.toLowerCase();
+      return bg.includes("11") || bg.includes("12");
     });
   }
 

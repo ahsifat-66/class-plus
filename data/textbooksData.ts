@@ -325,8 +325,102 @@ export const nctbBooksData = {
     },
   },
   "11-12": {
-    bn: { compulsory: [], groups: { science: [], business_studies: [], humanities: [] } },
-    en: { compulsory: [], groups: { science: [], business_studies: [], humanities: [] } },
+    bn: {
+      compulsory: [
+        { id: "c1112-bn-sahitya", title: "সাহিত্য পাঠ (বাংলা ১ম পত্র)", url: "https://drive.google.com/file/d/17bH291V5txub-YCrg5ab-o2CA4MKvwD4/view?usp=drive_link", subject: "Bangla Literature" },
+        { id: "c1112-bn-sohopath", title: "সহপাঠ (বাংলা)", url: "https://drive.google.com/file/d/12WjKZdodXSSzvkwO8_LViQpydKi3zXtw/view?usp=drive_link", subject: "Bangla Literature" },
+        { id: "c1112-bn-grammar", title: "বাংলা ব্যাকরণ ও নির্মিতি (বাংলা ২য় পত্র)", url: "https://drive.google.com/file/d/1leaeW1dOzPZG7rn8bc5fyiIT1TjRgJvN/view?usp=drive_link", subject: "Bangla Grammar" },
+        { id: "c1112-en-eft", title: "English for Today", url: "https://drive.google.com/file/d/1EekMeoOWO4nVPdCUyvSLA4Y9uuBUONPo/view?usp=drive_link", subject: "English" },
+        { id: "c1112-en-gram", title: "English Grammar and Composition", url: "https://drive.google.com/file/d/1VvKMLPUfuENVBh5lg6_CVsyrf7BegaBC/view?usp=drive_link", subject: "English Grammar" },
+        { id: "c1112-ict", title: "তথ্য ও যোগাযোগ প্রযুক্তি (ICT)", url: "https://drive.google.com/file/d/1EzubZfMIWg6mbswtaQHpjjxwm-FD4KD8/view?usp=drive_link", subject: "ICT" },
+      ],
+      groups: {
+        science: [
+          { id: "c1112-sci-phy1", title: "পদার্থবিজ্ঞান ১ম পত্র", url: "https://drive.google.com/file/d/1G_y4t4fW3ZfbgbXSV2fqH4PvHiXApDyu/view?usp=drive_link", subject: "Physics" },
+          { id: "c1112-sci-phy2", title: "পদার্থবিজ্ঞান ২য় পত্র", url: "https://drive.google.com/file/d/1G_y4t4fW3ZfbgbXSV2fqH4PvHiXApDyu/view?usp=drive_link", subject: "Physics" },
+          { id: "c1112-sci-chem1", title: "রসায়ন ১ম পত্র", url: "https://drive.google.com/file/d/16teUgLDPKTIB8ZOp6dS59DKY-3R7w72L/view?usp=drive_link", subject: "Chemistry" },
+          { id: "c1112-sci-chem2", title: "রসায়ন ২য় পত্র", url: "https://drive.google.com/file/d/16teUgLDPKTIB8ZOp6dS59DKY-3R7w72L/view?usp=drive_link", subject: "Chemistry" },
+          { id: "c1112-sci-bio1", title: "জীববিজ্ঞান ১ম পত্র (উদ্ভিদবিজ্ঞান)", url: "https://drive.google.com/file/d/1zhk3MHn6XUbPTz48ywJcs63A01cwtnzd/view?usp=drive_link", subject: "Biology" },
+          { id: "c1112-sci-bio2", title: "জীববিজ্ঞান ২য় পত্র (প্রাণিবিজ্ঞান)", url: "https://drive.google.com/file/d/1zhk3MHn6XUbPTz48ywJcs63A01cwtnzd/view?usp=drive_link", subject: "Biology" },
+          { id: "c1112-sci-hm1", title: "উচ্চতর গণিত ১ম পত্র", url: "https://drive.google.com/file/d/1o6Wf0NbCswP0NhtmZXJowvIvPaA30mVK/view?usp=drive_link", subject: "Higher Mathematics" },
+          { id: "c1112-sci-hm2", title: "উচ্চতর গণিত ২য় পত্র", url: "https://drive.google.com/file/d/1o6Wf0NbCswP0NhtmZXJowvIvPaA30mVK/view?usp=drive_link", subject: "Higher Mathematics" },
+        ],
+        business_studies: [
+          { id: "c1112-comm-acc1", title: "হিসাববিজ্ঞান ১ম পত্র", url: "https://drive.google.com/file/d/1ys1MbQk9EW8wTOan58Rt0YPca53ZYZHP/view?usp=drive_link", subject: "Accounting" },
+          { id: "c1112-comm-acc2", title: "হিসাববিজ্ঞান ২য় পত্র", url: "https://drive.google.com/file/d/1ys1MbQk9EW8wTOan58Rt0YPca53ZYZHP/view?usp=drive_link", subject: "Accounting" },
+          { id: "c1112-comm-bus-org1", title: "ব্যবসায় সংগঠন ও ব্যবস্থাপনা ১ম পত্র", url: "https://drive.google.com/file/d/1OoA-foSjnstGw7OJxB_dvuuF_bm9-R8i/view?usp=drive_link", subject: "Business Studies" },
+          { id: "c1112-comm-bus-org2", title: "ব্যবসায় সংগঠন ও ব্যবস্থাপনা ২য় পত্র", url: "https://drive.google.com/file/d/1OoA-foSjnstGw7OJxB_dvuuF_bm9-R8i/view?usp=drive_link", subject: "Business Studies" },
+          { id: "c1112-comm-fin1", title: "ফিন্যান্স, ব্যাংকিং ও বিমা ১ম পত্র", url: "https://drive.google.com/file/d/1gNBkuWDJxYGTNSF9KppN4iGEAWkoIt7Y/view?usp=drive_link", subject: "Finance & Banking" },
+          { id: "c1112-comm-fin2", title: "ফিন্যান্স, ব্যাংকিং ও বিমা ২য় পত্র", url: "https://drive.google.com/file/d/1gNBkuWDJxYGTNSF9KppN4iGEAWkoIt7Y/view?usp=drive_link", subject: "Finance & Banking" },
+          { id: "c1112-comm-prod1", title: "উৎপাদন ব্যবস্থাপনা ও বিপণন ১ম পত্র", url: "https://drive.google.com/file/d/1HSEx5MnCfB-a6DCeN_RcK0XevcETAa5t/view?usp=drive_link", subject: "Production Management" },
+          { id: "c1112-comm-prod2", title: "উৎপাদন ব্যবস্থাপনা ও বিপণন ২য় পত্র", url: "https://drive.google.com/file/d/1HSEx5MnCfB-a6DCeN_RcK0XevcETAa5t/view?usp=drive_link", subject: "Production Management" },
+          { id: "c1112-comm-econ1", title: "অর্থনীতি ১ম পত্র", url: "https://drive.google.com/file/d/1NVIjVD7hmOM1ZRkhTcOYnUrAqbTWjWH0/view?usp=drive_link", subject: "Economics" },
+          { id: "c1112-comm-econ2", title: "অর্থনীতি ২য় পত্র", url: "https://drive.google.com/file/d/1NVIjVD7hmOM1ZRkhTcOYnUrAqbTWjWH0/view?usp=drive_link", subject: "Economics" },
+        ],
+        humanities: [
+          { id: "c1112-arts-econ1", title: "অর্থনীতি ১ম পত্র", url: "https://drive.google.com/file/d/1NVIjVD7hmOM1ZRkhTcOYnUrAqbTWjWH0/view?usp=drive_link", subject: "Economics" },
+          { id: "c1112-arts-econ2", title: "অর্থনীতি ২য় পত্র", url: "https://drive.google.com/file/d/1NVIjVD7hmOM1ZRkhTcOYnUrAqbTWjWH0/view?usp=drive_link", subject: "Economics" },
+          { id: "c1112-arts-civ1", title: "পৌরনীতি ও সুশাসন ১ম পত্র", url: "https://drive.google.com/file/d/1QdtCDgJ-kRhbm8Vm-x1JIyQsfCQdvY8q/view?usp=drive_link", subject: "Civics & Citizenship" },
+          { id: "c1112-arts-civ2", title: "পৌরনীতি ও সুশাসন ২য় পত্র", url: "https://drive.google.com/file/d/1QdtCDgJ-kRhbm8Vm-x1JIyQsfCQdvY8q/view?usp=drive_link", subject: "Civics & Citizenship" },
+          { id: "c1112-arts-hist1", title: "ইতিহাস ১ম পত্র", url: "https://drive.google.com/file/d/1k1hmA3SfczWmLsJR-QQT8QybAFGkaY4B/view?usp=drive_link", subject: "History" },
+          { id: "c1112-arts-hist2", title: "ইতিহাস ২য় পত্র", url: "https://drive.google.com/file/d/1k1hmA3SfczWmLsJR-QQT8QybAFGkaY4B/view?usp=drive_link", subject: "History" },
+          { id: "c1112-arts-geo1", title: "ভূগোল ১ম পত্র", url: "https://drive.google.com/file/d/1xBYA6YBstbArM8uAwRSlsiuW8QqMTYRL/view?usp=drive_link", subject: "Geography" },
+          { id: "c1112-arts-geo2", title: "ভূগোল ২য় পত্র", url: "https://drive.google.com/file/d/1xBYA6YBstbArM8uAwRSlsiuW8QqMTYRL/view?usp=drive_link", subject: "Geography" },
+          { id: "c1112-arts-soc1", title: "সমাজবিজ্ঞান ১ম পত্র", url: "https://drive.google.com/file/d/1Pz7D9vw1z11B-OQlbDdKFva8_fwrYoY0/view?usp=drive_link", subject: "Sociology" },
+          { id: "c1112-arts-soc2", title: "সমাজবিজ্ঞান ২য় পত্র", url: "https://drive.google.com/file/d/1Pz7D9vw1z11B-OQlbDdKFva8_fwrYoY0/view?usp=drive_link", subject: "Sociology" },
+          { id: "c1112-arts-logic1", title: "যুক্তিবিদ্যা ১ম পত্র", url: "https://drive.google.com/file/d/1HSEx5MnCfB-a6DCeN_RcK0XevcETAa5t/view?usp=drive_link", subject: "Logic" },
+          { id: "c1112-arts-logic2", title: "যুক্তিবিদ্যা ২য় পত্র", url: "https://drive.google.com/file/d/1HSEx5MnCfB-a6DCeN_RcK0XevcETAa5t/view?usp=drive_link", subject: "Logic" },
+        ],
+      },
+    },
+    en: {
+      compulsory: [
+        { id: "c1112-en-bn-lit", title: "Sahitya Path (Bangla 1st Paper)", url: "https://drive.google.com/file/d/17bH291V5txub-YCrg5ab-o2CA4MKvwD4/view?usp=drive_link", subject: "Bangla Literature" },
+        { id: "c1112-en-bn-sp", title: "Shohopath (Bangla)", url: "https://drive.google.com/file/d/12WjKZdodXSSzvkwO8_LViQpydKi3zXtw/view?usp=drive_link", subject: "Bangla Literature" },
+        { id: "c1112-en-bn-gram", title: "Bangla Grammar & Composition", url: "https://drive.google.com/file/d/1leaeW1dOzPZG7rn8bc5fyiIT1TjRgJvN/view?usp=drive_link", subject: "Bangla Grammar" },
+        { id: "c1112-en-eft", title: "English for Today", url: "https://drive.google.com/file/d/1EekMeoOWO4nVPdCUyvSLA4Y9uuBUONPo/view?usp=drive_link", subject: "English" },
+        { id: "c1112-en-gram", title: "English Grammar and Composition", url: "https://drive.google.com/file/d/1VvKMLPUfuENVBh5lg6_CVsyrf7BegaBC/view?usp=drive_link", subject: "English Grammar" },
+        { id: "c1112-en-ict", title: "Information & Communication Technology (ICT)", url: "https://drive.google.com/file/d/1l82JAI2GL8zzAG1PzBdvRJvq8ouhxq9U/view?usp=drive_link", subject: "ICT" },
+      ],
+      groups: {
+        science: [
+          { id: "c1112-en-phy1", title: "Physics 1st Paper", url: "https://drive.google.com/file/d/17e_4XkWY7HIfhAG5lZ0WZYmhGnTH1-dh/view?usp=drive_link", subject: "Physics" },
+          { id: "c1112-en-phy2", title: "Physics 2nd Paper", url: "https://drive.google.com/file/d/17e_4XkWY7HIfhAG5lZ0WZYmhGnTH1-dh/view?usp=drive_link", subject: "Physics" },
+          { id: "c1112-en-chem1", title: "Chemistry 1st Paper", url: "https://drive.google.com/file/d/1D1S9VZnFHrziRihX_eabVpBVBDYhvbgm/view?usp=drive_link", subject: "Chemistry" },
+          { id: "c1112-en-chem2", title: "Chemistry 2nd Paper", url: "https://drive.google.com/file/d/1D1S9VZnFHrziRihX_eabVpBVBDYhvbgm/view?usp=drive_link", subject: "Chemistry" },
+          { id: "c1112-en-bio1", title: "Biology 1st Paper (Botany)", url: "https://drive.google.com/file/d/1zi9vIj2SzIOlnBubLWZZ_lkCJe-RkAkl/view?usp=drive_link", subject: "Biology" },
+          { id: "c1112-en-bio2", title: "Biology 2nd Paper (Zoology)", url: "https://drive.google.com/file/d/1zi9vIj2SzIOlnBubLWZZ_lkCJe-RkAkl/view?usp=drive_link", subject: "Biology" },
+          { id: "c1112-en-hm1", title: "Higher Mathematics 1st Paper", url: "https://drive.google.com/file/d/1h058NC7pQV5fwcvBZyuNnpQKrbWWvi9s/view?usp=drive_link", subject: "Higher Mathematics" },
+          { id: "c1112-en-hm2", title: "Higher Mathematics 2nd Paper", url: "https://drive.google.com/file/d/1h058NC7pQV5fwcvBZyuNnpQKrbWWvi9s/view?usp=drive_link", subject: "Higher Mathematics" },
+        ],
+        business_studies: [
+          { id: "c1112-en-acc1", title: "Accounting 1st Paper", url: "https://drive.google.com/file/d/1efjhwLg-7w8JRgzyDmwLP-U5NGrozTb6/view?usp=drive_link", subject: "Accounting" },
+          { id: "c1112-en-acc2", title: "Accounting 2nd Paper", url: "https://drive.google.com/file/d/1efjhwLg-7w8JRgzyDmwLP-U5NGrozTb6/view?usp=drive_link", subject: "Accounting" },
+          { id: "c1112-en-bus-org1", title: "Business Organization 1st Paper", url: "https://drive.google.com/file/d/1T5ODXubjX1jRVSrlaJCxz_nLMiFKkiBI/view?usp=drive_link", subject: "Business Studies" },
+          { id: "c1112-en-bus-org2", title: "Business Organization 2nd Paper", url: "https://drive.google.com/file/d/1T5ODXubjX1jRVSrlaJCxz_nLMiFKkiBI/view?usp=drive_link", subject: "Business Studies" },
+          { id: "c1112-en-fin1", title: "Finance, Banking & Insurance 1st Paper", url: "https://drive.google.com/file/d/1KkA9wIGoxWtB--0eGBO0hblmZnzd1uvn/view?usp=drive_link", subject: "Finance & Banking" },
+          { id: "c1112-en-fin2", title: "Finance, Banking & Insurance 2nd Paper", url: "https://drive.google.com/file/d/1KkA9wIGoxWtB--0eGBO0hblmZnzd1uvn/view?usp=drive_link", subject: "Finance & Banking" },
+          { id: "c1112-en-prod1", title: "Production Management 1st Paper", url: "https://drive.google.com/file/d/1ZWD3CSzF-ACPb1EwUJ-_mdBLZgsAKaz8/view?usp=drive_link", subject: "Production Management" },
+          { id: "c1112-en-prod2", title: "Production Management 2nd Paper", url: "https://drive.google.com/file/d/1ZWD3CSzF-ACPb1EwUJ-_mdBLZgsAKaz8/view?usp=drive_link", subject: "Production Management" },
+          { id: "c1112-en-econ1", title: "Economics 1st Paper", url: "https://drive.google.com/file/d/1oPO08fyz5CBXcASsKpo779xN7yLN9SKw/view?usp=drive_link", subject: "Economics" },
+          { id: "c1112-en-econ2", title: "Economics 2nd Paper", url: "https://drive.google.com/file/d/1oPO08fyz5CBXcASsKpo779xN7yLN9SKw/view?usp=drive_link", subject: "Economics" },
+        ],
+        humanities: [
+          { id: "c1112-en-econ1-h", title: "Economics 1st Paper", url: "https://drive.google.com/file/d/1oPO08fyz5CBXcASsKpo779xN7yLN9SKw/view?usp=drive_link", subject: "Economics" },
+          { id: "c1112-en-econ2-h", title: "Economics 2nd Paper", url: "https://drive.google.com/file/d/1oPO08fyz5CBXcASsKpo779xN7yLN9SKw/view?usp=drive_link", subject: "Economics" },
+          { id: "c1112-en-civ1", title: "Civics & Good Governance 1st Paper", url: "https://drive.google.com/file/d/115loKKAJJJ6-0nM4TbG39Ve_lkg-Ayls/view?usp=drive_link", subject: "Civics & Citizenship" },
+          { id: "c1112-en-civ2", title: "Civics & Good Governance 2nd Paper", url: "https://drive.google.com/file/d/115loKKAJJJ6-0nM4TbG39Ve_lkg-Ayls/view?usp=drive_link", subject: "Civics & Citizenship" },
+          { id: "c1112-en-hist1", title: "History 1st Paper", url: "https://drive.google.com/file/d/1amB4r1NWnmdVvykMrqZZNwpL76SBbtKS/view?usp=drive_link", subject: "History" },
+          { id: "c1112-en-hist2", title: "History 2nd Paper", url: "https://drive.google.com/file/d/1amB4r1NWnmdVvykMrqZZNwpL76SBbtKS/view?usp=drive_link", subject: "History" },
+          { id: "c1112-en-geo1", title: "Geography 1st Paper", url: "https://drive.google.com/file/d/1uuSOxc_NAXCktaPL0XvHpVQXnHfzTQ5S/view?usp=drive_link", subject: "Geography" },
+          { id: "c1112-en-geo2", title: "Geography 2nd Paper", url: "https://drive.google.com/file/d/1uuSOxc_NAXCktaPL0XvHpVQXnHfzTQ5S/view?usp=drive_link", subject: "Geography" },
+          { id: "c1112-en-soc1", title: "Sociology 1st Paper", url: "https://drive.google.com/file/d/1ICiZ1n70kQc-TUHobmIBuy3S3yv1_N9U/view?usp=drive_link", subject: "Sociology" },
+          { id: "c1112-en-soc2", title: "Sociology 2nd Paper", url: "https://drive.google.com/file/d/1ICiZ1n70kQc-TUHobmIBuy3S3yv1_N9U/view?usp=drive_link", subject: "Sociology" },
+          { id: "c1112-en-logic1", title: "Logic 1st Paper", url: "https://drive.google.com/file/d/1ZWD3CSzF-ACPb1EwUJ-_mdBLZgsAKaz8/view?usp=drive_link", subject: "Logic" },
+          { id: "c1112-en-logic2", title: "Logic 2nd Paper", url: "https://drive.google.com/file/d/1ZWD3CSzF-ACPb1EwUJ-_mdBLZgsAKaz8/view?usp=drive_link", subject: "Logic" },
+        ],
+      },
+    },
   },
 };
 
@@ -446,4 +540,149 @@ export function getGrade9To10FlatBooks(): Book[] {
   }
 
   return results;
+}
+
+/**
+ * Convert all textbooks in Class 11-12 dataset into standard Book[] items
+ */
+export function getGrade11To12FlatBooks(): Book[] {
+  const results: Book[] = [];
+  const addedIds = new Set<string>();
+
+  const n1112Bn = nctbBooksData["11-12"]?.bn;
+  if (n1112Bn) {
+    for (const item of n1112Bn.compulsory) {
+      if (item.id && !addedIds.has(item.id)) {
+        addedIds.add(item.id);
+        results.push({
+          id: item.id,
+          title: item.title,
+          subject: item.subject || "General",
+          driveUrl: item.url,
+          version: "bangla",
+          grade: "Class 11-12",
+        });
+      }
+    }
+    for (const gKey of ["science", "business_studies", "humanities"] as const) {
+      const gBooks = n1112Bn.groups[gKey] || [];
+      for (const item of gBooks) {
+        if (item.id && !addedIds.has(item.id)) {
+          addedIds.add(item.id);
+          results.push({
+            id: item.id,
+            title: item.title,
+            subject: item.subject || (gKey === "science" ? "Science" : gKey === "business_studies" ? "Business Studies" : "Humanities"),
+            driveUrl: item.url,
+            version: "bangla",
+            grade: "Class 11-12",
+          });
+        }
+      }
+    }
+  }
+
+  const n1112En = nctbBooksData["11-12"]?.en;
+  if (n1112En) {
+    for (const item of n1112En.compulsory) {
+      if (item.id && !addedIds.has(item.id)) {
+        addedIds.add(item.id);
+        results.push({
+          id: item.id,
+          title: item.title,
+          subject: item.subject || "General",
+          driveUrl: item.url,
+          version: "english",
+          grade: "Class 11-12",
+        });
+      }
+    }
+    for (const gKey of ["science", "business_studies", "humanities"] as const) {
+      const gBooks = n1112En.groups[gKey] || [];
+      for (const item of gBooks) {
+        if (item.id && !addedIds.has(item.id)) {
+          addedIds.add(item.id);
+          results.push({
+            id: item.id,
+            title: item.title,
+            subject: item.subject || (gKey === "science" ? "Science" : gKey === "business_studies" ? "Business Studies" : "Humanities"),
+            driveUrl: item.url,
+            version: "english",
+            grade: "Class 11-12",
+          });
+        }
+      }
+    }
+  }
+
+  return results;
+}
+
+export type GroupKey = "science" | "business_studies" | "humanities";
+
+export interface CurriculumTextbook {
+  id: string;
+  title: string;
+  subject?: string;
+  url?: string;
+  grade?: string;
+}
+
+export interface CurriculumBooksResult {
+  isGroupGrade: boolean;
+  compulsory: CurriculumTextbook[];
+  groupBooks: CurriculumTextbook[];
+  allDisplayBooks: CurriculumTextbook[];
+}
+
+/**
+ * Single unified helper to retrieve textbooks for any grade, group, and version
+ */
+export function getCurriculumBooksForGrade(
+  grade: string,
+  group: string | null | undefined,
+  version: "bangla" | "english" = "bangla"
+): CurriculumBooksResult {
+  const gStr = (grade || "").toLowerCase();
+  const vKey = version === "bangla" ? "bn" : "en";
+  const is910 = gStr.includes("9-10") || (gStr.includes("9") && !gStr.includes("11") && !gStr.includes("12"));
+  const is1112 = gStr.includes("11-12") || gStr.includes("11") || gStr.includes("12");
+
+  if (is910 || is1112) {
+    const gradeKey = is910 ? "9-10" : "11-12";
+    const dataset = nctbBooksData[gradeKey]?.[vKey];
+    const compulsory = (dataset?.compulsory || []).map((b) => ({
+      id: b.id,
+      title: b.title,
+      subject: b.subject,
+      url: b.url,
+      grade: is910 ? "Class 9-10" : "Class 11-12",
+    }));
+
+    let groupBooks: CurriculumTextbook[] = [];
+    if (group && ["science", "business_studies", "humanities"].includes(group)) {
+      const gList = dataset?.groups?.[group as GroupKey] || [];
+      groupBooks = gList.map((b) => ({
+        id: b.id,
+        title: b.title,
+        subject: b.subject,
+        url: b.url,
+        grade: is910 ? "Class 9-10" : "Class 11-12",
+      }));
+    }
+
+    return {
+      isGroupGrade: true,
+      compulsory,
+      groupBooks,
+      allDisplayBooks: [...compulsory, ...groupBooks],
+    };
+  }
+
+  return {
+    isGroupGrade: false,
+    compulsory: [],
+    groupBooks: [],
+    allDisplayBooks: [],
+  };
 }

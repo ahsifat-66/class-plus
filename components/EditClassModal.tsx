@@ -11,10 +11,11 @@ import {
   Sparkles,
   ExternalLink,
   Layers,
+  Info,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { booksData, flatBooksData, Book } from "@/data/booksData";
-import { nctbBooksData } from "@/data/textbooksData";
+import { nctbBooksData, getCurriculumBooksForGrade } from "@/data/textbooksData";
 
 interface EditClassModalProps {
   isOpen: boolean;
@@ -127,15 +128,12 @@ export default function EditClassModal({
     }
   }, [isOpen, classroom]);
 
-  const isGroupApplicable = gradeLevel === "Class 9-10" || gradeLevel === "Class 11-12";
+  const isGroupApplicable = gradeLevel.includes("9-10") || gradeLevel.includes("11-12");
 
   const handleGradeChange = (newGrade: string) => {
     setGradeLevel(newGrade);
-    if (newGrade === "Class 9-10" || newGrade === "Class 11-12") {
-      // Show group dropdown and default to Science if not set
-      setSelectedGroup((prev) => (prev ? prev : "science"));
-    } else {
-      // Hide group dropdown and clear selected group
+    const applicable = newGrade.includes("9-10") || newGrade.includes("11-12");
+    if (!applicable) {
       setSelectedGroup("");
     }
   };
@@ -153,7 +151,7 @@ export default function EditClassModal({
       case "humanities":
         return "Humanities (মানবিক)";
       default:
-        return "Science (বিজ্ঞান)";
+        return "";
     }
   };
 
@@ -167,46 +165,40 @@ export default function EditClassModal({
     []
   );
 
-  // Class 9-10 Compulsory Books for active version
-  const class910CompulsoryBooks = useMemo(() => {
-    const vKey = activeVersion === "bangla" ? "bn" : "en";
-    return nctbBooksData["9-10"]?.[vKey]?.compulsory || [];
-  }, [activeVersion]);
-
-  // Class 9-10 Group Books for active version and selected group
-  const class910GroupBooks = useMemo(() => {
-    const vKey = activeVersion === "bangla" ? "bn" : "en";
-    const grpKey = (selectedGroup || "science") as "science" | "business_studies" | "humanities";
-    return nctbBooksData["9-10"]?.[vKey]?.groups?.[grpKey] || [];
-  }, [activeVersion, selectedGroup]);
+  // Curriculum for active grade, group, and version
+  const curriculum = useMemo(() => {
+    return getCurriculumBooksForGrade(gradeLevel, selectedGroup, activeVersion);
+  }, [gradeLevel, selectedGroup, activeVersion]);
 
   // Dynamic counts for version tabs
-  const class910BanglaCount = useMemo(() => {
-    const comp = nctbBooksData["9-10"]?.bn?.compulsory?.length || 0;
-    const grpKey = (selectedGroup || "science") as "science" | "business_studies" | "humanities";
-    const grp = nctbBooksData["9-10"]?.bn?.groups?.[grpKey]?.length || 0;
-    return comp + grp;
-  }, [selectedGroup]);
+  const banglaTabCount = useMemo(() => {
+    if (gradeLevel.includes("6")) return class6BanglaBooks.length;
+    if (isGroupApplicable) {
+      return getCurriculumBooksForGrade(gradeLevel, selectedGroup, "bangla").allDisplayBooks.length;
+    }
+    return 0;
+  }, [gradeLevel, selectedGroup, isGroupApplicable, class6BanglaBooks]);
 
-  const class910EnglishCount = useMemo(() => {
-    const comp = nctbBooksData["9-10"]?.en?.compulsory?.length || 0;
-    const grpKey = (selectedGroup || "science") as "science" | "business_studies" | "humanities";
-    const grp = nctbBooksData["9-10"]?.en?.groups?.[grpKey]?.length || 0;
-    return comp + grp;
-  }, [selectedGroup]);
+  const englishTabCount = useMemo(() => {
+    if (gradeLevel.includes("6")) return class6EnglishBooks.length;
+    if (isGroupApplicable) {
+      return getCurriculumBooksForGrade(gradeLevel, selectedGroup, "english").allDisplayBooks.length;
+    }
+    return 0;
+  }, [gradeLevel, selectedGroup, isGroupApplicable, class6EnglishBooks]);
 
   // All books currently visible in the active view
   const currentViewBooks = useMemo(() => {
-    if (gradeLevel === "Class 9-10") {
-      return [...class910CompulsoryBooks, ...class910GroupBooks];
+    if (isGroupApplicable) {
+      return curriculum.allDisplayBooks;
     }
-    if (gradeLevel === "Class 6") {
+    if (gradeLevel.includes("6")) {
       return activeVersion === "bangla"
         ? class6BanglaBooks.map((b) => ({ id: b.id, title: b.title, url: b.driveUrl, subject: b.subject }))
         : class6EnglishBooks.map((b) => ({ id: b.id, title: b.title, url: b.driveUrl, subject: b.subject }));
     }
     return [];
-  }, [gradeLevel, activeVersion, class910CompulsoryBooks, class910GroupBooks, class6BanglaBooks, class6EnglishBooks]);
+  }, [isGroupApplicable, curriculum, gradeLevel, activeVersion, class6BanglaBooks, class6EnglishBooks]);
 
   // Bulk Selection Status for the currently active tab
   const allCurrentSelected =
@@ -403,27 +395,30 @@ export default function EditClassModal({
                 <option value="Class 9-10">Class 9-10 (৯ম-১০ম শ্রেণি)</option>
                 <option value="Class 11-12">Class 11-12 (একাদশ-দ্বাদশ শ্রেণি)</option>
               </select>
+
+              {/* Conditional Group Selection Dropdown (Directly below GRADE LEVEL) */}
+              {isGroupApplicable && (
+                <div className="mt-3 animate-in fade-in duration-200">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                    <Layers size={14} className="text-indigo-600 dark:text-indigo-400" />
+                    <span>GROUP / বিভাগ</span>
+                  </label>
+                  <select
+                    value={selectedGroup}
+                    onChange={(e) => handleGroupChange(e.target.value)}
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 text-base sm:text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[44px]"
+                  >
+                    <option value="">
+                      {language === "bn" ? "-- বিভাগ নির্বাচন করুন --" : "-- Select Group --"}
+                    </option>
+                    <option value="science">Science (বিজ্ঞান)</option>
+                    <option value="business_studies">Business Studies (ব্যবসায় শিক্ষা)</option>
+                    <option value="humanities">Humanities (মানবিক)</option>
+                  </select>
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Conditional Group Selection Dropdown (Only for Class 9-10 or Class 11-12) */}
-          {isGroupApplicable && (
-            <div className="animate-in fade-in duration-200">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                <Layers size={14} className="text-indigo-600 dark:text-indigo-400" />
-                <span>GROUP / বিভাগ</span>
-              </label>
-              <select
-                value={selectedGroup || "science"}
-                onChange={(e) => handleGroupChange(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 text-base sm:text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[44px]"
-              >
-                <option value="science">Science (বিজ্ঞান)</option>
-                <option value="business_studies">Business Studies (ব্যবসায় শিক্ষা)</option>
-                <option value="humanities">Humanities (মানবিক)</option>
-              </select>
-            </div>
-          )}
 
           {/* Recommended NCTB Textbooks Section */}
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-4">
@@ -471,16 +466,9 @@ export default function EditClassModal({
                 }`}
               >
                 <span>বাংলা ভার্সন</span>
-                {gradeLevel === "Class 9-10" && (
-                  <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                    {class910BanglaCount}
-                  </span>
-                )}
-                {gradeLevel === "Class 6" && (
-                  <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                    {class6BanglaBooks.length}
-                  </span>
-                )}
+                <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                  {banglaTabCount}
+                </span>
               </button>
 
               <button
@@ -493,16 +481,9 @@ export default function EditClassModal({
                 }`}
               >
                 <span>English Version</span>
-                {gradeLevel === "Class 9-10" && (
-                  <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                    {class910EnglishCount}
-                  </span>
-                )}
-                {gradeLevel === "Class 6" && (
-                  <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                    {class6EnglishBooks.length}
-                  </span>
-                )}
+                <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                  {englishTabCount}
+                </span>
               </button>
             </div>
 
@@ -514,8 +495,8 @@ export default function EditClassModal({
 
             {/* Book Checkboxes Grid */}
             <div className="mt-3 max-h-60 overflow-y-auto space-y-3 pr-1">
-              {/* CLASS 9-10 POPULATION */}
-              {gradeLevel === "Class 9-10" ? (
+              {/* GROUP-APPLICABLE GRADES (Class 9-10 & Class 11-12) */}
+              {isGroupApplicable ? (
                 <div className="space-y-4">
                   {/* আবশ্যিক বিষয় (Compulsory Subjects) */}
                   <div className="space-y-1.5">
@@ -527,31 +508,42 @@ export default function EditClassModal({
                           : "Compulsory Subjects (আবশ্যিক বিষয়)"}
                       </span>
                       <span className="text-[10px] text-slate-400 font-medium">
-                        {class910CompulsoryBooks.length} {language === "bn" ? "টি বিষয়" : "subjects"}
+                        {curriculum.compulsory.length} {language === "bn" ? "টি বিষয়" : "subjects"}
                       </span>
                     </div>
                     <div className="space-y-1.5">
-                      {class910CompulsoryBooks.map((b) => renderTextbookCard(b))}
+                      {curriculum.compulsory.map((b) => renderTextbookCard(b))}
                     </div>
                   </div>
 
-                  {/* বিভাগীয় বিষয় (Group Subjects) */}
-                  <div className="space-y-1.5 pt-2 border-t border-slate-200/80 dark:border-slate-700/80">
-                    <div className="flex items-center justify-between px-1">
-                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        {language === "bn" ? "বিভাগীয় বিষয়" : "Group Subjects"} ({getGroupLabel(selectedGroup)})
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-medium">
-                        {class910GroupBooks.length} {language === "bn" ? "টি বিষয়" : "subjects"}
+                  {/* বিভাগীয় বিষয় (Group Subjects) or Info Message */}
+                  {selectedGroup ? (
+                    <div className="space-y-1.5 pt-2 border-t border-slate-200/80 dark:border-slate-700/80">
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          {language === "bn" ? "বিভাগীয় বিষয়" : "Group Subjects"} ({getGroupLabel(selectedGroup)})
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {curriculum.groupBooks.length} {language === "bn" ? "টি বিষয়" : "subjects"}
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {curriculum.groupBooks.map((b) => renderTextbookCard(b))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 rounded-xl border border-dashed border-amber-300 dark:border-amber-700/60 bg-amber-50/60 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2.5">
+                      <Info size={16} className="shrink-0 text-amber-600 dark:text-amber-400" />
+                      <span>
+                        {language === "bn"
+                          ? "বিভাগীয় বই দেখতে অনুগ্রহ করে একটি বিভাগ (Group) নির্বাচন করুন।"
+                          : "Please select a Group to view recommended books."}
                       </span>
                     </div>
-                    <div className="space-y-1.5">
-                      {class910GroupBooks.map((b) => renderTextbookCard(b))}
-                    </div>
-                  </div>
+                  )}
                 </div>
-              ) : gradeLevel === "Class 6" ? (
+              ) : gradeLevel.includes("6") ? (
                 /* CLASS 6 POPULATION */
                 <div className="space-y-1.5">
                   {currentViewBooks.length === 0 ? (

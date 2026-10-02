@@ -272,8 +272,8 @@ export const booksData: ClassBooks[] = [
   },
 ];
 
-import { textbooksData, getGrade9To10FlatBooks } from "./textbooksData";
-export { textbooksData, getGrade9To10FlatBooks };
+import { textbooksData, getGrade9To10FlatBooks, getGrade11To12FlatBooks } from "./textbooksData";
+export { textbooksData, getGrade9To10FlatBooks, getGrade11To12FlatBooks };
 
 /**
  * Flat array of all books across all grades and versions for convenient lookup
@@ -284,6 +284,7 @@ export const flatBooksData: Book[] = [
     ...c.versions.englishVersion,
   ]),
   ...getGrade9To10FlatBooks(),
+  ...getGrade11To12FlatBooks(),
 ];
 
 /**
@@ -320,7 +321,15 @@ export function getBooksByGrade(
   }
 
   if (normalized.includes("9") || normalized.includes("10")) {
-    return getGrade9To10FlatBooks();
+    const b910 = getGrade9To10FlatBooks();
+    if (version) return b910.filter((b) => b.version === version);
+    return b910;
+  }
+
+  if (normalized.includes("11") || normalized.includes("12")) {
+    const b1112 = getGrade11To12FlatBooks();
+    if (version) return b1112.filter((b) => b.version === version);
+    return b1112;
   }
 
   return flatBooksData;
