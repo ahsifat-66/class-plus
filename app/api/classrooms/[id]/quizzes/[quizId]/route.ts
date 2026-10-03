@@ -11,7 +11,18 @@ export async function GET(
   try {
     const { id: classroomId, quizId } = params;
     const session = await getSessionUser(req);
-    const userId = session?.id;
+    let userId = session?.id;
+
+    if (!userId) {
+      const emailCookie = req.cookies.get("classpulse_user_email")?.value;
+      if (emailCookie) {
+        const u = await prisma.user.findUnique({
+          where: { email: emailCookie },
+          select: { id: true, role: true },
+        });
+        if (u) userId = u.id;
+      }
+    }
 
     const classroom = await prisma.classroom.findUnique({
       where: { id: classroomId },
@@ -22,7 +33,7 @@ export async function GET(
       return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
     }
 
-    const isTeacher = classroom.teacherId === userId;
+    const isTeacher = Boolean(userId && classroom.teacherId === userId);
 
     const quiz = await prisma.quiz.findUnique({
       where: { id: quizId },

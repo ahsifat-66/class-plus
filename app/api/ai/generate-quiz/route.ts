@@ -128,10 +128,15 @@ JSON Array Structure:
       ) {
         correctOptionIndex = 0;
       }
+      const rawExp =
+        q.explanation ||
+        q.rationale ||
+        q.reasoning ||
+        q.feedback ||
+        q.solution ||
+        q.details;
       const explanation =
-        typeof q.explanation === "string" && q.explanation.trim()
-          ? q.explanation.trim()
-          : "";
+        typeof rawExp === "string" && rawExp.trim() ? rawExp.trim() : "";
       return {
         question,
         options,

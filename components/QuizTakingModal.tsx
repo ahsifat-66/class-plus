@@ -22,6 +22,12 @@ interface Question {
   points: number;
   correctOptionIndex?: number;
   explanation?: string | null;
+  rationale?: string | null;
+  reasoning?: string | null;
+  feedback?: string | null;
+  solution?: string | null;
+  details?: string | null;
+  correctAnswer?: number | string;
 }
 
 interface QuizSubmission {
@@ -69,6 +75,30 @@ export default function QuizTakingModal({
   const [result, setResult] = useState<any | null>(null);
   const [error, setError] = useState("");
   const isAutoSubmitting = useRef(false);
+
+  const [displayedQuiz, setDisplayedQuiz] = useState<Quiz | null>(quiz);
+
+  useEffect(() => {
+    setDisplayedQuiz(quiz);
+  }, [quiz]);
+
+  useEffect(() => {
+    if (!isOpen || !quiz?.id) return;
+    const effectiveMode = mode || (quiz.mySubmission ? "REVIEW" : "TAKE");
+    if (
+      effectiveMode === "REVIEW" &&
+      displayedQuiz?.questions?.[0]?.correctOptionIndex === undefined
+    ) {
+      fetch(`/api/classrooms/${classroomId}/quizzes/${quiz.id}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.quiz) {
+            setDisplayedQuiz(data.quiz);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [isOpen, quiz?.id, mode, classroomId, displayedQuiz?.questions]);
 
   // Initialize or restore state when quiz or mode changes
   useEffect(() => {
@@ -137,6 +167,7 @@ export default function QuizTakingModal({
   }, [isOpen, quiz, hasStarted, result, secondsRemaining, isSubmitting]);
 
   if (!isOpen || !quiz) return null;
+  const activeQuiz = displayedQuiz || quiz;
 
   const handleSelectOption = (qIdx: number, optIdx: number) => {
     if (result) return; // Locked once submitted
@@ -314,7 +345,7 @@ export default function QuizTakingModal({
 
           {/* Questions List */}
           <div className="space-y-5">
-            {quiz.questions.map((q, qIdx) => {
+            {activeQuiz.questions.map((q, qIdx) => {
               const rawSelected = result
                 ? (result.review?.[qIdx]?.userSelected ?? result.selectedAnswers?.[qIdx] ?? selectedAnswers[qIdx])
                 : selectedAnswers[qIdx];
@@ -432,18 +463,56 @@ export default function QuizTakingModal({
                     })}
                   </div>
 
-                  {/* Explanation Box (Revealed only upon quiz submission or in review mode) */}
-                  {result && (q.explanation || result.review?.[qIdx]?.explanation) && (
-                    <div className="mt-2.5 p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl text-xs text-indigo-950 dark:text-indigo-200 animate-in fade-in duration-150">
-                      <span className="font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5 mb-1">
-                        <Lightbulb size={14} className="text-amber-500 shrink-0" />
-                        <span>{language === "bn" ? "ব্যাখ্যা (Explanation & Logic):" : "Explanation & Logic:"}</span>
-                      </span>
-                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                        {q.explanation || result.review?.[qIdx]?.explanation}
-                      </p>
-                    </div>
-                  )}
+                  {/* Robust Explanation Display (Revealed only upon quiz submission or in review mode) */}
+                  {result &&
+                    (() => {
+                      const question = q as any;
+                      const reviewItem = result?.review?.[qIdx];
+                      const explanationText =
+                        question?.explanation ||
+                        question?.rationale ||
+                        question?.reasoning ||
+                        question?.feedback ||
+                        question?.solution ||
+                        question?.details ||
+                        reviewItem?.explanation ||
+                        reviewItem?.rationale ||
+                        reviewItem?.reasoning ||
+                        reviewItem?.feedback ||
+                        reviewItem?.solution ||
+                        reviewItem?.details;
+
+                      const correctOpt =
+                        question?.correctOptionIndex !== undefined
+                          ? question.correctOptionIndex
+                          : question?.correctAnswer !== undefined
+                          ? question.correctAnswer
+                          : reviewItem?.correctOptionIndex;
+
+                      const optLabel =
+                        typeof correctOpt === "number" && correctOpt >= 0
+                          ? String.fromCharCode(65 + correctOpt)
+                          : correctOpt !== undefined && correctOpt !== null
+                          ? String(correctOpt)
+                          : "";
+
+                      return explanationText ? (
+                        <div className="mt-3 p-3 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-150 dark:border-indigo-900/50 rounded-xl text-xs text-indigo-950 dark:text-indigo-200 animate-in fade-in duration-150">
+                          <div className="flex items-center gap-1.5 font-bold text-indigo-700 dark:text-indigo-300 mb-1">
+                            <span>💡</span>
+                            <span>{language === "bn" ? "ব্যাখ্যা (Explanation):" : "Explanation:"}</span>
+                          </div>
+                          <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                            {explanationText}
+                          </p>
+                        </div>
+                      ) : (
+                        /* Fallback if older quiz has no explanation saved */
+                        <div className="mt-2 text-xs text-slate-400 dark:text-slate-500 italic">
+                          💡 {language === "bn" ? `সঠিক উত্তরের যুক্তি: অপশন ${optLabel} সঠিক।` : `Answer Key Logic: Option ${optLabel} is correct.`}
+                        </div>
+                      );
+                    })()}
                 </div>
               );
             })}

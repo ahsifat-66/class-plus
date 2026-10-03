@@ -266,7 +266,7 @@ export default function CreateQuizModal({
           correctOptionIndex: typeof q.answerIndex === "number" ? q.answerIndex : (q.correctOptionIndex ?? 0),
           answerIndex: typeof q.answerIndex === "number" ? q.answerIndex : (q.correctOptionIndex ?? 0),
           points: q.points || 1,
-          explanation: q.explanation || "",
+          explanation: (q.explanation || q.rationale || q.reasoning || q.feedback || q.solution || q.details || "").trim(),
         }));
 
         setQuestions(generated);
@@ -345,7 +345,7 @@ export default function CreateQuizModal({
             options: q.options,
             correctOptionIndex: q.correctOptionIndex,
             points: Number(q.points) || 1,
-            explanation: q.explanation?.trim() || undefined,
+            explanation: (q.explanation || (q as any).rationale || (q as any).reasoning || (q as any).feedback || (q as any).solution || (q as any).details)?.trim() || undefined,
           })),
         }),
       });

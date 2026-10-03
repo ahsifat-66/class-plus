@@ -48,8 +48,20 @@ export async function POST(
   try {
     const { id: classroomId, quizId } = params;
     const session = await getSessionUser(req);
+    let userId = session?.id;
 
-    if (!session?.id) {
+    if (!userId) {
+      const emailCookie = req.cookies.get("classpulse_user_email")?.value;
+      if (emailCookie) {
+        const u = await prisma.user.findUnique({
+          where: { email: emailCookie },
+          select: { id: true, role: true },
+        });
+        if (u) userId = u.id;
+      }
+    }
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -93,6 +105,8 @@ export async function POST(
         isCorrect,
         points: q.points,
         explanation: q.explanation || null,
+        rationale: q.explanation || null,
+        reasoning: q.explanation || null,
       };
     });
 
@@ -101,12 +115,12 @@ export async function POST(
       where: {
         quizId_userId: {
           quizId,
-          userId: session.id,
+          userId,
         },
       },
       create: {
         quizId,
-        userId: session.id,
+        userId,
         selectedAnswers: normalizedAnswers,
         score,
         totalPoints,

@@ -20,6 +20,12 @@ export interface QuestionItem {
   correctOptionIndex: number;
   points: number;
   explanation?: string | null;
+  rationale?: string | null;
+  reasoning?: string | null;
+  feedback?: string | null;
+  solution?: string | null;
+  details?: string | null;
+  correctAnswer?: number | string;
 }
 
 export interface SubmissionItem {
@@ -402,18 +408,45 @@ export default function QuizSubmissionsModal({
                         })}
                       </div>
 
-                      {/* Explanation Box */}
-                      {q.explanation && (
-                        <div className="mt-2.5 p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl text-xs text-indigo-950 dark:text-indigo-200">
-                          <span className="font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5 mb-1">
-                            <Lightbulb size={14} className="text-amber-500 shrink-0" />
-                            <span>ব্যাখ্যা (Explanation & Logic):</span>
-                          </span>
-                          <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                            {q.explanation}
-                          </p>
-                        </div>
-                      )}
+                      {/* Robust Explanation Display */}
+                      {(() => {
+                        const question = q as any;
+                        const explanationText =
+                          question?.explanation ||
+                          question?.rationale ||
+                          question?.reasoning ||
+                          question?.feedback ||
+                          question?.solution ||
+                          question?.details;
+
+                        const correctOpt =
+                          question?.correctOptionIndex !== undefined
+                            ? question.correctOptionIndex
+                            : question?.correctAnswer;
+                        const optLabel =
+                          typeof correctOpt === "number" && correctOpt >= 0
+                            ? String.fromCharCode(65 + correctOpt)
+                            : correctOpt !== undefined && correctOpt !== null
+                            ? String(correctOpt)
+                            : "";
+
+                        return explanationText ? (
+                          <div className="mt-3 p-3 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-150 dark:border-indigo-900/50 rounded-xl text-xs text-indigo-950 dark:text-indigo-200">
+                            <div className="flex items-center gap-1.5 font-bold text-indigo-700 dark:text-indigo-300 mb-1">
+                              <span>💡</span>
+                              <span>ব্যাখ্যা (Explanation):</span>
+                            </div>
+                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                              {explanationText}
+                            </p>
+                          </div>
+                        ) : (
+                          /* Fallback if older quiz has no explanation saved */
+                          <div className="mt-2 text-xs text-slate-400 dark:text-slate-500 italic">
+                            💡 সঠিক উত্তরের যুক্তি: অপশন {optLabel} সঠিক।
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })

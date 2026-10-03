@@ -12,7 +12,18 @@ export async function GET(
   try {
     const { id: classroomId } = params;
     const session = await getSessionUser(req);
-    const userId = session?.id;
+    let userId = session?.id;
+
+    if (!userId) {
+      const emailCookie = req.cookies.get("classpulse_user_email")?.value;
+      if (emailCookie) {
+        const u = await prisma.user.findUnique({
+          where: { email: emailCookie },
+          select: { id: true, role: true },
+        });
+        if (u) userId = u.id;
+      }
+    }
 
     // Check if teacher
     const classroom = await prisma.classroom.findUnique({
@@ -24,7 +35,7 @@ export async function GET(
       return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
     }
 
-    const isTeacher = classroom.teacherId === userId;
+    const isTeacher = Boolean(userId && classroom.teacherId === userId);
 
     const quizzes = await prisma.quiz.findMany({
       where: { classroomId },
@@ -91,8 +102,20 @@ export async function POST(
   try {
     const { id: classroomId } = params;
     const session = await getSessionUser(req);
+    let userId = session?.id;
 
-    if (!session?.id) {
+    if (!userId) {
+      const emailCookie = req.cookies.get("classpulse_user_email")?.value;
+      if (emailCookie) {
+        const u = await prisma.user.findUnique({
+          where: { email: emailCookie },
+          select: { id: true, role: true },
+        });
+        if (u) userId = u.id;
+      }
+    }
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -105,7 +128,7 @@ export async function POST(
       return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
     }
 
-    if (classroom.teacherId !== session.id) {
+    if (classroom.teacherId !== userId) {
       return NextResponse.json(
         { error: "Only the classroom instructor can create quizzes." },
         { status: 403 }
@@ -129,11 +152,24 @@ export async function POST(
     const validatedQuestions = questions.map((q: any, i: number) => {
       const question = typeof q.question === "string" ? q.question.trim() : `Question ${i + 1}`;
       const options = Array.isArray(q.options) && q.options.length >= 2 ? q.options.map(String) : ["A", "B", "C", "D"];
-      let correctOptionIndex = Number(q.correctOptionIndex);
+      let correctOptionIndex = Number(
+        q.correctOptionIndex !== undefined
+          ? q.correctOptionIndex
+          : q.correctAnswer !== undefined
+          ? q.correctAnswer
+          : q.answerIndex
+      );
       if (isNaN(correctOptionIndex) || correctOptionIndex < 0 || correctOptionIndex >= options.length) {
         correctOptionIndex = 0;
       }
-      const explanation = typeof q.explanation === "string" && q.explanation.trim() ? q.explanation.trim() : null;
+      const rawExplanation =
+        q.explanation ||
+        q.rationale ||
+        q.reasoning ||
+        q.feedback ||
+        q.solution ||
+        q.details;
+      const explanation = typeof rawExplanation === "string" && rawExplanation.trim() ? rawExplanation.trim() : null;
       return {
         question,
         options,
