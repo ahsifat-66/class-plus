@@ -13,6 +13,7 @@ import {
   Check,
   BookOpen,
 } from "lucide-react";
+import QuestionExplanationCard from "@/components/QuestionExplanationCard";
 
 export interface QuestionItem {
   id: string;
@@ -437,31 +438,17 @@ export default function QuizSubmissionsModal({
                             ? String(correctOpt)
                             : "";
 
-                        const hasValidExplanation =
-                          explanationText &&
-                          !explanationText.includes("একাডেমিক যুক্তির ভিত্তিতে") &&
-                          !explanationText.includes("নির্বাচনটি প্রাসঙ্গিক এবং সঠিক") &&
-                          !explanationText.includes("পাঠ্যবই অনুযায়ী সঠিক উত্তর হলো অপশন");
-
-                        return hasValidExplanation ? (
-                          <div className="mt-3 p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 rounded-xl text-xs text-indigo-950 dark:text-indigo-200">
-                            <div className="flex items-center gap-1.5 font-bold text-indigo-700 dark:text-indigo-300 mb-1">
-                              <span>💡</span>
-                              <span>ব্যাখ্যা ও বিশ্লেষণ:</span>
-                            </div>
-                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-2 whitespace-pre-wrap">
-                              {explanationText}
-                            </p>
-                            {pageRefText && (
-                              <div className="pt-2 mt-2 border-t border-indigo-100 dark:border-indigo-900/50 flex items-center gap-2 text-indigo-800 dark:text-indigo-300 font-medium">
-                                <span>📖 পাঠ্যবই রেফারেন্স:</span>
-                                <span className="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 font-semibold text-[11px]">
-                                  {pageRefText}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        ) : null;
+                        return (
+                          <QuestionExplanationCard
+                            questionId={question?.id}
+                            questionText={question?.question || ""}
+                            options={question?.options || []}
+                            correctOptionIndex={typeof correctOpt === "number" ? correctOpt : undefined}
+                            correctAnswer={correctOpt}
+                            explanation={explanationText}
+                            pageReference={pageRefText}
+                          />
+                        );
                       })()}
                     </div>
                   );
