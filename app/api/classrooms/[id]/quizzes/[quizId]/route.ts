@@ -61,9 +61,25 @@ export async function GET(
       : null;
 
     if (isTeacher || mySubmission) {
+      const cleanedQuestions = quiz.questions.map((q) => {
+        const rawExp = q.explanation;
+        const cleanExp =
+          rawExp &&
+          !rawExp.includes("একাডেমিক যুক্তির ভিত্তিতে") &&
+          !rawExp.includes("নির্বাচনটি প্রাসঙ্গিক এবং সঠিক") &&
+          !rawExp.includes("পাঠ্যবই অনুযায়ী সঠিক উত্তর হলো অপশন")
+            ? rawExp
+            : null;
+        return {
+          ...q,
+          explanation: cleanExp,
+        };
+      });
+
       return NextResponse.json({
         quiz: {
           ...quiz,
+          questions: cleanedQuestions,
           mySubmission,
           submissions: isTeacher ? quiz.submissions : mySubmission ? [mySubmission] : [],
         },

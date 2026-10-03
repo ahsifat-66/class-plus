@@ -145,8 +145,15 @@ JSON Array Structure:
         q.feedback ||
         q.solution ||
         q.details;
-      const explanation =
+      let explanation =
         typeof rawExp === "string" && rawExp.trim() ? rawExp.trim() : "";
+      if (
+        explanation.includes("একাডেমিক যুক্তির ভিত্তিতে") ||
+        explanation.includes("নির্বাচনটি প্রাসঙ্গিক এবং সঠিক") ||
+        explanation.includes("পাঠ্যবই অনুযায়ী সঠিক উত্তর হলো অপশন")
+      ) {
+        explanation = "";
+      }
 
       const rawRef =
         q.pageReference ||

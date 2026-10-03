@@ -273,13 +273,25 @@ export default function CreateQuizModal({
       }
 
       if (Array.isArray(data.questions) && data.questions.length > 0) {
+        const sanitizeExplanation = (exp: string) => {
+          const trimmed = (exp || "").trim();
+          if (
+            trimmed.includes("একাডেমিক যুক্তির ভিত্তিতে") ||
+            trimmed.includes("নির্বাচনটি প্রাসঙ্গিক এবং সঠিক") ||
+            trimmed.includes("পাঠ্যবই অনুযায়ী সঠিক উত্তর হলো অপশন")
+          ) {
+            return "";
+          }
+          return trimmed;
+        };
+
         const generated = data.questions.map((q: any) => ({
           question: q.question,
           options: q.options,
           correctOptionIndex: typeof q.answerIndex === "number" ? q.answerIndex : (q.correctOptionIndex ?? 0),
           answerIndex: typeof q.answerIndex === "number" ? q.answerIndex : (q.correctOptionIndex ?? 0),
           points: q.points || 1,
-          explanation: (q.explanation || q.rationale || q.reasoning || q.feedback || q.solution || q.details || "").trim(),
+          explanation: sanitizeExplanation(q.explanation || q.rationale || q.reasoning || q.feedback || q.solution || q.details || ""),
           pageReference: (q.pageReference || q.page_reference || q.textbookReference || q.reference || "").trim(),
         }));
 

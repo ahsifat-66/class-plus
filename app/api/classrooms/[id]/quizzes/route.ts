@@ -63,8 +63,23 @@ export async function GET(
 
       // If teacher or student already submitted, include full question details with correctOptionIndex
       if (isTeacher || mySubmission) {
+        const cleanedQuestions = quiz.questions.map((q) => {
+          const rawExp = q.explanation;
+          const cleanExp =
+            rawExp &&
+            !rawExp.includes("একাডেমিক যুক্তির ভিত্তিতে") &&
+            !rawExp.includes("নির্বাচনটি প্রাসঙ্গিক এবং সঠিক") &&
+            !rawExp.includes("পাঠ্যবই অনুযায়ী সঠিক উত্তর হলো অপশন")
+              ? rawExp
+              : null;
+          return {
+            ...q,
+            explanation: cleanExp,
+          };
+        });
         return {
           ...quiz,
+          questions: cleanedQuestions,
           mySubmission,
           submissionsCount: quiz.submissions.length,
           submissions: isTeacher ? quiz.submissions : mySubmission ? [mySubmission] : [],
@@ -169,7 +184,15 @@ export async function POST(
         q.feedback ||
         q.solution ||
         q.details;
-      const explanation = typeof rawExplanation === "string" && rawExplanation.trim() ? rawExplanation.trim() : null;
+      let explanation = typeof rawExplanation === "string" && rawExplanation.trim() ? rawExplanation.trim() : null;
+      if (
+        explanation &&
+        (explanation.includes("একাডেমিক যুক্তির ভিত্তিতে") ||
+         explanation.includes("নির্বাচনটি প্রাসঙ্গিক এবং সঠিক") ||
+         explanation.includes("পাঠ্যবই অনুযায়ী সঠিক উত্তর হলো অপশন"))
+      ) {
+        explanation = null;
+      }
 
       const rawPageRef =
         q.pageReference ||

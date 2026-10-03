@@ -210,7 +210,14 @@ JSON Schema:
         q.feedback ||
         q.solution ||
         q.details;
-      const explanation = typeof rawExp === "string" ? rawExp.trim() : "";
+      let explanation = typeof rawExp === "string" ? rawExp.trim() : "";
+      if (
+        explanation.includes("একাডেমিক যুক্তির ভিত্তিতে") ||
+        explanation.includes("নির্বাচনটি প্রাসঙ্গিক এবং সঠিক") ||
+        explanation.includes("পাঠ্যবই অনুযায়ী সঠিক উত্তর হলো অপশন")
+      ) {
+        explanation = "";
+      }
 
       const rawRef =
         q.pageReference ||

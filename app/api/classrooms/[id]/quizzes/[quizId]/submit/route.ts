@@ -96,6 +96,14 @@ export async function POST(
       if (isCorrect) {
         score += q.points;
       }
+      const cleanExp =
+        q.explanation &&
+        !q.explanation.includes("একাডেমিক যুক্তির ভিত্তিতে") &&
+        !q.explanation.includes("নির্বাচনটি প্রাসঙ্গিক এবং সঠিক") &&
+        !q.explanation.includes("পাঠ্যবই অনুযায়ী সঠিক উত্তর হলো অপশন")
+          ? q.explanation
+          : null;
+
       return {
         id: q.id,
         question: q.question,
@@ -104,9 +112,9 @@ export async function POST(
         userSelected,
         isCorrect,
         points: q.points,
-        explanation: q.explanation || null,
-        rationale: q.explanation || null,
-        reasoning: q.explanation || null,
+        explanation: cleanExp,
+        rationale: cleanExp,
+        reasoning: cleanExp,
         pageReference: q.pageReference || null,
       };
     });
