@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Lightbulb,
   Check,
+  BookOpen,
 } from "lucide-react";
 
 export interface QuestionItem {
@@ -20,6 +21,7 @@ export interface QuestionItem {
   correctOptionIndex: number;
   points: number;
   explanation?: string | null;
+  pageReference?: string | null;
   rationale?: string | null;
   reasoning?: string | null;
   feedback?: string | null;
@@ -419,6 +421,11 @@ export default function QuizSubmissionsModal({
                           question?.solution ||
                           question?.details;
 
+                        const pageRefText =
+                          question?.pageReference ||
+                          (question as any)?.page_reference ||
+                          (question as any)?.textbookReference;
+
                         const correctOpt =
                           question?.correctOptionIndex !== undefined
                             ? question.correctOptionIndex
@@ -430,20 +437,31 @@ export default function QuizSubmissionsModal({
                             ? String(correctOpt)
                             : "";
 
-                        return explanationText ? (
-                          <div className="mt-3 p-3 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-150 dark:border-indigo-900/50 rounded-xl text-xs text-indigo-950 dark:text-indigo-200">
-                            <div className="flex items-center gap-1.5 font-bold text-indigo-700 dark:text-indigo-300 mb-1">
-                              <span>💡</span>
-                              <span>ব্যাখ্যা (Explanation):</span>
-                            </div>
-                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                              {explanationText}
-                            </p>
-                          </div>
-                        ) : (
-                          /* Fallback if older quiz has no explanation saved */
-                          <div className="mt-2 text-xs text-slate-400 dark:text-slate-500 italic">
-                            💡 সঠিক উত্তরের যুক্তি: অপশন {optLabel} সঠিক।
+                        return (
+                          <div className="mt-3 space-y-2">
+                            {pageRefText && (
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-semibold text-[11px] border border-indigo-200 dark:border-indigo-800">
+                                <BookOpen size={12} className="shrink-0" />
+                                <span>পাঠ্যবই রেফারেন্স: {pageRefText}</span>
+                              </div>
+                            )}
+
+                            {explanationText ? (
+                              <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-150 dark:border-indigo-900/50 rounded-xl text-xs text-indigo-950 dark:text-indigo-200">
+                                <div className="flex items-center gap-1.5 font-bold text-indigo-700 dark:text-indigo-300 mb-1">
+                                  <Lightbulb size={13} className="text-amber-500 shrink-0" />
+                                  <span>ব্যাখ্যা (Explanation):</span>
+                                </div>
+                                <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                                  {explanationText}
+                                </p>
+                              </div>
+                            ) : (
+                              /* Fallback if older quiz has no explanation saved */
+                              <div className="mt-2 text-xs text-slate-400 dark:text-slate-500 italic">
+                                💡 সঠিক উত্তরের যুক্তি: অপশন {optLabel} সঠিক।
+                              </div>
+                            )}
                           </div>
                         );
                       })()}

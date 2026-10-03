@@ -107,6 +107,7 @@ export async function POST(
         explanation: q.explanation || null,
         rationale: q.explanation || null,
         reasoning: q.explanation || null,
+        pageReference: q.pageReference || null,
       };
     });
 

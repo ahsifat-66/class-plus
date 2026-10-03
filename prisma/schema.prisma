@@ -262,6 +262,7 @@ model QuizQuestion {
   correctOptionIndex Int
   points             Int      @default(1)
   explanation        String?
+  pageReference      String?
 
   @@index([quizId])
 }

@@ -110,3 +110,15 @@ export async function generateMultimodalGeminiContent(
   throw lastError || new Error("Failed to generate multimodal response from Gemini API.");
 }
 
+/**
+ * Core assessment and explanation directives for Bangladesh NCTB Quiz Generation.
+ * Strictly requires dynamic question-specific explanations with exact NCTB page references.
+ */
+export const NCTB_QUIZ_EXPLANATION_GUIDELINES = `
+CRITICAL REQUIREMENT FOR 'explanation' & 'pageReference':
+1. Each question MUST have a UNIQUE, dynamic explanation strictly tailored to THAT specific question's subject matter.
+2. DO NOT use generic filler sentences (e.g., "পাঠ্যবই অনুযায়ী সঠিক", "একাডেমিক যুক্তির ভিত্তিতে", "বই অনুযায়ী সঠিক").
+3. The explanation must clearly explain WHY the correct option is scientifically, mathematically, or factually true, and why other options are incorrect.
+4. Provide the exact NCTB Chapter name and the relevant textbook page range for that specific topic (e.g. "অধ্যায় ৩, পৃষ্ঠা: ৪৫-৪৭" or "Chapter 3, Pages: 45-47").
+`.trim();
+

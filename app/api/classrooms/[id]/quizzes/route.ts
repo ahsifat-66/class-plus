@@ -170,12 +170,21 @@ export async function POST(
         q.solution ||
         q.details;
       const explanation = typeof rawExplanation === "string" && rawExplanation.trim() ? rawExplanation.trim() : null;
+
+      const rawPageRef =
+        q.pageReference ||
+        q.page_reference ||
+        q.textbookReference ||
+        q.reference;
+      const pageReference = typeof rawPageRef === "string" && rawPageRef.trim() ? rawPageRef.trim() : null;
+
       return {
         question,
         options,
         correctOptionIndex,
         points: Number(q.points) || 1,
         explanation,
+        pageReference,
       };
     });
 

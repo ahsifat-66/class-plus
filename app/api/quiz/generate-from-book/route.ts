@@ -106,7 +106,11 @@ Strict Output Requirements:
 1. 100% PURE, STANDARD BENGALI (প্রমিত বাংলা): All questions, 4 options, and explanations must be written in accurate Bengali matching the official NCTB textbook terminology (e.g. সালোকসংশ্লেষণ, অভিকর্ষজ ত্বরণ, সমীকরণ, লসাগু, অনুচ্ছেদ, ইত্যাদি).
 2. Exactly 4 distinct choices per question. One must be undeniably correct, three must be plausible distractors.
 3. answerIndex: An integer from 0 to 3 indicating the zero-indexed correct option.
-4. explanation: A concise, helpful 1-2 sentence explanation in Bengali explaining why the answer is correct.
+4. CRITICAL REQUIREMENT FOR 'explanation' & 'pageReference':
+   - Each question MUST have a UNIQUE, dynamic explanation strictly tailored to THAT specific question's subject matter.
+   - DO NOT use generic filler sentences (e.g., "পাঠ্যবই অনুযায়ী সঠিক", "একাডেমিক যুক্তির ভিত্তিতে", "বই অনুযায়ী সঠিক") without actual concepts.
+   - The explanation must clearly explain WHY the correct option is scientifically, mathematically, or factually true, and why other options are incorrect.
+   - Provide the exact NCTB Chapter name and the relevant textbook page range for that specific topic in 'pageReference' (e.g. "অধ্যায় ৩, পৃষ্ঠা: ৪৫-৪৭").
 5. Format: Return ONLY a raw JSON array of objects. Do NOT use markdown code fences (\`\`\`json or \`\`\`), no greetings, and no trailing text.
 
 JSON Schema:
@@ -115,7 +119,8 @@ JSON Schema:
     "question": "প্রশ্নের বিষয়বস্তু এখানে লিখুন?",
     "options": ["অপশন ১", "অপশন ২", "অপশন ৩", "অপশন ৪"],
     "answerIndex": 0,
-    "explanation": "সঠিক উত্তরের ব্যাখ্যা"
+    "explanation": "সঠিক উত্তরের পূর্ণাঙ্গ ব্যাখ্যা: কেন এই উত্তরটি বৈজ্ঞানিক/গাণিতিক/তথ্যগতভাবে সঠিক এবং অন্যান্য অপশন কেন ভুল তা বিস্তারিত যুক্তি।",
+    "pageReference": "অধ্যায় ৩, পৃষ্ঠা: ৪৫-৪৭"
   }
 ]`;
 
@@ -198,12 +203,29 @@ JSON Schema:
           ? q.correctOptionIndex
           : 0;
 
+      const rawExp =
+        q.explanation ||
+        q.rationale ||
+        q.reasoning ||
+        q.feedback ||
+        q.solution ||
+        q.details;
+      const explanation = typeof rawExp === "string" ? rawExp.trim() : "";
+
+      const rawRef =
+        q.pageReference ||
+        q.page_reference ||
+        q.textbookReference ||
+        q.reference;
+      const pageReference = typeof rawRef === "string" ? rawRef.trim() : "";
+
       return {
         question: String(q.question || `প্রশ্ন ${idx + 1}`).trim(),
         options,
         answerIndex: ansIdx,
         correctOptionIndex: ansIdx,
-        explanation: String(q.explanation || "").trim(),
+        explanation,
+        pageReference,
         points: 1,
       };
     });

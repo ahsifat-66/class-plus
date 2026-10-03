@@ -29,6 +29,7 @@ interface QuestionItem {
   answerIndex?: number;
   points: number | "";
   explanation?: string;
+  pageReference?: string;
 }
 
 interface CreateQuizModalProps {
@@ -224,6 +225,18 @@ export default function CreateQuizModal({
     }
   };
 
+  const handleExplanationChange = (qIdx: number, val: string) => {
+    setQuestions((prev) =>
+      prev.map((q, i) => (i === qIdx ? { ...q, explanation: val } : q))
+    );
+  };
+
+  const handlePageReferenceChange = (qIdx: number, val: string) => {
+    setQuestions((prev) =>
+      prev.map((q, i) => (i === qIdx ? { ...q, pageReference: val } : q))
+    );
+  };
+
   // Generate Questions from Assigned Textbook via AI
   const handleGenerateFromBook = async () => {
     if (!aiChapter.trim()) {
@@ -267,6 +280,7 @@ export default function CreateQuizModal({
           answerIndex: typeof q.answerIndex === "number" ? q.answerIndex : (q.correctOptionIndex ?? 0),
           points: q.points || 1,
           explanation: (q.explanation || q.rationale || q.reasoning || q.feedback || q.solution || q.details || "").trim(),
+          pageReference: (q.pageReference || q.page_reference || q.textbookReference || q.reference || "").trim(),
         }));
 
         setQuestions(generated);
@@ -346,6 +360,7 @@ export default function CreateQuizModal({
             correctOptionIndex: q.correctOptionIndex,
             points: Number(q.points) || 1,
             explanation: (q.explanation || (q as any).rationale || (q as any).reasoning || (q as any).feedback || (q as any).solution || (q as any).details)?.trim() || undefined,
+            pageReference: q.pageReference?.trim() || undefined,
           })),
         }),
       });
@@ -915,12 +930,41 @@ export default function CreateQuizModal({
                     </div>
                   </div>
 
-                  {q.explanation && (
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 italic bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
-                      <Lightbulb size={13} className="text-amber-500 shrink-0" />
-                      <span>{language === "bn" ? "ব্যাখ্যা:" : "Explanation:"} {q.explanation}</span>
+                  {/* Dynamic Explanation & NCTB Page Reference */}
+                  <div className="pt-2 border-t border-slate-200/70 dark:border-slate-700/60 space-y-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <div className="sm:col-span-1 space-y-1">
+                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <BookOpen size={13} className="text-indigo-600 dark:text-indigo-400" />
+                          <span>{language === "bn" ? "পাঠ্যবই রেফারেন্স" : "NCTB Reference"}</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={q.pageReference || ""}
+                          onChange={(e) => handlePageReferenceChange(qIdx, e.target.value)}
+                          placeholder={language === "bn" ? "যেমন: অধ্যায় ৩, পৃষ্ঠা: ৪৫-৪৭" : "e.g. Chapter 3, Pages: 45-47"}
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                        />
+                      </div>
+                      <div className="sm:col-span-2 space-y-1">
+                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <Lightbulb size={13} className="text-amber-500" />
+                          <span>{language === "bn" ? "প্রশ্নভিত্তিক সঠিক উত্তরের ব্যাখ্যা" : "Question-Specific Explanation"}</span>
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={q.explanation || ""}
+                          onChange={(e) => handleExplanationChange(qIdx, e.target.value)}
+                          placeholder={
+                            language === "bn"
+                              ? "সঠিক উত্তরের বৈজ্ঞানিক/তথ্যগত যুক্তি এবং অন্যান্য অপশন কেন ভুল তার ব্যাখ্যা..."
+                              : "Explain why the correct answer is factually/conceptually true and why others are wrong..."
+                          }
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none leading-relaxed"
+                        />
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
