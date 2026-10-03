@@ -44,7 +44,8 @@ Strict Language & Pedagogical Directives:
 3. QUALITY: Questions must test understanding, analytical reasoning, and core curriculum concepts.
 4. OPTIONS: Exactly 4 distinct, plausible choices per question (one correct, three plausible distractors).
 5. CORRECT OPTION: Zero-indexed integer (0, 1, 2, or 3).
-6. FORMAT: Output ONLY a raw valid JSON array. Do NOT include markdown code fences (\`\`\`json or \`\`\`), greetings, or commentary.
+6. EXPLANATION: Provide a concise, clear NCTB curriculum textbook-aligned pedagogical explanation explaining why the correct answer is right and why it matters.
+7. FORMAT: Output ONLY a raw valid JSON array. Do NOT include markdown code fences or backticks, greetings, or commentary.
 
 JSON Array Structure:
 [
@@ -52,7 +53,8 @@ JSON Array Structure:
     "question": "প্রশ্নের বিষয়বস্তু এখানে লিখুন?",
     "options": ["অপশন ক", "অপশন খ", "অপশন গ", "অপশন ঘ"],
     "correctOptionIndex": 0,
-    "points": 1
+    "points": 1,
+    "explanation": "সংক্ষিপ্ত ও স্পষ্ট একাডেমিক ব্যাখ্যা (সঠিক উত্তরের যুক্তি ও মূল সূত্র)।"
   }
 ]`;
     } else {
@@ -64,7 +66,8 @@ Strict Language & Pedagogical Directives:
 2. QUALITY: Questions must test conceptual understanding, numerical/analytical principles, and factual correctness.
 3. OPTIONS: Exactly 4 distinct, plausible choices per question (one correct, three plausible distractors).
 4. CORRECT OPTION: Zero-indexed integer (0, 1, 2, or 3).
-5. FORMAT: Output ONLY a raw valid JSON array. Do NOT include markdown code fences (\`\`\`json or \`\`\`), greetings, or commentary.
+5. EXPLANATION: Provide a concise, clear NCTB curriculum-aligned explanation of why this answer is correct and the underlying textbook logic.
+6. FORMAT: Output ONLY a raw valid JSON array. Do NOT include markdown code fences or backticks, greetings, or commentary.
 
 JSON Array Structure:
 [
@@ -72,7 +75,8 @@ JSON Array Structure:
     "question": "What is the primary function of chlorophyll in photosynthesis?",
     "options": ["Absorbing light energy", "Releasing nitrogen", "Fixing carbon into oxygen", "Storing lipids"],
     "correctOptionIndex": 0,
-    "points": 1
+    "points": 1,
+    "explanation": "Chlorophyll is a photosynthetic pigment that absorbs solar photon energy to drive light-dependent reactions in plant chloroplasts."
   }
 ]`;
     }
@@ -124,11 +128,16 @@ JSON Array Structure:
       ) {
         correctOptionIndex = 0;
       }
+      const explanation =
+        typeof q.explanation === "string" && q.explanation.trim()
+          ? q.explanation.trim()
+          : "";
       return {
         question,
         options,
         correctOptionIndex,
         points: Number(q.points) || 1,
+        explanation,
       };
     });
 

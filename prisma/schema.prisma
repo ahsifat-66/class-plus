@@ -261,6 +261,7 @@ model QuizQuestion {
   options            String[]
   correctOptionIndex Int
   points             Int      @default(1)
+  explanation        String?
 
   @@index([quizId])
 }

@@ -10,7 +10,6 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
-  const emailCookie = req.cookies.get("classpulse_user_email")?.value;
   let userPayload: { id: string; email: string; role: string; name: string } | null = null;
 
   if (token) {
@@ -28,7 +27,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // 1. If user is already authenticated and visits /login or /signup, redirect to dashboard
-  if ((userPayload || emailCookie) && (pathname === "/login" || pathname === "/signup")) {
+  if (userPayload && (pathname === "/login" || pathname === "/signup")) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
@@ -39,7 +38,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/analytics") ||
     pathname.startsWith("/classroom");
 
-  if (isProtectedPage && !userPayload && !emailCookie) {
+  if (isProtectedPage && !userPayload) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);

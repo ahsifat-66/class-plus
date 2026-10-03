@@ -14,6 +14,16 @@ function generateClassCode(): string {
   return code;
 }
 
+const safeUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  uniqueId: true,
+  avatar: true,
+  avatarUrl: true,
+};
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -32,9 +42,9 @@ export async function GET(req: NextRequest) {
       // If no userId and not authenticated, return all classrooms
       const classrooms = await prisma.classroom.findMany({
         include: {
-          teacher: true,
+          teacher: { select: safeUserSelect },
           enrollments: {
-            include: { user: true },
+            include: { user: { select: safeUserSelect } },
           },
           assignments: true,
           channels: true,
@@ -57,9 +67,9 @@ export async function GET(req: NextRequest) {
     const teachingPromise = prisma.classroom.findMany({
       where: { teacherId: user.id },
       include: {
-        teacher: true,
+        teacher: { select: safeUserSelect },
         enrollments: {
-          include: { user: true },
+          include: { user: { select: safeUserSelect } },
         },
         assignments: true,
         channels: true,
@@ -77,9 +87,9 @@ export async function GET(req: NextRequest) {
         ],
       },
       include: {
-        teacher: true,
+        teacher: { select: safeUserSelect },
         enrollments: {
-          include: { user: true },
+          include: { user: { select: safeUserSelect } },
         },
         assignments: {
           include: {
@@ -229,7 +239,7 @@ export async function POST(req: NextRequest) {
     const classroom = await prisma.classroom.create({
       data: classroomData,
       include: {
-        teacher: true,
+        teacher: { select: safeUserSelect },
         channels: true,
         enrollments: true,
         members: true,

@@ -4,6 +4,16 @@ import bcrypt from "bcryptjs";
 import { getSessionUser } from "@/lib/auth/session";
 import { flatBooksData } from "@/data/booksData";
 
+const safeUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  uniqueId: true,
+  avatar: true,
+  avatarUrl: true,
+};
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -14,10 +24,10 @@ export async function GET(
     const classroom = await prisma.classroom.findUnique({
       where: { id },
       include: {
-        teacher: true,
+        teacher: { select: safeUserSelect },
         enrollments: {
           include: {
-            user: true,
+            user: { select: safeUserSelect },
           },
           orderBy: { createdAt: "asc" },
         },
@@ -26,7 +36,7 @@ export async function GET(
         },
         announcements: {
           include: {
-            author: true,
+            author: { select: safeUserSelect },
           },
           orderBy: { createdAt: "desc" },
         },
@@ -34,7 +44,7 @@ export async function GET(
           include: {
             submissions: {
               include: {
-                student: true,
+                student: { select: safeUserSelect },
               },
             },
           },
@@ -42,7 +52,7 @@ export async function GET(
         },
         notes: {
           include: {
-            user: true,
+            user: { select: safeUserSelect },
           },
           orderBy: { createdAt: "desc" },
         },
@@ -154,7 +164,7 @@ export async function PATCH(
       where: { id },
       data: updateData,
       include: {
-        teacher: true,
+        teacher: { select: safeUserSelect },
         textbooks: {
           orderBy: { title: "asc" },
         },

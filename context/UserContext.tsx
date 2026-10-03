@@ -92,24 +92,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const switchUser = async (email: string) => {
-    try {
-      setIsLoading(true);
-      const res = await fetch("/api/auth/me", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCurrentUser(data.user);
-        window.location.reload();
-      }
-    } catch (e) {
-      console.error("Failed to switch user", e);
-    } finally {
-      setIsLoading(false);
-    }
+  const switchUser = async (_email: string) => {
+    // Unauthenticated user switching disabled for security
+    console.warn("Direct user switching is disabled for security hardening.");
   };
 
   const normalizeUser = (user: User | null): User | null => {

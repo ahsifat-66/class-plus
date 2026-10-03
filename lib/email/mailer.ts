@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import nodemailer from "nodemailer";
+import crypto from "crypto";
 
 interface SendOtpOptions {
   to: string;
@@ -19,8 +20,7 @@ export interface SendOtpResult {
 }
 
 export function generateOtpCode(): string {
-  // Use 123456 as requested for testing/development while custom domain is not yet configured
-  return "123456";
+  return crypto.randomInt(100000, 999999).toString();
 }
 
 /**

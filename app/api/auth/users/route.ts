@@ -1,18 +1,60 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
+import { getSessionUser } from "@/lib/auth/session";
 import { ensureUserUniqueId } from "@/lib/utils/uniqueId";
 import {
   resolveUserRole,
+  checkIsSuperAdmin,
   PERMANENT_SUPER_ADMIN_EMAIL,
   PERMANENT_SUPER_ADMIN_ID,
 } from "@/lib/auth/roles";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const session = await getSessionUser(req);
+    if (!session?.email || !session?.id) {
+      return NextResponse.json(
+        { error: "Access denied. Authentication required." },
+        { status: 401 }
+      );
+    }
+
+    const caller = await prisma.user.findUnique({
+      where: { id: session.id },
+      select: { id: true, email: true, name: true, role: true },
+    });
+
+    if (!caller) {
+      return NextResponse.json(
+        { error: "Access denied. User not found." },
+        { status: 403 }
+      );
+    }
+
+    const callerRole = resolveUserRole(caller);
+    if (!checkIsSuperAdmin({ ...caller, role: callerRole })) {
+      return NextResponse.json(
+        { error: "Access denied. Super Administrator privileges required." },
+        { status: 403 }
+      );
+    }
+
     const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        uniqueId: true,
+        avatar: true,
+        avatarUrl: true,
+        institution: true,
+        grade: true,
+        bio: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: "asc" },
     });
 

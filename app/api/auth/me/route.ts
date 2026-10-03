@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { AUTH_COOKIE_NAME } from "@/lib/auth/session";
-import { verifyJwtToken, signJwtToken } from "@/lib/auth/jwt";
+import { verifyJwtToken } from "@/lib/auth/jwt";
 import { ensureUserUniqueId } from "@/lib/utils/uniqueId";
 import {
   resolveUserRole,
@@ -136,75 +136,5 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error("Unexpected error in /api/auth/me:", error);
     return NextResponse.json({ user: null, summary: null }, { status: 200 });
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { email } = body;
-
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
-    }
-
-    try {
-      const user = await prisma.user.findUnique({
-        where: { email },
-        select: {
-          id: true,
-          uniqueId: true,
-          name: true,
-          email: true,
-          role: true,
-          avatar: true,
-          createdAt: true,
-        },
-      });
-
-      if (!user) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
-      }
-
-      // Auto-backfill uniqueId if missing
-      if (!user.uniqueId) {
-        user.uniqueId = await ensureUserUniqueId(user);
-      }
-
-      const effectiveRole = resolveUserRole(user);
-      const isSuperAdminEmail =
-        user.email?.toLowerCase().trim() === PERMANENT_SUPER_ADMIN_EMAIL.toLowerCase();
-      const finalUniqueId = isSuperAdminEmail ? PERMANENT_SUPER_ADMIN_ID : user.uniqueId;
-
-      const userResponse = {
-        ...user,
-        role: effectiveRole,
-        uniqueId: finalUniqueId,
-      };
-
-      const token = await signJwtToken({
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        name: user.name,
-      });
-
-      const response = NextResponse.json({ user: userResponse, message: "User switched successfully" });
-      response.cookies.set(AUTH_COOKIE_NAME, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 30,
-        path: "/",
-      });
-
-      return response;
-    } catch (dbError) {
-      console.error("Database error in /api/auth/me POST:", dbError);
-      return NextResponse.json({ error: "Database error" }, { status: 500 });
-    }
-  } catch (error) {
-    console.error("Error switching user:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

@@ -80,7 +80,6 @@ export async function POST(req: NextRequest) {
           email: normalizedEmail,
           emailDelivered: mailResult.delivered,
           emailError: mailResult.error,
-          devCode: mailResult?.fallback ? otpCode : undefined,
         },
         { status: 403 }
       );

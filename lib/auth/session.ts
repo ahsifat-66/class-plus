@@ -33,36 +33,6 @@ export async function getSessionUser(req?: NextRequest): Promise<AuthJwtPayload 
     if (session?.id) return session;
   }
 
-  // 5. Fallback session recovery using email cookie if token is missing/expired
-  let fallbackEmail: string | undefined = req?.cookies?.get("classpulse_user_email")?.value;
-  if (!fallbackEmail) {
-    try {
-      const cookieStore = cookies();
-      fallbackEmail = cookieStore.get("classpulse_user_email")?.value;
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  if (fallbackEmail) {
-    try {
-      const dbUser = await prisma.user.findUnique({
-        where: { email: fallbackEmail },
-        select: { id: true, email: true, role: true, name: true },
-      });
-      if (dbUser) {
-        return {
-          id: dbUser.id,
-          email: dbUser.email,
-          role: dbUser.role,
-          name: dbUser.name,
-        };
-      }
-    } catch (err) {
-      // ignore
-    }
-  }
-
   return null;
 }
 

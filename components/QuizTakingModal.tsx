@@ -11,6 +11,7 @@ import {
   Loader2,
   Check,
   RotateCcw,
+  Lightbulb,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 
@@ -20,6 +21,7 @@ interface Question {
   options: string[];
   points: number;
   correctOptionIndex?: number;
+  explanation?: string | null;
 }
 
 interface QuizSubmission {
@@ -243,9 +245,9 @@ export default function QuizTakingModal({
             {!result && hasStarted && (
               <div
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl font-mono text-xs sm:text-sm font-bold border transition-colors ${
-                  secondsRemaining < 60
+                  secondsRemaining <= 60
                     ? "bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-950/60 dark:border-rose-800 dark:text-rose-400 animate-pulse"
-                    : "bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-950/60 dark:border-indigo-800 dark:text-indigo-300"
+                    : "bg-slate-100 border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
                 }`}
               >
                 <Clock size={16} />
@@ -429,6 +431,19 @@ export default function QuizTakingModal({
                       );
                     })}
                   </div>
+
+                  {/* Explanation Box (Revealed only upon quiz submission or in review mode) */}
+                  {result && (q.explanation || result.review?.[qIdx]?.explanation) && (
+                    <div className="mt-2.5 p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl text-xs text-indigo-950 dark:text-indigo-200 animate-in fade-in duration-150">
+                      <span className="font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5 mb-1">
+                        <Lightbulb size={14} className="text-amber-500 shrink-0" />
+                        <span>{language === "bn" ? "ব্যাখ্যা (Explanation & Logic):" : "Explanation & Logic:"}</span>
+                      </span>
+                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                        {q.explanation || result.review?.[qIdx]?.explanation}
+                      </p>
+                    </div>
+                  )}
                 </div>
               );
             })}

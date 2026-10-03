@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import DOMPurify from "isomorphic-dompurify";
 
 interface MarkdownViewerProps {
   content: string;
@@ -24,7 +25,7 @@ export default function MarkdownViewer({
         <ul key={key} className="my-2 list-disc list-inside space-y-1 text-slate-700 dark:text-slate-300 pl-1">
           {listItems.map((item, idx) => (
             <li key={idx} className="text-xs sm:text-sm">
-              <span dangerouslySetInnerHTML={{ __html: formatInline(item) }} />
+              <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatInline(item)) }} />
             </li>
           ))}
         </ul>
@@ -89,7 +90,7 @@ export default function MarkdownViewer({
         <h4
           key={`h3-${index}`}
           className="mt-3 mb-1 text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100"
-          dangerouslySetInnerHTML={{ __html: formatInline(trimmed.slice(4)) }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatInline(trimmed.slice(4))) }}
         />
       );
       return;
@@ -101,7 +102,7 @@ export default function MarkdownViewer({
         <h3
           key={`h2-${index}`}
           className="mt-4 mb-1.5 text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100"
-          dangerouslySetInnerHTML={{ __html: formatInline(trimmed.slice(3)) }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatInline(trimmed.slice(3))) }}
         />
       );
       return;
@@ -113,7 +114,7 @@ export default function MarkdownViewer({
         <h2
           key={`h1-${index}`}
           className="mt-4 mb-2 text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100"
-          dangerouslySetInnerHTML={{ __html: formatInline(trimmed.slice(2)) }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatInline(trimmed.slice(2))) }}
         />
       );
       return;
@@ -126,7 +127,7 @@ export default function MarkdownViewer({
         <blockquote
           key={`quote-${index}`}
           className="my-2 border-l-4 border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/40 px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 rounded-r-xl"
-          dangerouslySetInnerHTML={{ __html: formatInline(trimmed.slice(2)) }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatInline(trimmed.slice(2))) }}
         />
       );
       return;
@@ -150,7 +151,7 @@ export default function MarkdownViewer({
       <p
         key={`p-${index}`}
         className="my-1 text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300"
-        dangerouslySetInnerHTML={{ __html: formatInline(trimmed) }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatInline(trimmed)) }}
       />
     );
   });

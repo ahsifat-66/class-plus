@@ -17,6 +17,7 @@ import {
   FileCheck,
   Check,
   BarChart,
+  Lightbulb,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { flatBooksData, Book } from "@/data/booksData";
@@ -344,6 +345,7 @@ export default function CreateQuizModal({
             options: q.options,
             correctOptionIndex: q.correctOptionIndex,
             points: Number(q.points) || 1,
+            explanation: q.explanation?.trim() || undefined,
           })),
         }),
       });
@@ -914,8 +916,9 @@ export default function CreateQuizModal({
                   </div>
 
                   {q.explanation && (
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 italic bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
-                      💡 {language === "bn" ? "ব্যাখ্যা:" : "Explanation:"} {q.explanation}
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 italic bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
+                      <Lightbulb size={13} className="text-amber-500 shrink-0" />
+                      <span>{language === "bn" ? "ব্যাখ্যা:" : "Explanation:"} {q.explanation}</span>
                     </div>
                   )}
                 </div>

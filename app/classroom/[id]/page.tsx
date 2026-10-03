@@ -2157,6 +2157,7 @@ export default function ClassroomHub() {
         onClose={() => setSelectedQuizSubmissions(null)}
         quizTitle={selectedQuizSubmissions?.title || "Quiz"}
         submissions={selectedQuizSubmissions?.submissions || []}
+        questions={selectedQuizSubmissions?.questions || []}
         totalPoints={
           selectedQuizSubmissions?.questions?.reduce(
             (sum: number, q: any) => sum + (q.points || 1),

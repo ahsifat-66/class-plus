@@ -16,13 +16,9 @@ export const dynamic = "force-dynamic";
 
 async function verifyAdminCaller(req: NextRequest) {
   const session = await getSessionUser(req);
-  let callerEmail = session?.email;
+  const callerEmail = session?.email;
 
-  if (!callerEmail) {
-    callerEmail = req.cookies.get("classpulse_user_email")?.value;
-  }
-
-  if (!callerEmail) {
+  if (!callerEmail || !session?.id) {
     return null;
   }
 

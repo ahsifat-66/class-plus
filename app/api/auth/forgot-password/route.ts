@@ -62,12 +62,7 @@ export async function POST(req: NextRequest) {
       success: true,
       requireOtp: true,
       email: normalizedEmail,
-      emailDelivered,
-      emailError,
-      provider: mailResult.provider,
-      verificationCode: "123456",
-      devCode: "123456",
-      message: "Reset code: 123456. Enter this code to reset your password.",
+      message: "Verification code sent to your email.",
     });
   } catch (error: any) {
     console.error("Error in forgot-password:", error);

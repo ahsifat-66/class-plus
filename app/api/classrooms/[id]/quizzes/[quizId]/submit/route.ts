@@ -92,6 +92,7 @@ export async function POST(
         userSelected,
         isCorrect,
         points: q.points,
+        explanation: q.explanation || null,
       };
     });
 

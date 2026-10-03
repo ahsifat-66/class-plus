@@ -169,12 +169,7 @@ export async function POST(req: NextRequest) {
       email: normalizedEmail,
       userId: user.id,
       role: user.role,
-      emailDelivered,
-      emailError,
-      provider,
-      verificationCode: "123456",
-      devCode: "123456",
-      message: "Verification code: 123456. Enter this code to verify and activate your account.",
+      message: "Verification code sent to your email.",
     });
   } catch (error: any) {
     console.error("Error in registration:", error);

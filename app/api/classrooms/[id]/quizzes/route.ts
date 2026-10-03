@@ -133,11 +133,13 @@ export async function POST(
       if (isNaN(correctOptionIndex) || correctOptionIndex < 0 || correctOptionIndex >= options.length) {
         correctOptionIndex = 0;
       }
+      const explanation = typeof q.explanation === "string" && q.explanation.trim() ? q.explanation.trim() : null;
       return {
         question,
         options,
         correctOptionIndex,
         points: Number(q.points) || 1,
+        explanation,
       };
     });
 
