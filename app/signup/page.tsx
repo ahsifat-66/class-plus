@@ -111,17 +111,13 @@ function SignUpContent() {
       if (data.requireVerification) {
         setStep("VERIFY");
         setResendCooldown(30);
-        setOtp(["1", "2", "3", "4", "5", "6"]);
-        if (data.emailDelivered === false) {
-          setError(
-            data.emailError
-              ? `Email notice: ${data.emailError}. For testing, use code: 123456`
-              : "Email delivery pending domain setup. Use code: 123456"
-          );
+        setOtp(["", "", "", "", "", ""]);
+        if (data.emailDelivered === false && data.emailError) {
+          setError(`Notice: ${data.emailError}. Please check your inbox or request a new code.`);
         } else {
-          setSuccess(`Verification code sent to ${email.trim().toLowerCase()}! (Code: 123456)`);
+          setSuccess(`A 6-digit verification code has been sent to ${email.trim().toLowerCase()}.`);
         }
-        setTimeout(() => inputRefs.current[5]?.focus(), 100);
+        setTimeout(() => inputRefs.current[0]?.focus(), 100);
       } else {
         setSuccess(`Account created! Welcome, ${data.user.name}!`);
         if (data.user) {
@@ -249,8 +245,9 @@ function SignUpContent() {
       }
 
       setResendCooldown(30);
-      setOtp(["1", "2", "3", "4", "5", "6"]);
-      setSuccess("Verification code: 123456. Auto-filled for testing!");
+      setOtp(["", "", "", "", "", ""]);
+      setSuccess(`A new verification code has been sent to ${email.trim().toLowerCase()}.`);
+      setTimeout(() => inputRefs.current[0]?.focus(), 50);
     } catch (err: any) {
       setError(err.message || "Failed to resend code.");
     } finally {
@@ -454,24 +451,14 @@ function SignUpContent() {
                 </div>
               )}
 
-              {/* Code Testing Helper Banner */}
-              <div className="p-3 rounded-2xl bg-indigo-50/90 border border-indigo-100 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-slate-700">Verification Code:</span>
-                  <span className="font-mono bg-white px-2 py-0.5 rounded-lg border border-indigo-200 text-indigo-700 font-black tracking-widest text-sm shadow-xs">
-                    123456
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOtp(["1", "2", "3", "4", "5", "6"]);
-                    setTimeout(() => inputRefs.current[5]?.focus(), 50);
-                  }}
-                  className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-all active:scale-95 shadow-xs cursor-pointer min-h-[36px] flex items-center"
-                >
-                  Auto-fill
-                </button>
+              {/* Production Verification Instruction */}
+              <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-center space-y-1">
+                <p className="text-xs sm:text-sm font-semibold text-indigo-950">
+                  Enter the 6-digit verification code sent to your email
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  আপনার ইমেইলে পাঠানো ৬ ডিজিটের ওটিপি কোডটি লিখুন
+                </p>
               </div>
 
               {/* 6-Digit OTP Form */}
