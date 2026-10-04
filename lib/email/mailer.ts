@@ -23,14 +23,19 @@ export function generateOtpCode(): string {
   return crypto.randomInt(100000, 999999).toString();
 }
 
+export const SENDER_EMAIL =
+  process.env.EMAIL_FROM ||
+  process.env.RESEND_FROM ||
+  "ClassPulse <noreply@classpulse.fun>";
+
 /**
  * Generates clean, responsive HTML email body displaying the 6-digit OTP code clearly.
  */
 export function getVerificationEmailHtml(code: string, isReset = false): string {
   const actionTitle = isReset ? "Password Reset Code" : "Verification Code";
   const actionDescription = isReset
-    ? "We received a request to reset your ClassPlus account password. Enter this 6-digit code to proceed with setting your new password."
-    : "Welcome to ClassPlus! Please enter this 6-digit verification code to activate your account and access your learning dashboard.";
+    ? "We received a request to reset your ClassPulse account password. Enter this 6-digit code to proceed with setting your new password."
+    : "Welcome to ClassPulse! Please enter this 6-digit verification code to activate your account and access your learning dashboard.";
 
   return `
 <!DOCTYPE html>
@@ -38,7 +43,7 @@ export function getVerificationEmailHtml(code: string, isReset = false): string 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your ClassPlus Verification Code</title>
+  <title>Your ClassPulse Verification Code</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 0; }
     .container { max-width: 520px; margin: 30px auto; background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
@@ -55,7 +60,7 @@ export function getVerificationEmailHtml(code: string, isReset = false): string 
 <body>
   <div class="container">
     <div class="header">
-      <h1>ClassPlus</h1>
+      <h1>ClassPulse</h1>
       <p>Secure Student & Teacher Educational Platform</p>
     </div>
     <div class="body">
@@ -72,7 +77,7 @@ export function getVerificationEmailHtml(code: string, isReset = false): string 
       </p>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} ClassPlus Educational Hub. All rights reserved.
+      &copy; ${new Date().getFullYear()} ClassPulse Educational Hub. All rights reserved.
     </div>
   </div>
 </body>
@@ -92,11 +97,18 @@ export async function sendOtpEmail({
   type = "SIGNUP",
 }: SendOtpOptions): Promise<SendOtpResult> {
   const isReset = type === "RESET_PASSWORD";
-  const subject = "Your ClassPlus Verification Code";
+  const subject = isReset
+    ? "Your ClassPulse Password Reset Code"
+    : "Your ClassPulse Verification Code";
+
+  const senderFrom =
+    process.env.EMAIL_FROM ||
+    process.env.RESEND_FROM ||
+    "ClassPulse <noreply@classpulse.fun>";
 
   // Always log dev OTP code to terminal/Vercel console for debugging and local testing
   console.log("=== DEV OTP CODE ===", code);
-  console.log(`[OTP DISPATCH] Recipient: ${to} | Action: ${type} | Code: ${code}`);
+  console.log(`[OTP DISPATCH] Recipient: ${to} | Action: ${type} | Sender: ${senderFrom} | Code: ${code}`);
 
   // Notice if RESEND_API_KEY is not yet loaded
   if (!process.env.RESEND_API_KEY) {
@@ -111,7 +123,7 @@ export async function sendOtpEmail({
     try {
       const resend = new Resend(resendApiKey);
       const { data, error } = await resend.emails.send({
-        from: "onboarding@resend.dev",
+        from: senderFrom,
         to: to,
         subject,
         html: htmlContent,
@@ -120,6 +132,7 @@ export async function sendOtpEmail({
       if (error) {
         console.error("[EMAIL DISPATCH ERROR - RESEND]", {
           recipient: to,
+          sender: senderFrom,
           error: error.message,
           name: error.name,
         });
@@ -133,7 +146,7 @@ export async function sendOtpEmail({
         };
       }
 
-      console.log(`[EMAIL DISPATCH SUCCESS - RESEND] Delivered OTP to ${to} (Message ID: ${data?.id})`);
+      console.log(`[EMAIL DISPATCH SUCCESS - RESEND] Delivered OTP to ${to} from ${senderFrom} (Message ID: ${data?.id})`);
       return {
         success: true,
         delivered: true,
@@ -144,6 +157,7 @@ export async function sendOtpEmail({
     } catch (err: any) {
       console.error("[EMAIL DISPATCH ERROR - RESEND EXCEPTION]", {
         recipient: to,
+        sender: senderFrom,
         error: err.message,
         stack: err.stack,
       });
@@ -173,7 +187,7 @@ export async function sendOtpEmail({
   const smtpFrom =
     process.env.SMTP_FROM ||
     process.env.GMAIL_FROM ||
-    `"ClassPlus" <${smtpUser || "no-reply@classplus.edu"}>`;
+    senderFrom;
 
   if (smtpUser && smtpPass) {
     try {
@@ -241,6 +255,7 @@ export async function sendOtpEmail({
   console.log("==================================================");
   console.log(`[OTP EMAIL DEV LOG]`);
   console.log(`Recipient: ${to}`);
+  console.log(`Sender: ${senderFrom}`);
   console.log(`Action: ${type}`);
   console.log(`6-DIGIT OTP CODE: ${code}`);
   console.log("==================================================");

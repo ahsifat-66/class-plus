@@ -55,13 +55,13 @@ export async function POST(req: NextRequest) {
       type: "RESET_PASSWORD",
     });
 
-    const emailDelivered = mailResult.delivered;
-    const emailError = mailResult.error;
-
     return NextResponse.json({
       success: true,
       requireOtp: true,
       email: normalizedEmail,
+      emailDelivered: mailResult.delivered,
+      emailError: mailResult.error,
+      provider: mailResult.provider,
       message: "Verification code sent to your email.",
     });
   } catch (error: any) {
