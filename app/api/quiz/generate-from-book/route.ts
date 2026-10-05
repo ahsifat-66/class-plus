@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
-import { generateAcademicContent, generateMultimodalGeminiContent } from "@/lib/gemini";
+import {
+  generateAcademicContent,
+  generateMultimodalGeminiContent,
+  buildNctbQuizPrompt,
+} from "@/lib/gemini";
 
 export const dynamic = "force-dynamic";
 
@@ -81,48 +85,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Build Gemini prompt
-    const difficultyGuide = {
-      Easy: "সহজ (মূল ধারণা, সংজ্ঞা ও সরাসরি বইয়ের তথ্যভিত্তিক)",
-      Medium: "মাঝারি (ধারণাগত বোধগম্যতা, প্রয়োগ ও সম্পর্ক স্থাপন)",
-      Hard: "কঠিন (বিশ্লেষণমূলক চিন্তা, বহুপদী সমাপ্তিসূচক বা উচ্চতর দক্ষতা)",
-    }[validDifficulty as "Easy" | "Medium" | "Hard"];
-
-    const prompt = `You are a senior Bangladesh National Curriculum and Textbook Board (NCTB) assessment specialist and teacher.
-Generate exactly ${count} curriculum-grade Multiple-Choice Questions (MCQs) for:
-- Book: "${bookTitle}"
-- Subject: "${subject}"
-- Chapter/Topic: "${chapter.trim()}"
-- Grade: "${gradeLevel}"
-- Difficulty Level: "${validDifficulty}" (${difficultyGuide})
-
-${
-  pdfBase64
-    ? "IMPORTANT: Attached is the actual textbook PDF. Carefully study the content of the specified chapter/topic from this textbook and base the questions directly on the concepts, exercises, and examples found in this chapter."
-    : "IMPORTANT: Use the official Bangladesh NCTB curriculum standard for this grade and subject to formulate precise, authentic textbook questions."
-}
-
-Strict Output Requirements:
-1. 100% PURE, STANDARD BENGALI (প্রমিত বাংলা): All questions, 4 options, and explanations must be written in accurate Bengali matching the official NCTB textbook terminology (e.g. সালোকসংশ্লেষণ, অভিকর্ষজ ত্বরণ, সমীকরণ, লসাগু, অনুচ্ছেদ, ইত্যাদি).
-2. Exactly 4 distinct choices per question. One must be undeniably correct, three must be plausible distractors.
-3. answerIndex: An integer from 0 to 3 indicating the zero-indexed correct option.
-4. CRITICAL REQUIREMENT FOR 'explanation' & 'pageReference':
-   - Each question MUST have a UNIQUE, dynamic explanation strictly tailored to THAT specific question's subject matter.
-   - DO NOT use generic filler sentences (e.g., "পাঠ্যবই অনুযায়ী সঠিক", "একাডেমিক যুক্তির ভিত্তিতে", "বই অনুযায়ী সঠিক") without actual concepts.
-   - The explanation must clearly explain WHY the correct option is scientifically, mathematically, or factually true, and why other options are incorrect.
-   - Provide the exact NCTB Chapter name and the relevant textbook page range for that specific topic in 'pageReference' (e.g. "অধ্যায় ৩, পৃষ্ঠা: ৪৫-৪৭").
-5. Format: Return ONLY a raw JSON array of objects. Do NOT use markdown code fences (\`\`\`json or \`\`\`), no greetings, and no trailing text.
-
-JSON Schema:
-[
-  {
-    "question": "প্রশ্নের বিষয়বস্তু এখানে লিখুন?",
-    "options": ["অপশন ১", "অপশন ২", "অপশন ৩", "অপশন ৪"],
-    "answerIndex": 0,
-    "explanation": "সঠিক উত্তরের পূর্ণাঙ্গ ব্যাখ্যা: কেন এই উত্তরটি বৈজ্ঞানিক/গাণিতিক/তথ্যগতভাবে সঠিক এবং অন্যান্য অপশন কেন ভুল তা বিস্তারিত যুক্তি।",
-    "pageReference": "অধ্যায় ৩, পৃষ্ঠা: ৪৫-৪৭"
-  }
-]`;
+    // 2. Build Gemini prompt with strict grade boundaries and dynamic explanations
+    const prompt = buildNctbQuizPrompt({
+      gradeLevel: String(gradeLevel || "Class 9-10"),
+      subject: String(subject || bookTitle || "General"),
+      chapterName: `${bookTitle ? `${bookTitle} - ` : ""}${chapter.trim()}`,
+      count,
+      language: "bn",
+      difficulty: validDifficulty as "Easy" | "Medium" | "Hard",
+      contextText: pdfBase64
+        ? "Attached is the actual textbook PDF. Carefully study the content of the specified chapter/topic from this textbook and base the questions directly on the concepts, exercises, and examples found in this chapter."
+        : undefined,
+    });
 
     let rawText = "";
 
@@ -196,12 +170,15 @@ JSON Schema:
         ? q.options.slice(0, 4).map((opt: any) => String(opt).trim())
         : ["অপশন ক", "অপশন খ", "অপশন গ", "অপশন ঘ"];
 
-      const ansIdx =
-        typeof q.answerIndex === "number" && q.answerIndex >= 0 && q.answerIndex < 4
+      const rawAns =
+        (q as any).correctAnswer !== undefined
+          ? (q as any).correctAnswer
+          : typeof q.answerIndex === "number" && q.answerIndex >= 0 && q.answerIndex < 4
           ? q.answerIndex
           : typeof q.correctOptionIndex === "number" && q.correctOptionIndex >= 0 && q.correctOptionIndex < 4
           ? q.correctOptionIndex
           : 0;
+      const ansIdx = Number(rawAns) >= 0 && Number(rawAns) < options.length ? Number(rawAns) : 0;
 
       const rawExp =
         q.explanation ||
@@ -226,11 +203,15 @@ JSON Schema:
         q.reference;
       const pageReference = typeof rawRef === "string" ? rawRef.trim() : "";
 
+      const rawPrompt = (q as any).prompt || q.question;
+
       return {
-        question: String(q.question || `প্রশ্ন ${idx + 1}`).trim(),
+        question: String(rawPrompt || `প্রশ্ন ${idx + 1}`).trim(),
+        prompt: String(rawPrompt || `প্রশ্ন ${idx + 1}`).trim(),
         options,
         answerIndex: ansIdx,
         correctOptionIndex: ansIdx,
+        correctAnswer: ansIdx,
         explanation,
         pageReference,
         points: 1,
